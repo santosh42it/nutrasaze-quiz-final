@@ -8,6 +8,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     allowedHosts: ['localhost', '.replit.dev', '.repl.co'],
+    historyApiFallback: true,
     headers: {
       'Content-Type': 'application/javascript',
       'Cross-Origin-Opener-Policy': 'same-origin',
