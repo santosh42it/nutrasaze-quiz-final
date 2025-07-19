@@ -9,24 +9,9 @@ import { AdminLogin } from "./components/admin/AdminLogin";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
-// Basic error handling for Supabase configuration issues
+// Simple error suppression for development
 window.addEventListener('unhandledrejection', (event) => {
-  const reason = event.reason;
-  const errorMessage = reason?.message || String(reason) || '';
-  
-  // Only suppress Supabase configuration errors
-  if (errorMessage.includes('Supabase not configured')) {
-    event.preventDefault();
-    return;
-  }
-});
-
-// Create admin user on application start (with error suppression)
-createAdminUser().catch((error) => {
-  // Only log if it's not a known configuration issue
-  if (!error?.message?.includes('Supabase not configured')) {
-    console.warn('Admin user setup warning:', error);
-  }
+  event.preventDefault();
 });
 
 createRoot(document.getElementById("app") as HTMLElement).render(
