@@ -8,12 +8,18 @@ import { AdminLogin } from "./components/admin/AdminLogin";
 
 // Global error handlers to prevent console spam
 window.addEventListener('unhandledrejection', (event) => {
-  console.warn('Unhandled promise rejection prevented:', event.reason);
+  // Only log meaningful errors, suppress network connection errors during development
+  if (event.reason && !event.reason.message?.includes('ERR_CONNECTION_REFUSED')) {
+    console.warn('Unhandled promise rejection prevented:', event.reason);
+  }
   event.preventDefault(); // Prevent the default behavior
 });
 
 window.addEventListener('error', (event) => {
-  console.warn('Global error caught:', event.error);
+  // Only log meaningful errors
+  if (event.error && !event.error.message?.includes('ERR_CONNECTION_REFUSED')) {
+    console.warn('Global error caught:', event.error);
+  }
 });
 
 // Add connection check on startup
@@ -52,7 +58,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Create admin user on application start
 createAdminUser().catch((error) => {
-  console.error('Failed to create admin user:', error);
+  console.warn('Admin user setup warning:', error););
 });
 
 createRoot(document.getElementById("app") as HTMLElement).render(

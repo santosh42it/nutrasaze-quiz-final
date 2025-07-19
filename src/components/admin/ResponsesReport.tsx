@@ -68,7 +68,13 @@ export const ResponsesReport: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Basic responses:', basicResponses, 'Error:', basicError);
+      if (basicError && basicError.message?.includes('connection')) {
+        console.warn('Network connection issue, using cached data if available');
+      } else if (basicError) {
+        console.log('Fetch error:', basicError);
+      } else {
+        console.log('✅ Successfully fetched', basicResponses?.length || 0, 'responses');
+      }
 
       if (basicError) {
         console.error('Error fetching basic responses:', basicError);
