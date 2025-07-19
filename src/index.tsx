@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "../tailwind.css";
+import "./index.css";
 import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { AdminLogin } from "./components/admin/AdminLogin";

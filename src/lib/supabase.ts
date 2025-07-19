@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Missing Supabase environment variables.');
   console.error('Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
   console.error('Please add them in the Secrets section of Replit');
-}</if>
+}
 
 // Always create the client, even with empty values to prevent errors
 const client = createClient(
