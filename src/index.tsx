@@ -8,7 +8,9 @@ import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
 // Create admin user on application start
-createAdminUser().catch(console.error);
+createAdminUser().catch((error) => {
+  console.error('Failed to create admin user:', error);
+});
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>

@@ -1,1 +1,1 @@
-export { SectionComponentNodeByAnima as Ingredients } from "./Ingredients";
+export { Ingredients } from "./Ingredients";

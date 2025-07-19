@@ -40,50 +40,20 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Create admin user
+// Create admin user on application start
 export const createAdminUser = async () => {
-  const adminEmail = 'admin@nutrasage.com';
-  const adminPassword = 'nutrasage@123';
-
   try {
-    // First try to sign in with admin credentials
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: adminEmail,
-      password: adminPassword,
+    const { data: { user }, error } = await supabase.auth.signUp({
+      email: 'admin@nutrasage.com',
+      password: 'admin123',
     });
 
-    // If sign in succeeds, admin already exists
-    if (signInData.user) {
-      console.log('Admin user already exists');
-      // Sign out after verification since this is just a check
-      await supabase.auth.signOut();
-      return;
+    if (error && error.message !== 'User already registered') {
+      console.error('Error creating admin user:', error);
+    } else {
+      console.log('Admin user created or already exists');
     }
-
-    // If sign in fails with anything other than invalid credentials, log the error
-    if (signInError && !signInError.message.includes('Invalid login credentials')) {
-      console.error('Error checking admin user:', signInError.message);
-      return;
-    }
-
-    // If we reach here, admin doesn't exist, so create the account
-    const { data, error } = await supabase.auth.signUp({
-      email: adminEmail,
-      password: adminPassword,
-      options: {
-        data: {
-          role: 'admin'
-        }
-      }
-    });
-
-    if (error) {
-      console.error('Error creating admin user:', error.message);
-      return;
-    }
-
-    console.log('Admin user created successfully');
   } catch (error) {
-    console.error('Error in createAdminUser:', error);
+    console.error('Unexpected error creating admin user:', error);
   }
 };
