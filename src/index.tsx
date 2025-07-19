@@ -15,8 +15,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ContentScreen />} />
-        <Route path="/quiz" element={<QuizScreen />} />
+        <Route path="/" element={<QuizScreen />} />
+        <Route path="/content" element={<ContentScreen />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin/*"
