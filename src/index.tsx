@@ -9,56 +9,15 @@ import { AdminLogin } from "./components/admin/AdminLogin";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
-// Comprehensive error suppression for development environment
+// Basic error handling for Supabase configuration issues
 window.addEventListener('unhandledrejection', (event) => {
-  // Check if it's a network-related error
   const reason = event.reason;
   const errorMessage = reason?.message || String(reason) || '';
-  const errorStack = reason?.stack || '';
   
-  // Suppress all network and connection errors
-  if (
-    errorMessage.includes('ERR_CONNECTION_REFUSED') ||
-    errorMessage.includes('Failed to fetch') ||
-    errorMessage.includes('WebSocket connection') ||
-    errorMessage.includes('NetworkError') ||
-    errorMessage.includes('fetch') ||
-    errorMessage.includes('Supabase not configured') ||
-    errorStack.includes('supabase') ||
-    errorStack.includes('fetch') ||
-    String(reason).includes('ERR_CONNECTION_REFUSED')
-  ) {
+  // Only suppress Supabase configuration errors
+  if (errorMessage.includes('Supabase not configured')) {
     event.preventDefault();
     return;
-  }
-  
-  // Only log non-network errors
-  if (errorMessage && !errorMessage.includes('connection')) {
-    console.warn('Unhandled promise rejection:', event.reason);
-  }
-  event.preventDefault();
-});
-
-window.addEventListener('error', (event) => {
-  const errorMessage = event.error?.message || '';
-  const errorStack = event.error?.stack || '';
-  
-  // Suppress all network and connection errors
-  if (
-    errorMessage.includes('ERR_CONNECTION_REFUSED') ||
-    errorMessage.includes('Failed to fetch') ||
-    errorMessage.includes('WebSocket connection') ||
-    errorMessage.includes('NetworkError') ||
-    errorStack.includes('supabase') ||
-    errorStack.includes('fetch')
-  ) {
-    event.preventDefault();
-    return;
-  }
-  
-  // Only log meaningful errors
-  if (errorMessage && !errorMessage.includes('connection')) {
-    console.warn('Global error:', event.error);
   }
 });
 
