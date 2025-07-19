@@ -36,17 +36,25 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   error: null,
 
   fetchQuestions: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
+      console.log('Fetching questions from database...');
       const { data, error } = await supabase
         .from('questions')
         .select('*')
         .order('order_index');
       
-      if (error) throw error;
-      set({ questions: data });
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      
+      console.log('Questions fetched:', data?.length || 0);
+      set({ questions: data || [] });
     } catch (error) {
-      set({ error: (error as Error).message });
+      const errorMessage = (error as Error).message;
+      console.error('Error fetching questions:', errorMessage);
+      set({ error: errorMessage });
     } finally {
       set({ loading: false });
     }

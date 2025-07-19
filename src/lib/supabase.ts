@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/database';
 
@@ -5,39 +6,41 @@ import type { Database } from '../types/database';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
-// Create mock client for development without Supabase
-const createMockClient = () => ({
-  from: () => ({
-    select: () => Promise.resolve({ data: [], error: null }),
-    insert: () => Promise.resolve({ data: null, error: null }),
-    update: () => Promise.resolve({ data: null, error: null }),
-    delete: () => Promise.resolve({ data: null, error: null }),
-    eq: function() { return this; },
-    order: function() { return this; },
-  }),
+// Check if we have valid Supabase credentials
+const hasValidCredentials = supabaseUrl !== 'https://placeholder.supabase.co' && supabaseAnonKey !== 'placeholder-key';
+
+// Create real Supabase client
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    signInWithPassword: () => Promise.resolve({ data: { user: { id: '1' }, session: { access_token: 'mock' } }, error: null }),
-    signOut: () => Promise.resolve({ error: null }),
-    getSession: () => Promise.resolve({ data: { session: { access_token: 'mock' } }, error: null }),
-    getUser: () => Promise.resolve({ data: { user: { id: '1' } }, error: null }),
-    onAuthStateChange: (callback: any) => {
-      // Simulate authenticated state
-      setTimeout(() => callback('SIGNED_IN', { access_token: 'mock' }), 100);
-      return { data: { subscription: { unsubscribe: () => {} } } };
-    },
+    persistSession: true,
+    autoRefreshToken: true,
   },
-  storage: {
-    from: () => ({
-      upload: () => Promise.resolve({ data: { path: 'mock-path' }, error: null }),
-      getPublicUrl: () => ({ data: { publicUrl: 'https://placeholder.com/image.jpg' } }),
-    }),
-  },
+  db: {
+    schema: 'public'
+  }
 });
 
-// Use mock client for now
-export const supabase = createMockClient();
-
-// Create admin user function - simplified for development
+// Create admin user function
 export const createAdminUser = async () => {
-  return { data: { user: { id: '1' } }, error: null };
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: 'admin@nutrasage.com',
+      password: 'nutrasage@123'
+    });
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+// Test database connection
+export const testConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('questions').select('count(*)', { count: 'exact' });
+    return { connected: !error, error };
+  } catch (error) {
+    return { connected: false, error };
+  }
 };

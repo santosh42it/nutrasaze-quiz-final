@@ -1,23 +1,59 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminStore } from '../../stores/adminStore';
 import { QuestionManager } from './QuestionManager';
 import { TagManager } from './TagManager';
 import { ProductManager } from './ProductManager';
 import { ResponsesReport } from './ResponsesReport';
 import { Button } from '../ui/button';
-import { supabase } from '../../lib/supabase';
+import { supabase, testConnection } from '../../lib/supabase';
+import { setupDatabase, insertSampleData } from '../../lib/database-setup';
 
 export const AdminPanel: React.FC = () => {
-  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts } = useAdminStore();
+  const navigate = useNavigate();
+  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, error } = useAdminStore();
   const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses'>('responses');
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [isSettingUp, setIsSettingUp] = useState(false);
 
   useEffect(() => {
-    fetchQuestions();
-    fetchOptions();
-    fetchTags();
-    fetchProducts();
+    checkDatabaseConnection();
   }, []);
+
+  const checkDatabaseConnection = async () => {
+    const { connected } = await testConnection();
+    setDbStatus(connected ? 'connected' : 'disconnected');
+    
+    if (connected) {
+      fetchQuestions();
+      fetchOptions();
+      fetchTags();
+      fetchProducts();
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/admin/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  const handleSetupDatabase = async () => {
+    setIsSettingUp(true);
+    try {
+      await setupDatabase();
+      await insertSampleData();
+      await checkDatabaseConnection();
+    } catch (error) {
+      console.error('Database setup error:', error);
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#fff4fc]">
@@ -29,12 +65,33 @@ export const AdminPanel: React.FC = () => {
               <h1 className="[font-family:'DM_Serif_Display',Helvetica] text-xl sm:text-2xl lg:text-3xl text-[#1d0917] tracking-[1px] sm:tracking-[2px] font-bold">
                 Admin Panel
               </h1>
-              <Button
-                onClick={() => supabase.auth.signOut()}
-                className="bg-[#913177] text-white hover:bg-[#913177]/90 w-full sm:w-auto text-sm sm:text-base px-3 sm:px-4 py-2"
-              >
-                Sign Out
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <span className={`w-2 h-2 rounded-full ${
+                    dbStatus === 'connected' ? 'bg-green-500' : 
+                    dbStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+                  }`}></span>
+                  <span className="text-[#1d0917]">
+                    {dbStatus === 'connected' ? 'DB Connected' : 
+                     dbStatus === 'disconnected' ? 'DB Disconnected' : 'Checking...'}
+                  </span>
+                </div>
+                {dbStatus === 'disconnected' && (
+                  <Button
+                    onClick={handleSetupDatabase}
+                    disabled={isSettingUp}
+                    className="bg-blue-500 text-white hover:bg-blue-600 text-xs sm:text-sm px-2 sm:px-3 py-1"
+                  >
+                    {isSettingUp ? 'Setting up...' : 'Setup DB'}
+                  </Button>
+                )}
+                <Button
+                  onClick={handleSignOut}
+                  className="bg-[#913177] text-white hover:bg-[#913177]/90 w-full sm:w-auto text-sm sm:text-base px-3 sm:px-4 py-2"
+                >
+                  Sign Out
+                </Button>
+              </div>
             </div>
 
             {/* Tab Navigation - Mobile Optimized */}
