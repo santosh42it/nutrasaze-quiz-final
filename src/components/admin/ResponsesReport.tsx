@@ -479,19 +479,31 @@ export const ResponsesReport: React.FC = () => {
                         </div>
                       )}
                       {answer.file_url && (
-                        <div className="text-[#3d3d3d] mt-2">
-                          <strong>File:</strong> 
-                          <a href={answer.file_url} target="_blank" rel="noopener noreferrer" className="text-[#913177] hover:underline ml-2 break-all">
-                            📎 View uploaded file ({answer.file_url.split('/').pop()})
-                          </a>
-                          <div className="mt-1 text-xs text-[#6d6d6e]">
-                            Click to download/view the uploaded document
+                        <div className="text-[#3d3d3d] mt-2 bg-green-50 border border-green-200 rounded p-3">
+                          <strong className="text-green-700">📎 Uploaded File:</strong> 
+                          <div className="mt-1">
+                            <a 
+                              href={answer.file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-[#913177] hover:underline font-medium inline-flex items-center gap-1"
+                            >
+                              🔗 {answer.file_url.split('/').pop()}
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15,3 21,3 21,9"/>
+                                <line x1="10" y1="14" x2="21" y2="3"/>
+                              </svg>
+                            </a>
+                          </div>
+                          <div className="mt-1 text-xs text-green-600">
+                            Click to view/download the uploaded document
                           </div>
                         </div>
                       )}
-                      {!answer.file_url && answer.questions?.question_text?.toLowerCase().includes('blood test') && answer.answer_text.toLowerCase().includes('yes') && (
-                        <div className="text-red-500 mt-2 text-sm font-medium">
-                          ⚠️ Note: User indicated they have a blood test but no file was uploaded
+                      {!answer.file_url && (answer.questions?.question_text?.toLowerCase().includes('blood test') || answer.questions?.question_text?.toLowerCase().includes('upload')) && answer.answer_text.toLowerCase().includes('yes') && (
+                        <div className="text-red-500 mt-2 text-sm font-medium bg-red-50 border border-red-200 rounded p-2">
+                          ⚠️ Note: User indicated they have a file to upload but no file was uploaded
                         </div>
                       )}
                     </div>

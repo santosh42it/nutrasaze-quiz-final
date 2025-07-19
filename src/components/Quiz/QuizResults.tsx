@@ -89,6 +89,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         });
 
       console.log('Valid answers to save:', validAnswers);
+      console.log('Selected file for upload:', selectedFile ? selectedFile.name : 'No file');
 
       if (validAnswers.length === 0) {
         console.log('No valid answers to save, skipping answers insertion');
@@ -141,6 +142,32 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       const answersToInsert = [];
 
+      // First, handle file upload if there's a selected file
+      let uploadedFileUrl = null;
+      if (selectedFile) {
+        try {
+          console.log('Processing file upload:', selectedFile.name, 'Size:', selectedFile.size);
+          const fileExt = selectedFile.name.split('.').pop();
+          const fileName = `${responseData.id}_${Date.now()}.${fileExt}`;
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('quiz-files')
+            .upload(fileName, selectedFile);
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+          } else {
+            const { data: { publicUrl } } = supabase.storage
+              .from('quiz-files')
+              .getPublicUrl(fileName);
+            uploadedFileUrl = publicUrl;
+            console.log('File uploaded successfully:', uploadedFileUrl);
+          }
+        } catch (error) {
+          console.error('Error in file upload process:', error);
+        }
+      }
+
       for (const [questionId, answer] of validAnswers) {
         const mappedQuestionId = questionIdMap[questionId];
         if (!mappedQuestionId) {
@@ -155,30 +182,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           continue;
         }
 
-        // Handle file upload for blood test question
+        // Check if this question should have the uploaded file attached
         let fileUrl = null;
-        if (questionId === 'blood_test' && selectedFile) {
-          try {
-            console.log('Uploading file:', selectedFile.name);
-            const fileExt = selectedFile.name.split('.').pop();
-            const fileName = `${responseData.id}_${questionId}_${Date.now()}.${fileExt}`;
+        const questionText = questionsData?.find(q => q.id === mappedQuestionId)?.question_text?.toLowerCase() || '';
+        const shouldAttachFile = questionId === 'blood_test' || 
+                               questionText.includes('blood test') || 
+                               questionText.includes('upload') ||
+                               questionText.includes('file') ||
+                               String(answer).toLowerCase().includes('upload');
 
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('quiz-files')
-              .upload(fileName, selectedFile);
-
-            if (uploadError) {
-              console.error('Error uploading file:', uploadError);
-            } else {
-              const { data: { publicUrl } } = supabase.storage
-                .from('quiz-files')
-                .getPublicUrl(fileName);
-              fileUrl = publicUrl;
-              console.log('File uploaded successfully:', fileUrl);
-            }
-          } catch (error) {
-            console.error('Error in file upload:', error);
-          }
+        if (shouldAttachFile && uploadedFileUrl) {
+          fileUrl = uploadedFileUrl;
+          console.log(`Attaching file to question: ${questionId} (${questionText})`);
         }
 
         answersToInsert.push({
