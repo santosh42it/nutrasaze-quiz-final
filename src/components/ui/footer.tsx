@@ -8,7 +8,7 @@ export const Footer = (): JSX.Element => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="text-xl font-bold mb-4 md:mb-0">NutraSage</div>
           <div className="text-sm text-gray-300">
-            © 2025 NutraSage. All rights reserved.
+            © 2024 NutraSage. All rights reserved.
           </div>
         </div>
       </div>
