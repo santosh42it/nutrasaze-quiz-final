@@ -453,69 +453,66 @@ export const ResponsesReport: React.FC = () => {
 
       {/* Enhanced Filters and Controls */}
       <Card className="border-none shadow-lg bg-white">
-        <CardContent className="p-3 sm:p-6 lg:p-8">
-          <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#1d0917] flex items-center">
-                <span className="mr-2 sm:mr-3 text-sm sm:text-base">🗂️</span>
-                <span className="text-sm sm:text-base lg:text-xl">Detailed Responses</span>
-              </h3>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-                <Button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="bg-[#913177] text-white hover:bg-[#913177]/90 shadow-md text-xs sm:text-sm px-3 py-2"
-                >
-                  {refreshing ? '🔄 Refreshing...' : '🔄 Refresh'}
-                </Button>
-                <Button
-                  onClick={exportToCSV}
-                  className="bg-[#4ade80] text-white hover:bg-[#22c55e] shadow-md text-xs sm:text-sm px-3 py-2"
-                >
-                  📥 Export CSV
-                </Button>
-              </div>
+        <CardContent className="p-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+            <h3 className="text-2xl font-bold text-[#1d0917] flex items-center">
+              <span className="mr-3">🗂️</span>Detailed Responses
+            </h3>
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-[#913177] text-white hover:bg-[#913177]/90 shadow-md"
+              >
+                {refreshing ? '🔄 Refreshing...' : '🔄 Refresh'}
+              </Button>
+              <Button
+                onClick={exportToCSV}
+                className="bg-[#4ade80] text-white hover:bg-[#22c55e] shadow-md"
+              >
+                📥 Export CSV
+              </Button>
             </div>
           </div>
 
           {/* Advanced Filter Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 lg:p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
             <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#1d0917] mb-1 sm:mb-2">Search</label>
+              <label className="block text-sm font-semibold text-[#1d0917] mb-2">Search</label>
               <Input
                 placeholder="Name, email, or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-[#e9d6e4] focus:border-[#913177] text-xs sm:text-sm h-8 sm:h-10"
+                className="border-[#e9d6e4] focus:border-[#913177]"
               />
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#1d0917] mb-1 sm:mb-2">From Date</label>
+              <label className="block text-sm font-semibold text-[#1d0917] mb-2">From Date</label>
               <Input
                 type="date"
                 value={dateRange.from}
                 onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                className="border-[#e9d6e4] focus:border-[#913177] text-xs sm:text-sm h-8 sm:h-10"
+                className="border-[#e9d6e4] focus:border-[#913177]"
               />
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#1d0917] mb-1 sm:mb-2">To Date</label>
+              <label className="block text-sm font-semibold text-[#1d0917] mb-2">To Date</label>
               <Input
                 type="date"
                 value={dateRange.to}
                 onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                className="border-[#e9d6e4] focus:border-[#913177] text-xs sm:text-sm h-8 sm:h-10"
+                className="border-[#e9d6e4] focus:border-[#913177]"
               />
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#1d0917] mb-1 sm:mb-2">Age Group</label>
+              <label className="block text-sm font-semibold text-[#1d0917] mb-2">Age Group</label>
               <select
                 value={ageFilter}
                 onChange={(e) => setAgeFilter(e.target.value)}
-                className="w-full p-1 sm:p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none text-xs sm:text-sm h-8 sm:h-10"
+                className="w-full p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
               >
                 <option value="">All Ages</option>
                 <option value="18-25">18-25 years</option>
@@ -590,46 +587,43 @@ export const ResponsesReport: React.FC = () => {
 
           {/* Enhanced Responses Table */}
           <div className="overflow-x-auto bg-white rounded-lg shadow-inner">
-            <table className="w-full min-w-[768px]">
+            <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white">
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Name</th>
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Email</th>
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Phone</th>
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Age</th>
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Date</th>
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Answers</th>
-                  <th className="text-left py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 font-bold text-xs sm:text-sm uppercase tracking-wider">Actions</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Name</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Email</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Phone</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Age</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Date</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Answers</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedResponses.map((response, index) => (
                   <tr key={response.id} className={`border-b border-[#f0f0f0] hover:bg-gradient-to-r hover:from-[#fff4fc] hover:to-white transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'}`}>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6">
-                      <div className="font-semibold text-[#1d0917] text-xs sm:text-sm truncate max-w-[120px]">{response.name}</div>
+                    <td className="py-4 px-6">
+                      <div className="font-semibold text-[#1d0917]">{response.name}</div>
                     </td>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 text-[#3d3d3d] text-xs sm:text-sm truncate max-w-[150px]">{response.email}</td>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 text-[#3d3d3d] text-xs sm:text-sm">{response.contact}</td>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6">
-                      <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#913177]/10 text-[#913177]">
+                    <td className="py-4 px-6 text-[#3d3d3d]">{response.email}</td>
+                    <td className="py-4 px-6 text-[#3d3d3d]">{response.contact}</td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#913177]/10 text-[#913177]">
                         {response.age}
                       </span>
                     </td>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6 text-[#3d3d3d] text-xs sm:text-sm">
-                      <div className="max-w-[100px] truncate">{formatDate(response.created_at || '')}</div>
-                    </td>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6">
-                      <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4ade80]/10 text-[#22c55e]">
-                        {response.answers?.length || 0}
+                    <td className="py-4 px-6 text-[#3d3d3d] text-sm">{formatDate(response.created_at || '')}</td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4ade80]/10 text-[#22c55e]">
+                        {response.answers?.length || 0} answers
                       </span>
                     </td>
-                    <td className="py-2 sm:py-3 lg:py-4 px-2 sm:px-4 lg:px-6">
+                    <td className="py-4 px-6">
                       <Button
                         onClick={() => setSelectedResponse(response)}
-                        className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white hover:from-[#7a2463] hover:to-[#9a3687] text-xs sm:text-sm px-2 sm:px-3 lg:px-4 py-1 sm:py-2 shadow-md"
+                        className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white hover:from-[#7a2463] hover:to-[#9a3687] text-sm px-4 py-2 shadow-md"
                       >
-                        <span className="hidden sm:inline">👁️ View</span>
-                        <span className="sm:hidden">👁️</span>
+                        👁️ View Details
                       </Button>
                     </td>
                   </tr>
