@@ -7,6 +7,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Create admin user function
+export const createAdminUser = async () => {
+  try {
+    // This is just a placeholder - implement your admin user creation logic
+    console.log('Admin user creation placeholder');
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+  }
+};
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
