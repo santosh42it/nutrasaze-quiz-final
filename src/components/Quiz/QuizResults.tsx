@@ -27,7 +27,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Answers Count:', Object.keys(answers).length);
       console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing');
-      
+
       // Validate required fields
       if (!userInfo.name || !userInfo.email || !userInfo.contact || !userInfo.age) {
         console.error('Missing required fields:', { userInfo });
@@ -51,7 +51,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       };
       console.log('Data being inserted:', insertData);
       console.log('Current timestamp:', new Date().toISOString());
-      
+
       const { data: responseData, error: responseError } = await supabase
         .from('quiz_responses')
         .insert(insertData)
@@ -116,7 +116,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Create a mapping from question text/type to database ID
       const questionIdMap: { [key: string]: number } = {};
-      
+
       // Map based on question content patterns
       questionsData?.forEach(q => {
         const text = q.question_text.toLowerCase();
@@ -140,7 +140,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Question ID mapping:', questionIdMap);
 
       const answersToInsert = [];
-      
+
       for (const [questionId, answer] of validAnswers) {
         const mappedQuestionId = questionIdMap[questionId];
         if (!mappedQuestionId) {
@@ -154,7 +154,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           });
           continue;
         }
-        
+
         // Handle file upload for blood test question
         let fileUrl = null;
         if (questionId === 'blood_test' && selectedFile) {
@@ -162,7 +162,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             console.log('Uploading file:', selectedFile.name);
             const fileExt = selectedFile.name.split('.').pop();
             const fileName = `${responseData.id}_${questionId}_${Date.now()}.${fileExt}`;
-            
+
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('quiz-files')
               .upload(fileName, selectedFile);
@@ -180,11 +180,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             console.error('Error in file upload:', error);
           }
         }
-        
+
         answersToInsert.push({
           response_id: responseData.id,
           question_id: mappedQuestionId,
-          answer_text: String(answer).substring(0, 500), // Limit length
+          answer_text: String(answer).substring(0, 500),
           additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
           file_url: fileUrl
         });
@@ -212,7 +212,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
-      
+
       let errorMessage = 'Unknown error occurred';
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -221,7 +221,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       } else if (error && typeof error === 'object' && 'message' in error) {
         errorMessage = String(error.message);
       }
-      
+
       alert(`There was an error saving your quiz response: ${errorMessage}. Please check the console for more details and try again.`);
     } finally {
       setIsSubmitting(false);
@@ -246,7 +246,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             <p className="font-desktop-body-xl-regular text-[18px] md:text-[20px] lg:text-[24px] leading-[24px] md:leading-[28px] lg:leading-[32px] text-white/90 max-w-3xl mx-auto mb-8">
               Based on your responses, we've created a custom supplement plan tailored to your unique health needs and goals. Get ready to transform your wellness journey!
             </p>
-            
+
             {/* User Info Card */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
               <div className="flex items-center justify-center gap-4 mb-4">
@@ -260,7 +260,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                   <p className="text-white/80">Your personalized plan is ready</p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-4 mt-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-[#913177] bg-white rounded-lg py-2">3</div>
@@ -283,13 +283,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       {/* Main Content */}
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Recommendations Section */}
           <div className="mb-16">
             <h2 className="[font-family:'DM_Serif_Display',Helvetica] text-[32px] md:text-[40px] font-normal text-[#1d0917] text-center tracking-[2px] mb-12">
               Your Recommended Supplements
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
@@ -326,7 +326,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                         {product.price}
                       </div>
                     </div>
-                    
+
                     <div className="p-6">
                       <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-[20px] font-normal text-[#1d0917] mb-3 tracking-[1px]">
                         {product.title}
@@ -334,7 +334,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                       <p className="font-desktop-body-m-regular text-[#3d3d3d] text-sm mb-4 leading-relaxed">
                         {product.description}
                       </p>
-                      
+
                       <div className="space-y-3">
                         <div className="text-sm font-semibold text-[#1d0917]">Key Benefits:</div>
                         <div className="grid grid-cols-2 gap-2">
@@ -366,7 +366,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                
+
                 {/* Pricing Info */}
                 <div className="text-center lg:text-left">
                   <div className="flex items-center justify-center lg:justify-start gap-4 mb-6">
@@ -443,7 +443,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                     <p className="font-desktop-body-m-regular text-[#3d3d3d] mb-6">
                       Join thousands who have already started their wellness journey with NutraSage
                     </p>
-                    
+
                     <Button 
                       className="w-full h-16 rounded-2xl bg-[#913177] text-white font-desktop-body-m-bold text-lg shadow-lg hover:bg-[#913177]/90 transition-all duration-300 transform hover:scale-105"
                       disabled={isSubmitting}

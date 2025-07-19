@@ -481,14 +481,17 @@ export const ResponsesReport: React.FC = () => {
                       {answer.file_url && (
                         <div className="text-[#3d3d3d] mt-2">
                           <strong>File:</strong> 
-                          <a href={answer.file_url} target="_blank" rel="noopener noreferrer" className="text-[#913177] hover:underline ml-2">
-                            📎 View uploaded file
+                          <a href={answer.file_url} target="_blank" rel="noopener noreferrer" className="text-[#913177] hover:underline ml-2 break-all">
+                            📎 View uploaded file ({answer.file_url.split('/').pop()})
                           </a>
+                          <div className="mt-1 text-xs text-[#6d6d6e]">
+                            Click to download/view the uploaded document
+                          </div>
                         </div>
                       )}
                       {!answer.file_url && answer.questions?.question_text?.toLowerCase().includes('blood test') && answer.answer_text.toLowerCase().includes('yes') && (
-                        <div className="text-[#6d6d6e] mt-2 text-sm">
-                          <em>Note: User indicated they have a blood test but no file was uploaded</em>
+                        <div className="text-red-500 mt-2 text-sm font-medium">
+                          ⚠️ Note: User indicated they have a blood test but no file was uploaded
                         </div>
                       )}
                     </div>

@@ -13,13 +13,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   handleFileChange,
   acceptedFileTypes = ".pdf,.doc,.docx,.jpg,.jpeg,.png"
 }) => {
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+    }
+    handleFileChange(e);
+  };
   return (
     <div className="space-y-4 w-full">
       <div className="relative w-full h-40 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 transition-colors">
         <input
           type="file"
           accept={acceptedFileTypes}
-          onChange={handleFileChange}
+          onChange={handleFileSelect}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
         <div className="flex flex-col items-center gap-4 text-white px-4">
