@@ -7,13 +7,16 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['localhost', '.replit.dev', '.repl.co'],
-    historyApiFallback: true,
-    headers: {
-      'Content-Type': 'application/javascript',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp'
+    strictPort: true,
+    hmr: {
+      port: 5173,
+      host: '0.0.0.0'
     }
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true
   },
   css: {
     postcss: {
