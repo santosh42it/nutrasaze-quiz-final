@@ -1,3 +1,4 @@
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -5,49 +6,49 @@ import "./index.css";
 import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { AdminLogin } from "./components/admin/AdminLogin";
-
-// Global error handlers to prevent console spam
-window.addEventListener('unhandledrejection', (event) => {
-  // Only log meaningful errors, suppress network connection errors during development
-  if (event.reason && !event.reason.message?.includes('ERR_CONNECTION_REFUSED')) {
-    console.warn('Unhandled promise rejection prevented:', event.reason);
-  }
-  event.preventDefault(); // Prevent the default behavior
-});
-
-window.addEventListener('error', (event) => {
-  // Only log meaningful errors
-  if (event.error && !event.error.message?.includes('ERR_CONNECTION_REFUSED')) {
-    console.warn('Global error caught:', event.error);
-  }
-});
-
-// Add connection check on startup
-const checkConnection = async () => {
-  try {
-    const response = await fetch(window.location.origin, { 
-      method: 'HEAD',
-      mode: 'no-cors'
-    });
-    console.log('✅ Connection check passed');
-  } catch (error) {
-    console.warn('⚠️ Connection check failed:', error);
-  }
-};
-
-checkConnection();
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
-// Global error handler for unhandled promise rejections
+// Single set of global error handlers
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  event.preventDefault(); // Prevent the default browser behavior
+  // Suppress known development errors to reduce console spam
+  const errorMessage = event.reason?.message || '';
+  if (
+    errorMessage.includes('ERR_CONNECTION_REFUSED') ||
+    errorMessage.includes('Failed to fetch') ||
+    errorMessage.includes('WebSocket connection') ||
+    errorMessage.includes('Supabase not configured')
+  ) {
+    event.preventDefault();
+    return;
+  }
+  
+  // Log meaningful errors only
+  console.warn('Unhandled promise rejection:', event.reason);
+  event.preventDefault();
 });
 
-// Create admin user on application start
+window.addEventListener('error', (event) => {
+  // Suppress known development errors
+  const errorMessage = event.error?.message || '';
+  if (
+    errorMessage.includes('ERR_CONNECTION_REFUSED') ||
+    errorMessage.includes('Failed to fetch') ||
+    errorMessage.includes('WebSocket connection')
+  ) {
+    return;
+  }
+  
+  // Log meaningful errors only
+  console.warn('Global error:', event.error);
+});
+
+// Create admin user on application start (with error suppression)
 createAdminUser().catch((error) => {
-  console.warn('Admin user setup warning:', error);
+  // Only log if it's not a known configuration issue
+  if (!error?.message?.includes('Supabase not configured')) {
+    console.warn('Admin user setup warning:', error);
+  }
 });
 
 createRoot(document.getElementById("app") as HTMLElement).render(
