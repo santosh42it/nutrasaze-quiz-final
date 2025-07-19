@@ -4,17 +4,21 @@ export const Header = (): JSX.Element => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="flex justify-center items-center px-6 py-6 max-w-7xl mx-auto">
+        <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
           <div 
-            className="cursor-pointer transition-opacity hover:opacity-80" 
-            onClick={() => window.open('https://nutrasage.in', '_blank')}
+            className="text-2xl font-bold text-[#1d0917] cursor-pointer hover:text-[#913177] transition-colors" 
+            onClick={() => window.location.href = '/'}
           >
-            <img
-              src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339"
-              alt="NutraSage"
-              className="h-14 md:h-20 w-auto max-h-14 md:max-h-20"
-            />
+            NutraSage
           </div>
+          <nav className="hidden md:flex space-x-8">
+            <button
+              onClick={() => window.location.href = '/content'}
+              className="text-[#1d0917] hover:text-[#913177] transition-colors font-medium"
+            >
+              About Us
+            </button>
+          </nav>
         </div>
       </div>
     </header>

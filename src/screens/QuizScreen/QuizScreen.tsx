@@ -144,9 +144,9 @@ export const QuizScreen = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1d0917] flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 flex flex-col justify-center items-center px-4 pt-24 pb-8 min-h-[calc(100vh-200px)]">
+      <main className="flex-1 pb-0">
         {!showResults ? (
           <div className="min-h-[calc(100vh-72px)]">
             <QuizQuestion
