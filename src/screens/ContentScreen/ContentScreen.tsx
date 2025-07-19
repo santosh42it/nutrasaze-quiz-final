@@ -11,7 +11,7 @@ export const ContentScreen = (): JSX.Element => {
   return (
     <div className="flex flex-col min-h-screen bg-[#1d0917] overflow-x-hidden">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pt-24">
         <HeroByAnima />
         <Ingredients />
         <LifestyleSection />
