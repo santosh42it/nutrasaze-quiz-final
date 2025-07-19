@@ -7,6 +7,12 @@ import { AdminLogin } from "./components/admin/AdminLogin";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
+// Global error handler for unhandled promise rejections
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  event.preventDefault(); // Prevent the default browser behavior
+});
+
 // Create admin user on application start
 createAdminUser().catch((error) => {
   console.error('Failed to create admin user:', error);

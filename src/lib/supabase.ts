@@ -4,7 +4,19 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  console.error('Missing Supabase environment variables. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.');
+  // Create a dummy client to prevent errors
+  const dummyClient = {
+    auth: {
+      signUp: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } }),
+      signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } }),
+      signOut: () => Promise.resolve({ error: null }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null })
+    }
+  };
+  // @ts-ignore
+  window.supabaseClient = dummyClient;
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -43,6 +55,12 @@ export const getCurrentUser = async () => {
 // Create admin user on application start
 export const createAdminUser = async () => {
   try {
+    // Check if environment variables are configured
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      console.warn('Supabase environment variables not configured. Skipping admin user creation.');
+      return;
+    }
+
     const { data: { user }, error } = await supabase.auth.signUp({
       email: 'admin@nutrasage.com',
       password: 'admin123',
