@@ -43,7 +43,13 @@ export const HeroByAnima = (): JSX.Element => {
             </p>
           </div>
 
-          <Button className="w-[130px] h-9 rounded-3xl bg-[#913177] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary">
+          <Button 
+            onClick={() => {
+              window.location.hash = '#quiz';
+              window.location.reload();
+            }}
+            className="w-[130px] h-9 rounded-3xl bg-[#913177] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary"
+          >
             Take Quiz
           </Button>
         </div>

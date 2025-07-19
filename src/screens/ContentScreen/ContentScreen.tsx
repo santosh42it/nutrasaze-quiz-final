@@ -5,12 +5,20 @@ import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
 import { questions } from "../../components/Quiz/constants";
 import type { Question } from "../../components/Quiz/types";
+import { HeroByAnima } from "./sections/HeroByAnima/HeroByAnima";
+import { Ingredients } from "./sections/Ingredients/Ingredients";
+import { LifestyleSection } from "./sections/Lifestyle/LifestyleSection";
+import { Reviews } from "./sections/Reviews/Reviews";
+import { FaqByAnima } from "./sections/FaqByAnima/FaqByAnima";
 
 interface QuizAnswers {
   [key: string]: string;
 }
 
 export const ContentScreen = (): JSX.Element => {
+  // Check if we should show quiz based on URL hash
+  const isQuizMode = window.location.hash === '#quiz' || window.location.pathname === '/quiz';
+  
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [showResults, setShowResults] = useState<boolean>(false);
@@ -143,45 +151,63 @@ export const ContentScreen = (): JSX.Element => {
     }
   };
 
+  // Show quiz if in quiz mode
+  if (isQuizMode) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 pb-0">
+          {!showResults ? (
+            <div className="min-h-[calc(100vh-72px)]">
+              <QuizQuestion
+                question={questions[currentQuestion] as Question}
+                currentQuestion={currentQuestion}
+                totalQuestions={questions.length}
+                inputValue={inputValue}
+                setInputValue={setInputValue}
+                additionalInfo={additionalInfo}
+                setAdditionalInfo={setAdditionalInfo}
+                selectedFile={selectedFile}
+                setSelectedFile={setSelectedFile}
+                validationError={validationError}
+                setValidationError={setValidationError}
+                answers={answers}
+                handleNext={handleNext}
+                handleOptionSelect={handleOptionSelect}
+                handleKeyPress={handleKeyPress}
+                handleFileChange={handleFileChange}
+              />
+            </div>
+          ) : (
+            <div className="min-h-[calc(100vh-72px)] pb-16">
+              <QuizResults 
+                answers={answers}
+                userInfo={{
+                  name: answers.name,
+                  email: answers.email,
+                  contact: answers.contact,
+                  age: parseInt(answers.age) || 0
+                }}
+                selectedFile={selectedFile}
+              />
+            </div>
+          )}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show home page by default
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-[#1d0917] overflow-x-hidden">
       <Header />
-      <main className="flex-1 pb-0">
-        {!showResults ? (
-          <div className="min-h-[calc(100vh-72px)]">
-            <QuizQuestion
-              question={questions[currentQuestion] as Question}
-              currentQuestion={currentQuestion}
-              totalQuestions={questions.length}
-              inputValue={inputValue}
-              setInputValue={setInputValue}
-              additionalInfo={additionalInfo}
-              setAdditionalInfo={setAdditionalInfo}
-              selectedFile={selectedFile}
-              setSelectedFile={setSelectedFile}
-              validationError={validationError}
-              setValidationError={setValidationError}
-              answers={answers}
-              handleNext={handleNext}
-              handleOptionSelect={handleOptionSelect}
-              handleKeyPress={handleKeyPress}
-              handleFileChange={handleFileChange}
-            />
-          </div>
-        ) : (
-          <div className="min-h-[calc(100vh-72px)] pb-16">
-            <QuizResults 
-              answers={answers}
-              userInfo={{
-                name: answers.name,
-                email: answers.email,
-                contact: answers.contact,
-                age: parseInt(answers.age)
-              }}
-              selectedFile={selectedFile}
-            />
-          </div>
-        )}
+      <main className="flex-1">
+        <HeroByAnima />
+        <Ingredients />
+        <LifestyleSection />
+        <Reviews />
+        <FaqByAnima />
       </main>
       <Footer />
     </div>
