@@ -1,0 +1,1 @@
+export { LifestyleSection } from './LifestyleSection';

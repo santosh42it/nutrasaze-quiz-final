@@ -1,0 +1,1 @@
+export { HeroByAnima } from "./HeroByAnima";
