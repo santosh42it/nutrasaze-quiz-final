@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 
 export const AdminPanel: React.FC = () => {
   const { fetchQuestions, fetchOptions, fetchTags, fetchProducts } = useAdminStore();
-  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses'>('responses');
 
   useEffect(() => {
     fetchQuestions();
@@ -36,8 +36,8 @@ export const AdminPanel: React.FC = () => {
 
           <div className="flex gap-4 border-b border-[#e9d6e4]">
             {[
-              { id: 'questions', label: 'Quiz Questions' },
               { id: 'responses', label: 'Quiz Responses' },
+              { id: 'questions', label: 'Quiz Questions' },
               { id: 'tags', label: 'Tags' },
               { id: 'products', label: 'Products' }
             ].map((tab) => (
@@ -56,8 +56,8 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           <div className="grid gap-8">
-            {activeTab === 'questions' && <QuestionManager />}
             {activeTab === 'responses' && <ResponsesReport />}
+            {activeTab === 'questions' && <QuestionManager />}
             {activeTab === 'tags' && <TagManager />}
             {activeTab === 'products' && <ProductManager />}
           </div>

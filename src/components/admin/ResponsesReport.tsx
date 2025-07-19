@@ -23,6 +23,26 @@ export const ResponsesReport: React.FC = () => {
     fetchData();
   }, []);
 
+  // ESC key listener for modal
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedResponse) {
+        setSelectedResponse(null);
+      }
+    };
+
+    if (selectedResponse) {
+      document.addEventListener('keydown', handleEscKey);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedResponse]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchData();
@@ -401,28 +421,43 @@ export const ResponsesReport: React.FC = () => {
 
       {/* Response Detail Modal */}
       {selectedResponse && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto border-[#e9d6e4] bg-white">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedResponse(null);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setSelectedResponse(null);
+            }
+          }}
+          tabIndex={-1}
+        >
+          <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto border-[#e9d6e4] bg-white relative">
+            {/* Sticky Close Button */}
+            <div className="sticky top-0 bg-white z-10 p-4 border-b border-[#e9d6e4] flex justify-between items-center">
+              <h3 className="text-2xl font-semibold text-[#1d0917]">
+                {selectedResponse.name}'s Response
+              </h3>
+              <Button
+                onClick={() => setSelectedResponse(null)}
+                variant="outline"
+                className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc] shrink-0"
+              >
+                ✕ Close
+              </Button>
+            </div>
+            
             <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-semibold text-[#1d0917] mb-2">
-                    {selectedResponse.name}'s Response
-                  </h3>
-                  <div className="text-[#3d3d3d] space-y-1">
-                    <p><strong>Email:</strong> {selectedResponse.email}</p>
-                    <p><strong>Phone:</strong> {selectedResponse.contact}</p>
-                    <p><strong>Age:</strong> {selectedResponse.age}</p>
-                    <p><strong>Submitted:</strong> {formatDate(selectedResponse.created_at || '')}</p>
-                  </div>
+              <div className="mb-6">
+                <div className="text-[#3d3d3d] space-y-1">
+                  <p><strong>Email:</strong> {selectedResponse.email}</p>
+                  <p><strong>Phone:</strong> {selectedResponse.contact}</p>
+                  <p><strong>Age:</strong> {selectedResponse.age}</p>
+                  <p><strong>Submitted:</strong> {formatDate(selectedResponse.created_at || '')}</p>
                 </div>
-                <Button
-                  onClick={() => setSelectedResponse(null)}
-                  variant="outline"
-                  className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
-                >
-                  ✕ Close
-                </Button>
               </div>
 
               <div className="space-y-4">
