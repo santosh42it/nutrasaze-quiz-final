@@ -52,11 +52,12 @@ export interface Tag {
 export interface Product {
   id: number;
   name: string;
-  description?: string;
+  description: string;
   image_url?: string;
+  url?: string;
   is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface QuizReport {
