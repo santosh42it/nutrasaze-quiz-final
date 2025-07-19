@@ -1,7 +1,10 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 
 export const HeroByAnima = (): JSX.Element => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative w-full h-screen max-h-[800px] min-h-[598px] mt-[72px] overflow-hidden">
       {/* Video Background */}
@@ -44,10 +47,7 @@ export const HeroByAnima = (): JSX.Element => {
           </div>
 
           <Button 
-            onClick={() => {
-              window.location.hash = '#quiz';
-              window.location.reload();
-            }}
+            onClick={() => navigate('/quiz')}
             className="w-[130px] h-9 rounded-3xl bg-[#913177] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary"
           >
             Take Quiz
