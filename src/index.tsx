@@ -36,17 +36,6 @@ const checkConnection = async () => {
 };
 
 checkConnection();
-
-// Handle unhandled promise rejections
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  event.preventDefault(); // Prevent the error from appearing in console
-});
-
-// Handle other errors
-window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-});
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
@@ -58,7 +47,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Create admin user on application start
 createAdminUser().catch((error) => {
-  console.warn('Admin user setup warning:', error););
+  console.warn('Admin user setup warning:', error);
 });
 
 createRoot(document.getElementById("app") as HTMLElement).render(
