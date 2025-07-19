@@ -47,7 +47,9 @@ export const HeroByAnima = (): JSX.Element => {
           </div>
 
           <Button 
-            onClick={() => navigate('/quiz')}
+            onClick={() => {
+              window.location.href = '/quiz';
+            }}
             className="w-[130px] h-9 rounded-3xl bg-[#913177] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary"
           >
             Take Quiz

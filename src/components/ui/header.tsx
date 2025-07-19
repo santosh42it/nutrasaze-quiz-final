@@ -1,17 +1,28 @@
 import React from "react";
 
 export const Header = (): JSX.Element => {
+  const isQuizPage = window.location.pathname === '/quiz'; // Determine if it's the quiz page
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="flex justify-center items-center h-[72px]">
-          <a href="https://nutrasage.in/" className="flex items-center">
-            <img
-              src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339"
-              alt="NutraSage"
-              className="h-12 w-auto"
-            />
-          </a>
+        <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+          <div 
+            className="text-2xl font-bold text-[#1d0917] cursor-pointer" 
+            onClick={() => window.location.href = '/'}
+          >
+            NutraSage
+          </div>
+          <nav className="hidden md:flex space-x-8">
+            {isQuizPage && (
+              <button
+                onClick={() => window.location.href = '/'}
+                className="text-[#1d0917] hover:text-[#913177] transition-colors"
+              >
+                ← Back to Home
+              </button>
+            )}
+          </nav>
         </div>
       </div>
     </header>

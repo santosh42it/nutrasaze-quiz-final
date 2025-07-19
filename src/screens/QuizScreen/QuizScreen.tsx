@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Header } from "../../components/ui/header";
-import { ContentByAnima as Footer } from "../ContentScreen/sections/ContentByAnima/ContentByAnima";
+import { Footer } from "../../components/ui/footer";
 import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
 import { questions } from "../../components/Quiz/constants";
