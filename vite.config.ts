@@ -7,19 +7,17 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    strictPort: false,
+    strictPort: true,
     hmr: {
       port: 5173,
-      host: 'localhost',
-      clientPort: 5173,
-      overlay: false
+      host: '0.0.0.0'
     },
-    allowedHosts: ['localhost', '.replit.dev', '.repl.co', '.replit.app']
+    allowedHosts: ['localhost', '.replit.dev', '.repl.co']
   },
   preview: {
     host: '0.0.0.0',
     port: 5173,
-    strictPort: false
+    strictPort: true
   },
   css: {
     postcss: {
