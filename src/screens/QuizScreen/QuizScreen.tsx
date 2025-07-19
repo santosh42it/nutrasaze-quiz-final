@@ -146,9 +146,9 @@ export const QuizScreen = (): JSX.Element => {
   return (
     <div className="min-h-screen bg-[#1d0917] flex flex-col">
       <Header />
-      <main className="flex-1 flex flex-col justify-center items-center px-4 pt-24 pb-8 min-h-[calc(100vh-200px)]">
+      <main className="flex-1 flex flex-col justify-center items-center px-4 pt-28 md:pt-32 pb-4">
         {!showResults ? (
-          <div className="min-h-[calc(100vh-72px)]">
+          <div className="w-full flex flex-col justify-center min-h-[calc(100vh-180px)]">
             <QuizQuestion
               question={questions[currentQuestion] as Question}
               currentQuestion={currentQuestion}
@@ -169,7 +169,7 @@ export const QuizScreen = (): JSX.Element => {
             />
           </div>
         ) : (
-          <div className="min-h-[calc(100vh-72px)] pb-16">
+          <div className="w-full pb-8">
             <QuizResults 
               answers={answers}
               userInfo={{
