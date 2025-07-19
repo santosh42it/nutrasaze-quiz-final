@@ -11,7 +11,8 @@ export default defineConfig({
     hmr: {
       port: 5173,
       host: '0.0.0.0'
-    }
+    },
+    allowedHosts: ['localhost', '.replit.dev', '.repl.co']
   },
   preview: {
     host: '0.0.0.0',
