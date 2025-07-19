@@ -6,7 +6,7 @@ export const Header = (): JSX.Element => {
       <div className="container mx-auto px-4 md:px-8">
         <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
           <div 
-            className="text-2xl font-bold text-[#1d0917] cursor-pointer" 
+            className="text-2xl font-bold text-[#1d0917] cursor-pointer hover:text-[#913177] transition-colors" 
             onClick={() => window.location.href = '/'}
           >
             NutraSage
@@ -14,7 +14,7 @@ export const Header = (): JSX.Element => {
           <nav className="hidden md:flex space-x-8">
             <button
               onClick={() => window.location.href = '/content'}
-              className="text-[#1d0917] hover:text-[#913177] transition-colors"
+              className="text-[#1d0917] hover:text-[#913177] transition-colors font-medium"
             >
               About Us
             </button>

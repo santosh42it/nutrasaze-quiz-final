@@ -5,6 +5,17 @@ import "./index.css";
 import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { AdminLogin } from "./components/admin/AdminLogin";
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  event.preventDefault(); // Prevent the error from appearing in console
+});
+
+// Handle other errors
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+});
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
