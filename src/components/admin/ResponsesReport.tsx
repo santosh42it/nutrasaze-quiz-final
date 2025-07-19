@@ -440,22 +440,22 @@ export const ResponsesReport: React.FC = () => {
 
       {/* Enhanced Filters and Controls */}
       <Card className="border-none shadow-lg bg-white">
-        <CardContent className="p-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-            <h3 className="text-2xl font-bold text-[#1d0917] flex items-center">
-              <span className="mr-3">🗂️</span>Detailed Responses
+        <CardContent className="p-4 sm:p-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <h3 className="text-lg sm:text-2xl font-bold text-[#1d0917] flex items-center">
+              <span className="mr-2 sm:mr-3">🗂️</span>Detailed Responses
             </h3>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
               <Button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="bg-[#913177] text-white hover:bg-[#913177]/90 shadow-md"
+                className="bg-[#913177] text-white hover:bg-[#913177]/90 shadow-md text-sm"
               >
                 {refreshing ? '🔄 Refreshing...' : '🔄 Refresh'}
               </Button>
               <Button
                 onClick={exportToCSV}
-                className="bg-[#4ade80] text-white hover:bg-[#22c55e] shadow-md"
+                className="bg-[#4ade80] text-white hover:bg-[#22c55e] shadow-md text-sm"
               >
                 📥 Export CSV
               </Button>
