@@ -1,6 +1,7 @@
 
 import { Client } from 'pg';
 
+// This should be moved to a serverless function or API route
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
