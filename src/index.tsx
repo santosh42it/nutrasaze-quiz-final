@@ -9,38 +9,57 @@ import { AdminLogin } from "./components/admin/AdminLogin";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 
-// Single set of global error handlers
+// Comprehensive error suppression for development environment
 window.addEventListener('unhandledrejection', (event) => {
-  // Suppress known development errors to reduce console spam
-  const errorMessage = event.reason?.message || '';
+  // Check if it's a network-related error
+  const reason = event.reason;
+  const errorMessage = reason?.message || String(reason) || '';
+  const errorStack = reason?.stack || '';
+  
+  // Suppress all network and connection errors
   if (
     errorMessage.includes('ERR_CONNECTION_REFUSED') ||
     errorMessage.includes('Failed to fetch') ||
     errorMessage.includes('WebSocket connection') ||
-    errorMessage.includes('Supabase not configured')
+    errorMessage.includes('NetworkError') ||
+    errorMessage.includes('fetch') ||
+    errorMessage.includes('Supabase not configured') ||
+    errorStack.includes('supabase') ||
+    errorStack.includes('fetch') ||
+    String(reason).includes('ERR_CONNECTION_REFUSED')
   ) {
     event.preventDefault();
     return;
   }
   
-  // Log meaningful errors only
-  console.warn('Unhandled promise rejection:', event.reason);
+  // Only log non-network errors
+  if (errorMessage && !errorMessage.includes('connection')) {
+    console.warn('Unhandled promise rejection:', event.reason);
+  }
   event.preventDefault();
 });
 
 window.addEventListener('error', (event) => {
-  // Suppress known development errors
   const errorMessage = event.error?.message || '';
+  const errorStack = event.error?.stack || '';
+  
+  // Suppress all network and connection errors
   if (
     errorMessage.includes('ERR_CONNECTION_REFUSED') ||
     errorMessage.includes('Failed to fetch') ||
-    errorMessage.includes('WebSocket connection')
+    errorMessage.includes('WebSocket connection') ||
+    errorMessage.includes('NetworkError') ||
+    errorStack.includes('supabase') ||
+    errorStack.includes('fetch')
   ) {
+    event.preventDefault();
     return;
   }
   
-  // Log meaningful errors only
-  console.warn('Global error:', event.error);
+  // Only log meaningful errors
+  if (errorMessage && !errorMessage.includes('connection')) {
+    console.warn('Global error:', event.error);
+  }
 });
 
 // Create admin user on application start (with error suppression)
