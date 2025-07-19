@@ -6,6 +6,31 @@ import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { AdminLogin } from "./components/admin/AdminLogin";
 
+// Global error handlers to prevent console spam
+window.addEventListener('unhandledrejection', (event) => {
+  console.warn('Unhandled promise rejection prevented:', event.reason);
+  event.preventDefault(); // Prevent the default behavior
+});
+
+window.addEventListener('error', (event) => {
+  console.warn('Global error caught:', event.error);
+});
+
+// Add connection check on startup
+const checkConnection = async () => {
+  try {
+    const response = await fetch(window.location.origin, { 
+      method: 'HEAD',
+      mode: 'no-cors'
+    });
+    console.log('✅ Connection check passed');
+  } catch (error) {
+    console.warn('⚠️ Connection check failed:', error);
+  }
+};
+
+checkConnection();
+
 // Handle unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);

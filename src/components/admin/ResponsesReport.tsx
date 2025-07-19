@@ -72,6 +72,13 @@ export const ResponsesReport: React.FC = () => {
 
       if (basicError) {
         console.error('Error fetching basic responses:', basicError);
+        // Set empty data instead of returning early
+        setResponses([]);
+        setReport({
+          totalResponses: 0,
+          ageDistribution: { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 },
+          questionStats: {}
+        });
         return;
       }
 

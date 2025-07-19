@@ -1,90 +1,87 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../types/database';
 
+// Debug environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('🔍 Environment Debug:');
+console.log('🔍 Environment Check:');
 console.log('VITE_SUPABASE_URL:', supabaseUrl ? '✅ Present' : '❌ Missing');
 console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Present' : '❌ Missing');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables.');
+// Check if we have proper Supabase credentials
+const hasValidCredentials = supabaseUrl && supabaseAnonKey && 
+  supabaseUrl.includes('supabase') && 
+  supabaseAnonKey.length > 20;
+
+if (!hasValidCredentials) {
+  console.error('❌ Invalid or missing Supabase environment variables.');
   console.error('Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
-  console.error('Please check your Secrets section in Replit');
+  console.error('Please add them in the Secrets section of Replit');
+  console.error('URL should contain "supabase" and key should be longer than 20 characters');
 }
 
-// Create a safe client that won't throw errors
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+// Create a safe client with error handling
+const createSafeClient = () => {
+  try {
+    if (!hasValidCredentials) {
+      // Return a mock client that doesn't make real requests
+      return {
+        from: () => ({
+          select: () => Promise.resolve({ data: [], error: null }),
+          insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+          update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+          delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+          eq: function() { return this; },
+          order: function() { return this; },
+        }),
+        auth: {
+          signInWithPassword: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+          signOut: () => Promise.resolve({ error: null }),
+          getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+        storage: {
+          from: () => ({
+            upload: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+            getPublicUrl: () => ({ data: { publicUrl: '' } }),
+          }),
+        },
+      };
+    }
+
+    return createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: window.localStorage
-      }
-    })
-  : {
-      // Dummy client for when environment variables are missing
-      auth: {
-        signUp: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } }),
-        signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } }),
-        signOut: () => Promise.resolve({ error: null }),
-        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
       },
+    });
+  } catch (error) {
+    console.error('Error creating Supabase client:', error);
+    // Return the same mock client structure
+    return {
       from: () => ({
         select: () => Promise.resolve({ data: [], error: null }),
-        insert: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } }),
-        update: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } }),
-        delete: () => Promise.resolve({ data: null, error: { message: 'Environment variables not configured' } })
-      })
+        insert: () => Promise.resolve({ data: null, error: new Error('Supabase client error') }),
+        update: () => Promise.resolve({ data: null, error: new Error('Supabase client error') }),
+        delete: () => Promise.resolve({ data: null, error: new Error('Supabase client error') }),
+        eq: function() { return this; },
+        order: function() { return this; },
+      }),
+      auth: {
+        signInWithPassword: () => Promise.resolve({ data: null, error: new Error('Supabase client error') }),
+        signOut: () => Promise.resolve({ error: null }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      storage: {
+        from: () => ({
+          upload: () => Promise.resolve({ data: null, error: new Error('Supabase client error') }),
+          getPublicUrl: () => ({ data: { publicUrl: '' } }),
+        }),
+      },
     };
-
-// Helper function to check if user is authenticated
-export const isAuthenticated = async () => {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    return !!session;
-  } catch (error) {
-    console.error('Error checking authentication:', error);
-    return false;
   }
 };
 
-// Helper function to get current user
-export const getCurrentUser = async () => {
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    return user;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
-  }
-};
-
-// Create admin user on application start
-export const createAdminUser = async () => {
-  try {
-    // Check if environment variables are configured
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.warn('Supabase environment variables not configured. Skipping admin user creation.');
-      return;
-    }
-
-    const { data: { user }, error } = await supabase.auth.signUp({
-      email: 'admin@nutrasage.com',
-      password: 'admin123',
-    });
-
-    if (error && error.message !== 'User already registered') {
-      console.error('Error creating admin user:', error);
-    } else {
-      console.log('Admin user created or already exists');
-    }
-  } catch (error) {
-    console.error('Unexpected error creating admin user:', error);
-  }
-};
+export const supabase = createSafeClient();
