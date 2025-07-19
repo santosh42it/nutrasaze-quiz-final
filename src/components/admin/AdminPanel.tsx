@@ -12,7 +12,7 @@ import { supabase, testConnection, setupDatabase } from '../../lib/supabase';
 export const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, error, questions } = useAdminStore();
-  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses'>('questions');
+  const [activeTab, setActiveTab] = useState<'responses' | 'questions' | 'tags' | 'products'>('responses');
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'disconnected' | 'setup_required'>('checking');
   const [isSettingUp, setIsSettingUp] = useState(false);
 
@@ -44,13 +44,21 @@ export const AdminPanel: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate('/admin/login');
+      // Clear local session storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Force navigation
+      navigate('/admin/login', { replace: true });
     } catch (error) {
       console.error('Sign out error:', error);
       // Force navigation even if signout fails
-      navigate('/admin/login');
+      localStorage.clear();
+      sessionStorage.clear();
+      navigate('/admin/login', { replace: true });
     }
   };
 
@@ -133,8 +141,8 @@ export const AdminPanel: React.FC = () => {
             <div className="w-full">
               <div className="flex flex-wrap gap-1 sm:gap-2 border-b border-[#e9d6e4] pb-2 overflow-x-auto">
                 {[
-                  { id: 'questions', label: 'Questions', shortLabel: 'Questions' },
                   { id: 'responses', label: 'Responses', shortLabel: 'Responses' },
+                  { id: 'questions', label: 'Questions', shortLabel: 'Questions' },
                   { id: 'tags', label: 'Tags', shortLabel: 'Tags' },
                   { id: 'products', label: 'Products', shortLabel: 'Products' }
                 ].map((tab) => (
@@ -174,8 +182,8 @@ export const AdminPanel: React.FC = () => {
             
             {dbStatus === 'connected' && (
               <>
-                {activeTab === 'questions' && <QuestionManager />}
                 {activeTab === 'responses' && <ResponsesReport />}
+                {activeTab === 'questions' && <QuestionManager />}
                 {activeTab === 'tags' && <TagManager />}
                 {activeTab === 'products' && <ProductManager />}
               </>
