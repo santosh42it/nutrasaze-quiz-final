@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "../../components/ui/header";
 import { Footer } from "../../components/ui/footer";
 import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
-import { questions } from "../../components/Quiz/constants";
+import { getQuizQuestions } from "../../services/quizService";
 import type { Question } from "../../components/Quiz/types";
 
 interface QuizAnswers {
@@ -11,6 +11,9 @@ interface QuizAnswers {
 }
 
 export const QuizScreen = (): JSX.Element => {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [showResults, setShowResults] = useState<boolean>(false);
@@ -18,6 +21,26 @@ export const QuizScreen = (): JSX.Element => {
   const [additionalInfo, setAdditionalInfo] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string>("");
+
+  // Load questions on component mount
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading quiz questions...');
+        const loadedQuestions = await getQuizQuestions();
+        setQuestions(loadedQuestions);
+        console.log(`✅ Loaded ${loadedQuestions.length} questions`);
+      } catch (err) {
+        console.error('❌ Error loading questions:', err);
+        setError('Failed to load quiz questions. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, []);
 
   const validateInput = (value: string, questionId: string): string => {
     const question = questions.find(q => q.id === questionId);
@@ -142,6 +165,58 @@ export const QuizScreen = (): JSX.Element => {
       setValidationError("");
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 pb-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#913177] mx-auto mb-4"></div>
+            <p className="text-[#1d0917] font-desktop-body-l-regular">Loading quiz questions...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 pb-0 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 font-desktop-body-l-regular mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-[#913177] text-white px-6 py-2 rounded hover:bg-[#913177]/90"
+            >
+              Retry
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show quiz if questions are loaded and we have at least one question
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 pb-0 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-[#1d0917] font-desktop-body-l-regular">No quiz questions available.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
