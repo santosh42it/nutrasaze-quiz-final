@@ -267,11 +267,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="w-16 h-16 bg-[#913177] rounded-full flex items-center justify-center">
                   <span className="text-white text-2xl font-bold">
-                    {userInfo.name.charAt(0).toUpperCase()}
+                    {userInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
                 </div>
                 <div className="text-left">
-                  <h3 className="text-2xl font-bold">Hello, {userInfo.name}!</h3>
+                  <h3 className="text-2xl font-bold">Hello, {userInfo?.name || 'User'}!</h3>
                   <p className="text-white/80">Your personalized plan is ready</p>
                 </div>
               </div>
