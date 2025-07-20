@@ -49,6 +49,13 @@ export interface Tag {
   created_at?: string;
 }
 
+export interface QuestionTag {
+  id: number;
+  question_id: number;
+  tag_id: number;
+  created_at?: string;
+}
+
 export interface Product {
   id: number;
   name: string;

@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
 
 export const AdminPanel: React.FC = () => {
-  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts } = useAdminStore();
+  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags } = useAdminStore();
   const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses'>('responses');
 
   useEffect(() => {
@@ -16,6 +16,7 @@ export const AdminPanel: React.FC = () => {
     fetchOptions();
     fetchTags();
     fetchProducts();
+    fetchQuestionTags();
   }, []);
 
   return (

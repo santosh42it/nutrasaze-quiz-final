@@ -3,35 +3,53 @@ import { supabase } from '../lib/supabase';
 import type { Question, QuestionOption, Tag, Product } from '../types/database';
 
 interface AdminStore {
+  // State
   questions: Question[];
   options: QuestionOption[];
   tags: Tag[];
   products: Product[];
+  questionTags: QuestionTag[];
   loading: boolean;
   error: string | null;
+
+  // Question methods
   fetchQuestions: () => Promise<void>;
-  fetchOptions: () => Promise<void>;
-  fetchTags: () => Promise<void>;
-  fetchProducts: () => Promise<void>;
   addQuestion: (question: Omit<Question, 'id'>) => Promise<void>;
   updateQuestion: (id: number, updates: Partial<Question>) => Promise<void>;
   deleteQuestion: (id: number) => Promise<void>;
   reorderQuestions: (questions: Question[]) => Promise<void>;
+
+  // Option methods
+  fetchOptions: () => Promise<void>;
   addOption: (option: Omit<QuestionOption, 'id'>) => Promise<void>;
   updateOption: (id: number, updates: Partial<QuestionOption>) => Promise<void>;
   deleteOption: (id: number) => Promise<void>;
+
+  // Tag methods
+  fetchTags: () => Promise<void>;
   addTag: (name: string) => Promise<void>;
   deleteTag: (id: number) => Promise<void>;
-  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+
+  // Product methods
+  fetchProducts: () => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateProduct: (id: number, updates: Partial<Product>) => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
+
+  // Question Tags methods
+  fetchQuestionTags: () => Promise<void>;
+  addQuestionTag: (questionId: number, tagId: number) => Promise<void>;
+  removeQuestionTag: (questionId: number, tagId: number) => Promise<void>;
+  updateQuestionTags: (questionId: number, tagIds: number[]) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
+  // Initial state
   questions: [],
   options: [],
   tags: [],
   products: [],
+  questionTags: [],
   loading: false,
   error: null,
 
@@ -42,7 +60,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('questions')
         .select('*')
         .order('order_index');
-      
+
       if (error) throw error;
       set({ questions: data });
     } catch (error) {
@@ -68,7 +86,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           .from('questions')
           .update({ order_index: update.order_index })
           .eq('id', update.id);
-        
+
         if (error) throw error;
       }
     } catch (error) {
@@ -85,7 +103,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('question_options')
         .select('*')
         .order('order_index');
-      
+
       if (error) throw error;
       set({ options: data });
     } catch (error) {
@@ -102,7 +120,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('tags')
         .select('*')
         .order('name');
-      
+
       if (error) throw error;
       set({ tags: data });
     } catch (error) {
@@ -128,7 +146,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           )
         `)
         .order('name');
-      
+
       if (error) throw error;
       set({ products: data });
     } catch (error) {
@@ -143,7 +161,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       const { error } = await supabase
         .from('questions')
         .insert([question]);
-      
+
       if (error) throw error;
       await get().fetchQuestions();
     } catch (error) {
@@ -157,7 +175,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('questions')
         .update(updates)
         .eq('id', id);
-      
+
       if (error) throw error;
       await get().fetchQuestions();
     } catch (error) {
@@ -171,7 +189,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('questions')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
       await get().fetchQuestions();
     } catch (error) {
@@ -184,7 +202,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       const { error } = await supabase
         .from('question_options')
         .insert([option]);
-      
+
       if (error) throw error;
       await get().fetchOptions();
     } catch (error) {
@@ -198,7 +216,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('question_options')
         .update(updates)
         .eq('id', id);
-      
+
       if (error) throw error;
       await get().fetchOptions();
     } catch (error) {
@@ -212,7 +230,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('question_options')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
       await get().fetchOptions();
     } catch (error) {
@@ -225,7 +243,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       const { error } = await supabase
         .from('tags')
         .insert([{ name }]);
-      
+
       if (error) throw error;
       await get().fetchTags();
     } catch (error) {
@@ -239,7 +257,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('tags')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
       await get().fetchTags();
     } catch (error) {
@@ -252,7 +270,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       const { error } = await supabase
         .from('products')
         .insert([product]);
-      
+
       if (error) throw error;
       await get().fetchProducts();
     } catch (error) {
@@ -266,7 +284,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .from('products')
         .update(updates)
         .eq('id', id);
-      
+
       if (error) throw error;
       await get().fetchProducts();
     } catch (error) {
@@ -274,17 +292,114 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
-  deleteProduct: async (id) => {
+  deleteProduct: async (id: number) => {
     try {
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
-      await get().fetchProducts();
+
+      set({ 
+        products: get().products.filter(p => p.id !== id) 
+      });
     } catch (error) {
       set({ error: (error as Error).message });
     }
   },
+
+  // Question Tags methods
+  fetchQuestionTags: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('question_tags')
+        .select('*');
+
+      if (error) throw error;
+      set({ questionTags: data });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  addQuestionTag: async (questionId: number, tagId: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('question_tags')
+        .insert({ question_id: questionId, tag_id: tagId })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set({ 
+        questionTags: [...get().questionTags, data] 
+      });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  removeQuestionTag: async (questionId: number, tagId: number) => {
+    try {
+      const { error } = await supabase
+        .from('question_tags')
+        .delete()
+        .eq('question_id', questionId)
+        .eq('tag_id', tagId);
+
+      if (error) throw error;
+
+      set({ 
+        questionTags: get().questionTags.filter(
+          qt => !(qt.question_id === questionId && qt.tag_id === tagId)
+        ) 
+      });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  updateQuestionTags: async (questionId: number, tagIds: number[]) => {
+    try {
+      // Remove existing tags for this question
+      const { error: deleteError } = await supabase
+        .from('question_tags')
+        .delete()
+        .eq('question_id', questionId);
+
+      if (deleteError) throw deleteError;
+
+      // Add new tags
+      if (tagIds.length > 0) {
+        const questionTags = tagIds.map(tagId => ({
+          question_id: questionId,
+          tag_id: tagId
+        }));
+
+        const { data, error: insertError } = await supabase
+          .from('question_tags')
+          .insert(questionTags)
+          .select();
+
+        if (insertError) throw insertError;
+
+        // Update local state
+        set({ 
+          questionTags: [
+            ...get().questionTags.filter(qt => qt.question_id !== questionId),
+            ...data
+          ]
+        });
+      } else {
+        // Just remove from local state if no tags
+        set({ 
+          questionTags: get().questionTags.filter(qt => qt.question_id !== questionId)
+        });
+      }
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  }
 }));
