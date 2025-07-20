@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAdminStore } from '../../stores/adminStore';
 import type { Question, QuestionOption, Tag } from '../../types/database';
 import { Button } from '../ui/button';
@@ -10,15 +11,22 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
+interface OptionWithTags {
+  option: string;
+  tags: number[];
+}
+
 interface QuestionFormProps {
   question?: Question;
   options?: QuestionOption[];
   tags: Tag[];
-  onSave: (questionData: Partial<Question>, questionOptions?: string[], selectedTags?: number[]) => void;
+  onSave: (questionData: Partial<Question>, questionOptions?: OptionWithTags[]) => void;
   onCancel: () => void;
 }
 
 const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, onSave, onCancel }) => {
+  const { optionTags } = useAdminStore();
+  
   const [formData, setFormData] = useState<Partial<Question>>({
     question_text: question?.question_text || '',
     question_type: question?.question_type || 'text',
@@ -31,18 +39,32 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
     status: question?.status || 'draft'
   });
 
-  const [questionOptions, setQuestionOptions] = useState<string[]>(
-    options?.map(o => o.option_text) || []
-  );
+  const [questionOptions, setQuestionOptions] = useState<OptionWithTags[]>([]);
   const [newOption, setNewOption] = useState('');
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+
+  // Initialize options with their tags when editing
+  useEffect(() => {
+    if (options && options.length > 0) {
+      const optionsWithTags = options.map(option => {
+        const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+        return {
+          option: option.option_text,
+          tags: optionTagsForOption.map(ot => ot.tag_id)
+        };
+      });
+      setQuestionOptions(optionsWithTags);
+    }
+  }, [options, optionTags]);
 
   const isGenericQuestion = ['text', 'email', 'tel', 'number'].includes(formData.question_type || '');
 
   const handleAddOption = () => {
-    if (newOption.trim() && !questionOptions.includes(newOption.trim())) {
-      setQuestionOptions([...questionOptions, newOption.trim()]);
-      setNewOption('');
+    if (newOption.trim()) {
+      const existingOption = questionOptions.find(opt => opt.option === newOption.trim());
+      if (!existingOption) {
+        setQuestionOptions([...questionOptions, { option: newOption.trim(), tags: [] }]);
+        setNewOption('');
+      }
     }
   };
 
@@ -50,17 +72,21 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
     setQuestionOptions(questionOptions.filter((_, i) => i !== index));
   };
 
-  const handleTagToggle = (tagId: number) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId) 
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
-    );
+  const handleOptionTagToggle = (optionIndex: number, tagId: number) => {
+    setQuestionOptions(prev => prev.map((opt, index) => {
+      if (index === optionIndex) {
+        const updatedTags = opt.tags.includes(tagId)
+          ? opt.tags.filter(id => id !== tagId)
+          : [...opt.tags, tagId];
+        return { ...opt, tags: updatedTags };
+      }
+      return opt;
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData, questionOptions, selectedTags);
+    onSave(formData, formData.question_type === 'select' ? questionOptions : undefined);
   };
 
   return (
@@ -135,23 +161,48 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
           {formData.question_type === 'select' && (
             <div>
               <label className="block text-sm font-medium text-[#1d0917] mb-2">
-                Options
+                Options with Tags
               </label>
-              <div className="space-y-2">
-                {questionOptions.map((option, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-[#fff4fc] rounded-md">
-                    <span className="flex-1">{option}</span>
-                    <Button
-                      type="button"
-                      onClick={() => handleRemoveOption(index)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50"
-                    >
-                      Remove
-                    </Button>
+              <div className="space-y-4">
+                {questionOptions.map((optionWithTags, index) => (
+                  <div key={index} className="p-4 bg-[#fff4fc] rounded-md space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 font-medium">{optionWithTags.option}</span>
+                      <Button
+                        type="button"
+                        onClick={() => handleRemoveOption(index)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    
+                    {!isGenericQuestion && tags.length > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-600 mb-2">Tags for Product Recommendations:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {tags.map(tag => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => handleOptionTagToggle(index, tag.id)}
+                              className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                                optionWithTags.tags.includes(tag.id)
+                                  ? 'bg-[#913177] text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {tag.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
+                
                 <div className="flex gap-2">
                   <Input
                     value={newOption}
@@ -225,34 +276,6 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
             </div>
           )}
 
-          {/* Tags for Product Recommendations */}
-          {!isGenericQuestion && formData.question_type === 'select' && (
-            <div>
-              <label className="block text-sm font-medium text-[#1d0917] mb-2">
-                Tags for Product Recommendations
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => handleTagToggle(tag.id)}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                      selectedTags.includes(tag.id)
-                        ? 'bg-[#913177] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
-              </div>
-              {tags.length === 0 && (
-                <p className="text-sm text-gray-500">No tags available. Create tags first to enable product recommendations.</p>
-              )}
-            </div>
-          )}
-
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-[#1d0917] mb-2">
@@ -307,6 +330,8 @@ const SortableQuestionCard: React.FC<SortableQuestionCardProps> = ({
   onEdit,
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { optionTags, tags } = useAdminStore();
+  
   const {
     attributes,
     listeners,
@@ -389,14 +414,29 @@ const SortableQuestionCard: React.FC<SortableQuestionCardProps> = ({
 
           {questionOptions.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex flex-wrap gap-1">
-                {questionOptions.slice(0, 3).map((option) => (
-                  <span key={option.id} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {option.option_text}
-                  </span>
-                ))}
+              <div className="space-y-2">
+                {questionOptions.slice(0, 3).map((option) => {
+                  const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+                  const tagNames = optionTagsForOption.map(ot => {
+                    const tag = tags.find(t => t.id === ot.tag_id);
+                    return tag?.name;
+                  }).filter(Boolean);
+                  
+                  return (
+                    <div key={option.id} className="text-xs">
+                      <span className="bg-gray-100 px-2 py-1 rounded mr-2">
+                        {option.option_text}
+                      </span>
+                      {tagNames.length > 0 && (
+                        <span className="text-gray-500">
+                          Tags: {tagNames.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
                 {questionOptions.length > 3 && (
-                  <span className="text-xs text-gray-500">+{questionOptions.length - 3} more</span>
+                  <span className="text-xs text-gray-500">+{questionOptions.length - 3} more options</span>
                 )}
               </div>
             </div>
@@ -423,18 +463,26 @@ export const QuestionManager: React.FC = () => {
     questions, 
     options, 
     tags,
+    optionTags,
     addQuestion, 
     updateQuestion, 
     deleteQuestion, 
     reorderQuestions,
     addOption, 
-    deleteOption 
+    deleteOption,
+    updateOptionTags,
+    fetchOptionTags
   } = useAdminStore();
   
   const [showForm, setShowForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'draft'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Fetch option tags when component mounts
+  useEffect(() => {
+    fetchOptionTags();
+  }, [fetchOptionTags]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -468,10 +516,13 @@ export const QuestionManager: React.FC = () => {
     }
   };
 
-  const handleSaveQuestion = async (questionData: Partial<Question>, questionOptions?: string[], selectedTags?: number[]) => {
+  const handleSaveQuestion = async (questionData: Partial<Question>, questionOptions?: OptionWithTags[]) => {
     try {
+      let questionId: number;
+      
       if (editingQuestion) {
         await updateQuestion(editingQuestion.id, questionData);
+        questionId = editingQuestion.id;
         
         // Update options if it's a select question
         if (questionData.question_type === 'select' && questionOptions) {
@@ -481,30 +532,42 @@ export const QuestionManager: React.FC = () => {
             await deleteOption(option.id);
           }
           
-          // Add new options
+          // Add new options with tags
           for (let i = 0; i < questionOptions.length; i++) {
-            await addOption({
+            const { data: newOption } = await addOption({
               question_id: editingQuestion.id,
-              option_text: questionOptions[i],
+              option_text: questionOptions[i].option,
               order_index: i
             });
+            
+            if (newOption && questionOptions[i].tags.length > 0) {
+              await updateOptionTags(newOption.id, questionOptions[i].tags);
+            }
           }
         }
       } else {
-        const newQuestion = await addQuestion({
+        const { data: newQuestion } = await addQuestion({
           ...questionData as Question,
           order_index: questions.length,
           status: questionData.status || 'draft'
         });
         
-        // Add options if it's a select question
-        if (questionData.question_type === 'select' && questionOptions && newQuestion) {
-          for (let i = 0; i < questionOptions.length; i++) {
-            await addOption({
-              question_id: newQuestion.id,
-              option_text: questionOptions[i],
-              order_index: i
-            });
+        if (newQuestion) {
+          questionId = newQuestion.id;
+          
+          // Add options with tags if it's a select question
+          if (questionData.question_type === 'select' && questionOptions) {
+            for (let i = 0; i < questionOptions.length; i++) {
+              const { data: newOption } = await addOption({
+                question_id: newQuestion.id,
+                option_text: questionOptions[i].option,
+                order_index: i
+              });
+              
+              if (newOption && questionOptions[i].tags.length > 0) {
+                await updateOptionTags(newOption.id, questionOptions[i].tags);
+              }
+            }
           }
         }
       }

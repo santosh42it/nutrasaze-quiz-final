@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Question, QuestionOption, Tag, Product } from '../types/database';
+import type { Question, QuestionOption, Tag, Product, OptionTag } from '../types/database';
 
 interface AdminStore {
   // State
@@ -8,7 +8,7 @@ interface AdminStore {
   options: QuestionOption[];
   tags: Tag[];
   products: Product[];
-  questionTags: QuestionTag[];
+  optionTags: OptionTag[];
   loading: boolean;
   error: string | null;
 
@@ -49,7 +49,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   options: [],
   tags: [],
   products: [],
-  questionTags: [],
+  optionTags: [],
   loading: false,
   error: null,
 

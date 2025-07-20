@@ -49,9 +49,9 @@ export interface Tag {
   created_at?: string;
 }
 
-export interface QuestionTag {
+export interface OptionTag {
   id: number;
-  question_id: number;
+  option_id: number;
   tag_id: number;
   created_at?: string;
 }
