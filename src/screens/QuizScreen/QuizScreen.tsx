@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "../../components/ui/header";
 import { Footer } from "../../components/ui/footer";
 import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
-import { questions } from "../../components/Quiz/constants";
+import { questions as constantQuestions } from "../../components/Quiz/constants";
+import { fetchQuestions } from "../../services/questionService";
 import type { Question } from "../../components/Quiz/types";
 
 interface QuizAnswers {
@@ -18,6 +19,26 @@ export const QuizScreen = (): JSX.Element => {
   const [additionalInfo, setAdditionalInfo] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string>("");
+  const [questions, setQuestions] = useState<Question[]>(constantQuestions);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState<boolean>(true);
+
+  // Load questions on component mount
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        setIsLoadingQuestions(true);
+        const fetchedQuestions = await fetchQuestions();
+        setQuestions(fetchedQuestions);
+      } catch (error) {
+        console.error('Error loading questions:', error);
+        // Already falls back to constants in fetchQuestions
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+
+    loadQuestions();
+  }, []);
 
   const validateInput = (value: string, questionId: string): string => {
     const question = questions.find(q => q.id === questionId);
@@ -142,6 +163,22 @@ export const QuizScreen = (): JSX.Element => {
       setValidationError("");
     }
   };
+
+  // Show loading state while questions are being fetched
+  if (isLoadingQuestions) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 pb-0 flex items-center justify-center">
+          <div className="text-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e9d6e4] mx-auto mb-4"></div>
+            <p className="text-[#e9d6e4] text-lg">Loading questions...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
