@@ -41,14 +41,22 @@ export const ProductManager: React.FC = () => {
           .update(updateData)
           .eq('id', editingProduct.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Product update error:', updateError);
+          throw updateError;
+        }
 
         // Update product tags
         // First, remove all existing tag associations
-        await supabase
+        const { error: deleteTagsError } = await supabase
           .from('product_tags')
           .delete()
           .eq('product_id', editingProduct.id);
+
+        if (deleteTagsError) {
+          console.error('Delete tags error:', deleteTagsError);
+          throw deleteTagsError;
+        }
 
         // Then add the new tag associations
         if (selectedTags.length > 0) {
@@ -57,9 +65,14 @@ export const ProductManager: React.FC = () => {
             tag_id: tagId
           }));
           
-          await supabase
+          const { error: insertTagsError } = await supabase
             .from('product_tags')
             .insert(tagInserts);
+
+          if (insertTagsError) {
+            console.error('Insert tags error:', insertTagsError);
+            throw insertTagsError;
+          }
         }
 
         // Refresh products list to show updated data
@@ -79,7 +92,10 @@ export const ProductManager: React.FC = () => {
           .select()
           .single();
 
-        if (productError) throw productError;
+        if (productError) {
+          console.error('Product creation error:', productError);
+          throw productError;
+        }
 
         // Add tag associations for new product
         if (selectedTags.length > 0 && productData) {
@@ -88,9 +104,14 @@ export const ProductManager: React.FC = () => {
             tag_id: tagId
           }));
           
-          await supabase
+          const { error: insertTagsError } = await supabase
             .from('product_tags')
             .insert(tagInserts);
+
+          if (insertTagsError) {
+            console.error('Insert new product tags error:', insertTagsError);
+            throw insertTagsError;
+          }
         }
 
         // Refresh products list
@@ -102,6 +123,8 @@ export const ProductManager: React.FC = () => {
       setSelectedTags([]);
     } catch (error) {
       console.error('Error saving product:', error);
+      // You might want to show a user-friendly error message here
+      alert('Failed to save product. Please try again.');
     }
   };
 
