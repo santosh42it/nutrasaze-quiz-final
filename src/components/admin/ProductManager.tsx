@@ -25,12 +25,23 @@ export const ProductManager: React.FC = () => {
 
     try {
       if (editingProduct) {
-        // Update product details
-        await updateProduct(editingProduct.id, {
-          ...newProduct,
-          mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
-          srp: newProduct.srp ? Number(newProduct.srp) : undefined,
-        });
+        // Update product details directly through Supabase to ensure all fields are updated
+        const updateData = {
+          name: newProduct.name,
+          description: newProduct.description,
+          image_url: newProduct.image_url || null,
+          url: newProduct.url || null,
+          mrp: newProduct.mrp ? Number(newProduct.mrp) : null,
+          srp: newProduct.srp ? Number(newProduct.srp) : null,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: updateError } = await supabase
+          .from('products')
+          .update(updateData)
+          .eq('id', editingProduct.id);
+
+        if (updateError) throw updateError;
 
         // Update product tags
         // First, remove all existing tag associations
