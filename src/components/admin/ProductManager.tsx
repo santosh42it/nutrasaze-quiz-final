@@ -4,6 +4,7 @@ import { useAdminStore } from '../../stores/adminStore';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import type { Product } from '../../types/database';
 
 export const ProductManager: React.FC = () => {
@@ -12,6 +13,10 @@ export const ProductManager: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; product: Product | null }>({
+    isOpen: false,
+    product: null
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +61,21 @@ export const ProductManager: React.FC = () => {
     setEditingProduct(null);
     setNewProduct({});
     setSelectedTags([]);
+  };
+
+  const handleDeleteClick = (product: Product) => {
+    setDeleteDialog({ isOpen: true, product });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteDialog.product) {
+      await deleteProduct(deleteDialog.product.id);
+      setDeleteDialog({ isOpen: false, product: null });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ isOpen: false, product: null });
   };
 
   return (
@@ -301,7 +321,7 @@ export const ProductManager: React.FC = () => {
                           {product.is_active ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
-                          onClick={() => deleteProduct(product.id)}
+                          onClick={() => handleDeleteClick(product)}
                           className="text-xs text-red-600 hover:underline"
                         >
                           Delete
@@ -315,6 +335,15 @@ export const ProductManager: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${deleteDialog.product?.name}"? This action cannot be undone and may affect quiz recommendations that reference this product.`}
+      />
     </div>
   );
 };

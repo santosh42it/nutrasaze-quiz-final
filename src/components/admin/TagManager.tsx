@@ -3,10 +3,16 @@ import { useAdminStore } from '../../stores/adminStore';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import type { Tag } from '../../types/database';
 
 export const TagManager: React.FC = () => {
   const { tags, addTag, deleteTag } = useAdminStore();
   const [newTagName, setNewTagName] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; tag: Tag | null }>({
+    isOpen: false,
+    tag: null
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,6 +20,21 @@ export const TagManager: React.FC = () => {
 
     await addTag(newTagName);
     setNewTagName('');
+  };
+
+  const handleDeleteClick = (tag: Tag) => {
+    setDeleteDialog({ isOpen: true, tag });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteDialog.tag) {
+      await deleteTag(deleteDialog.tag.id);
+      setDeleteDialog({ isOpen: false, tag: null });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ isOpen: false, tag: null });
   };
 
   return (
@@ -49,7 +70,7 @@ export const TagManager: React.FC = () => {
             >
               <span className="text-[#1d0917]">{tag.name}</span>
               <button
-                onClick={() => deleteTag(tag.id)}
+                onClick={() => handleDeleteClick(tag)}
                 className="text-red-600 hover:text-red-800"
               >
                 ×
@@ -57,6 +78,15 @@ export const TagManager: React.FC = () => {
             </div>
           ))}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmDialog
+          isOpen={deleteDialog.isOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Tag"
+          description={`Are you sure you want to delete the tag "${deleteDialog.tag?.name}"? This action cannot be undone and will remove this tag from all associated questions and products, which may affect quiz functionality.`}
+        />
       </CardContent>
     </Card>
   );
