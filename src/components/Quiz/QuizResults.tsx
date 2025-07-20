@@ -22,11 +22,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const saveResponses = async () => {
     try {
       setIsSubmitting(true);
-      console.log('=== QUIZ SAVE DEBUG ===');
+      console.log('=== QUIZ SAVE DEBUG START ===');
       console.log('User Info:', userInfo);
       console.log('Answers Count:', Object.keys(answers).length);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing');
+      console.log('All Answers:', answers);
+      console.log('Selected File:', selectedFile ? selectedFile.name : 'No file');
+      console.log('Environment Check:');
+      console.log('- VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Present' : '❌ Missing');
+      console.log('- VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Present' : '❌ Missing');
+      console.log('- Full URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('- Timestamp:', new Date().toISOString());
 
       // Validate required fields
       if (!userInfo?.name?.trim() || !userInfo?.email?.trim() || !userInfo?.contact?.trim() || !userInfo?.age?.trim()) {
@@ -153,6 +158,26 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       if (selectedFile) {
         try {
           console.log('Processing file upload:', selectedFile.name, 'Size:', selectedFile.size);
+          
+          // Check if bucket exists, create if it doesn't
+          const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+          console.log('Available buckets:', buckets?.map(b => b.name));
+          
+          const bucketExists = buckets?.some(bucket => bucket.name === 'quiz-files');
+          if (!bucketExists) {
+            console.log('Creating quiz-files bucket...');
+            const { data: newBucket, error: createError } = await supabase.storage.createBucket('quiz-files', {
+              public: true,
+              allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+              fileSizeLimit: 5242880 // 5MB
+            });
+            if (createError) {
+              console.error('Error creating bucket:', createError);
+              throw new Error(`Failed to create storage bucket: ${createError.message}`);
+            }
+            console.log('Bucket created successfully:', newBucket);
+          }
+          
           const fileExt = selectedFile.name.split('.').pop();
           const fileName = `${responseData.id}_${Date.now()}.${fileExt}`;
 
@@ -162,6 +187,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
           if (uploadError) {
             console.error('Error uploading file:', uploadError);
+            throw new Error(`Failed to upload file: ${uploadError.message}`);
           } else {
             const { data: { publicUrl } } = supabase.storage
               .from('quiz-files')
@@ -171,6 +197,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           }
         } catch (error) {
           console.error('Error in file upload process:', error);
+          // Don't throw here, just log the error and continue without file
+          console.warn('Continuing without file upload due to error');
         }
       }
 
@@ -214,15 +242,24 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Answers to insert:', answersToInsert);
 
       if (answersToInsert.length > 0) {
-        const { error: answersError } = await supabase
+        console.log('Inserting answers into database...');
+        const { data: answersData, error: answersError } = await supabase
           .from('quiz_answers')
-          .insert(answersToInsert);
+          .insert(answersToInsert)
+          .select();
 
         if (answersError) {
-          console.error('Error saving quiz answers:', answersError.message, answersError);
+          console.error('Error saving quiz answers:', {
+            error: answersError,
+            message: answersError.message,
+            details: answersError.details,
+            hint: answersError.hint,
+            code: answersError.code,
+            answersToInsert
+          });
           throw new Error(`Failed to save quiz answers: ${answersError.message}`);
         } else {
-          console.log('Quiz answers saved successfully');
+          console.log('Quiz answers saved successfully:', answersData);
         }
       }
 
@@ -231,7 +268,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.error('Error in saveResponses:', {
         error,
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        userInfo,
+        answersCount: Object.keys(answers).length,
+        hasFile: !!selectedFile,
+        timestamp: new Date().toISOString()
       });
 
       let errorMessage = 'Unknown error occurred';
@@ -243,7 +284,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         errorMessage = String(error.message);
       }
 
-      alert(`There was an error saving your quiz response: ${errorMessage}. Please check the console for more details and try again.`);
+      // More user-friendly error message
+      const userFriendlyMessage = errorMessage.includes('Missing required user information') 
+        ? 'Please make sure you have filled in all required fields (name, email, contact, and age).'
+        : errorMessage.includes('Failed to save quiz response')
+        ? 'There was a problem connecting to the database. Please check your internet connection and try again.'
+        : `There was an error saving your quiz response: ${errorMessage}`;
+
+      alert(`${userFriendlyMessage}\n\nIf the problem persists, please contact support.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -251,7 +299,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
   useEffect(() => {
     if (!isSubmitted) {
-      saveResponses();
+      saveResponses().catch(error => {
+        console.error('Error in useEffect saveResponses:', error);
+        // Don't show alert here as it's already handled in saveResponses
+      });
     }
   }, []);
 
