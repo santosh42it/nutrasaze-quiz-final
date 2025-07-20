@@ -36,7 +36,11 @@ interface AdminStore {
   updateProduct: (id: number, updates: Partial<Product>) => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
 
-  // Question Tags methods
+  // Option Tags methods
+  fetchOptionTags: () => Promise<void>;
+  updateOptionTags: (optionId: number, tagIds: number[]) => Promise<void>;
+
+  // Question Tags methods (deprecated - moved to options)
   fetchQuestionTags: () => Promise<void>;
   addQuestionTag: (questionId: number, tagId: number) => Promise<void>;
   removeQuestionTag: (questionId: number, tagId: number) => Promise<void>;
@@ -304,6 +308,62 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       set({ 
         products: get().products.filter(p => p.id !== id) 
       });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  // Option Tags methods
+  fetchOptionTags: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('option_tags')
+        .select('*');
+
+      if (error) throw error;
+      set({ optionTags: data });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  updateOptionTags: async (optionId: number, tagIds: number[]) => {
+    try {
+      // Remove existing tags for this option
+      const { error: deleteError } = await supabase
+        .from('option_tags')
+        .delete()
+        .eq('option_id', optionId);
+
+      if (deleteError) throw deleteError;
+
+      // Add new tags
+      if (tagIds.length > 0) {
+        const optionTags = tagIds.map(tagId => ({
+          option_id: optionId,
+          tag_id: tagId
+        }));
+
+        const { data, error: insertError } = await supabase
+          .from('option_tags')
+          .insert(optionTags)
+          .select();
+
+        if (insertError) throw insertError;
+
+        // Update local state
+        set({ 
+          optionTags: [
+            ...get().optionTags.filter(ot => ot.option_id !== optionId),
+            ...data
+          ]
+        });
+      } else {
+        // Just remove from local state if no tags
+        set({ 
+          optionTags: get().optionTags.filter(ot => ot.option_id !== optionId)
+        });
+      }
     } catch (error) {
       set({ error: (error as Error).message });
     }
