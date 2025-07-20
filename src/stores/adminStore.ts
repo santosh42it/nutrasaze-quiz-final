@@ -14,14 +14,14 @@ interface AdminStore {
 
   // Question methods
   fetchQuestions: () => Promise<void>;
-  addQuestion: (question: Omit<Question, 'id'>) => Promise<void>;
-  updateQuestion: (id: number, updates: Partial<Question>) => Promise<void>;
+  addQuestion: (question: Omit<Question, 'id'>) => Promise<{ data: Question | null; error: Error | null }>;
+  updateQuestion: (id: number, updates: Partial<Question>) => Promise<{ data: Question | null; error: Error | null }>;
   deleteQuestion: (id: number) => Promise<void>;
   reorderQuestions: (questions: Question[]) => Promise<void>;
 
   // Option methods
   fetchOptions: () => Promise<void>;
-  addOption: (option: Omit<QuestionOption, 'id'>) => Promise<void>;
+  addOption: (option: Omit<QuestionOption, 'id'>) => Promise<{ data: QuestionOption | null; error: Error | null }>;
   updateOption: (id: number, updates: Partial<QuestionOption>) => Promise<void>;
   deleteOption: (id: number) => Promise<void>;
 
@@ -162,28 +162,46 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   addQuestion: async (question) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('questions')
-        .insert([question]);
+        .insert([question])
+        .select()
+        .single();
 
       if (error) throw error;
-      await get().fetchQuestions();
+      
+      // Update local state
+      set({ 
+        questions: [...get().questions, data]
+      });
+      
+      return { data, error: null };
     } catch (error) {
       set({ error: (error as Error).message });
+      return { data: null, error: error as Error };
     }
   },
 
   updateQuestion: async (id, updates) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('questions')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) throw error;
-      await get().fetchQuestions();
+      
+      // Update local state
+      set({ 
+        questions: get().questions.map(q => q.id === id ? data : q)
+      });
+      
+      return { data, error: null };
     } catch (error) {
       set({ error: (error as Error).message });
+      return { data: null, error: error as Error };
     }
   },
 
@@ -203,14 +221,23 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   addOption: async (option) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('question_options')
-        .insert([option]);
+        .insert([option])
+        .select()
+        .single();
 
       if (error) throw error;
-      await get().fetchOptions();
+      
+      // Update local state
+      set({ 
+        options: [...get().options, data]
+      });
+      
+      return { data, error: null };
     } catch (error) {
       set({ error: (error as Error).message });
+      return { data: null, error: error as Error };
     }
   },
 

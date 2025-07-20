@@ -631,27 +631,60 @@ export const QuestionManager: React.FC = () => {
       let questionId: number;
       
       if (editingQuestion) {
-        await updateQuestion(editingQuestion.id, questionData);
+        const { data: updatedQuestion } = await updateQuestion(editingQuestion.id, questionData);
         questionId = editingQuestion.id;
         
         // Update options if it's a select question
         if (questionData.question_type === 'select' && questionOptions) {
-          // Remove old options
           const existingOptions = options.filter(o => o.question_id === editingQuestion.id);
-          for (const option of existingOptions) {
-            await deleteOption(option.id);
+          
+          // Create a map of existing options by text for comparison
+          const existingOptionsMap = new Map(
+            existingOptions.map(opt => [opt.option_text, opt])
+          );
+          
+          // Track which existing options to keep
+          const optionsToKeep = new Set<number>();
+          
+          // Process each new/updated option
+          for (let i = 0; i < questionOptions.length; i++) {
+            const optionData = questionOptions[i];
+            const existingOption = existingOptionsMap.get(optionData.option);
+            
+            if (existingOption) {
+              // Option exists, just update tags and order
+              optionsToKeep.add(existingOption.id);
+              
+              // Update order if changed
+              if (existingOption.order_index !== i) {
+                await updateOption(existingOption.id, { order_index: i });
+              }
+              
+              // Update tags
+              await updateOptionTags(existingOption.id, optionData.tags);
+            } else {
+              // New option, create it
+              const { data: newOption } = await addOption({
+                question_id: editingQuestion.id,
+                option_text: optionData.option,
+                order_index: i
+              });
+              
+              if (newOption) {
+                optionsToKeep.add(newOption.id);
+                
+                // Add tags if any
+                if (optionData.tags.length > 0) {
+                  await updateOptionTags(newOption.id, optionData.tags);
+                }
+              }
+            }
           }
           
-          // Add new options with tags
-          for (let i = 0; i < questionOptions.length; i++) {
-            const { data: newOption } = await addOption({
-              question_id: editingQuestion.id,
-              option_text: questionOptions[i].option,
-              order_index: i
-            });
-            
-            if (newOption && questionOptions[i].tags.length > 0) {
-              await updateOptionTags(newOption.id, questionOptions[i].tags);
+          // Remove options that are no longer needed
+          for (const existingOption of existingOptions) {
+            if (!optionsToKeep.has(existingOption.id)) {
+              await deleteOption(existingOption.id);
             }
           }
         }
