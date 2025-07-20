@@ -117,7 +117,16 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          product_tags (
+            tag_id,
+            tags (
+              id,
+              name
+            )
+          )
+        `)
         .order('name');
       
       if (error) throw error;

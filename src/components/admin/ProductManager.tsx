@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAdminStore } from '../../stores/adminStore';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
@@ -8,7 +9,7 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import type { Product } from '../../types/database';
 
 export const ProductManager: React.FC = () => {
-  const { products, tags, addProduct, updateProduct, deleteProduct } = useAdminStore();
+  const { products, tags, addProduct, updateProduct, deleteProduct, fetchProducts } = useAdminStore();
   const [isAdding, setIsAdding] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
@@ -22,28 +23,75 @@ export const ProductManager: React.FC = () => {
     e.preventDefault();
     if (!newProduct.name || !newProduct.description) return;
 
-    if (editingProduct) {
-      await updateProduct(editingProduct.id, {
-        ...newProduct,
-        mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
-        srp: newProduct.srp ? Number(newProduct.srp) : undefined,
-      });
-      setEditingProduct(null);
-    } else {
-      await addProduct({
-        ...newProduct as Product,
-        mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
-        srp: newProduct.srp ? Number(newProduct.srp) : undefined,
-        is_active: true,
-      });
-      setIsAdding(false);
+    try {
+      if (editingProduct) {
+        // Update product details
+        await updateProduct(editingProduct.id, {
+          ...newProduct,
+          mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
+          srp: newProduct.srp ? Number(newProduct.srp) : undefined,
+        });
+
+        // Update product tags
+        // First, remove all existing tag associations
+        await supabase
+          .from('product_tags')
+          .delete()
+          .eq('product_id', editingProduct.id);
+
+        // Then add the new tag associations
+        if (selectedTags.length > 0) {
+          const tagInserts = selectedTags.map(tagId => ({
+            product_id: editingProduct.id,
+            tag_id: tagId
+          }));
+          
+          await supabase
+            .from('product_tags')
+            .insert(tagInserts);
+        }
+        
+        setEditingProduct(null);
+      } else {
+        // Create new product
+        const { data: productData, error: productError } = await supabase
+          .from('products')
+          .insert([{
+            ...newProduct as Product,
+            mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
+            srp: newProduct.srp ? Number(newProduct.srp) : undefined,
+            is_active: true,
+          }])
+          .select()
+          .single();
+
+        if (productError) throw productError;
+
+        // Add tag associations for new product
+        if (selectedTags.length > 0 && productData) {
+          const tagInserts = selectedTags.map(tagId => ({
+            product_id: productData.id,
+            tag_id: tagId
+          }));
+          
+          await supabase
+            .from('product_tags')
+            .insert(tagInserts);
+        }
+
+        // Refresh products list
+        await fetchProducts();
+        setIsAdding(false);
+      }
+      
+      setNewProduct({});
+      setSelectedTags([]);
+    } catch (error) {
+      console.error('Error saving product:', error);
     }
-    
-    setNewProduct({});
-    setSelectedTags([]);
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = async (product: Product) => {
     setEditingProduct(product);
     setNewProduct({
       name: product.name,
@@ -53,6 +101,21 @@ export const ProductManager: React.FC = () => {
       mrp: product.mrp,
       srp: product.srp,
     });
+    
+    // Fetch and set existing tags for this product
+    try {
+      const { data: productTags } = await supabase
+        .from('product_tags')
+        .select('tag_id')
+        .eq('product_id', product.id);
+      
+      if (productTags) {
+        setSelectedTags(productTags.map(pt => pt.tag_id));
+      }
+    } catch (error) {
+      console.error('Error fetching product tags:', error);
+    }
+    
     setIsAdding(false);
   };
 
