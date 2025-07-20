@@ -50,6 +50,9 @@ export const ProductManager: React.FC = () => {
             .from('product_tags')
             .insert(tagInserts);
         }
+
+        // Refresh products list to show updated data
+        await fetchProducts();
         
         setEditingProduct(null);
       } else {
