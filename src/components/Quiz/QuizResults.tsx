@@ -29,8 +29,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing');
 
       // Validate required fields
-      if (!userInfo.name || !userInfo.email || !userInfo.contact || !userInfo.age) {
+      if (!userInfo?.name?.trim() || !userInfo?.email?.trim() || !userInfo?.contact?.trim() || !userInfo?.age?.trim()) {
         console.error('Missing required fields:', { userInfo });
+        console.error('Field validation details:', {
+          name: userInfo?.name || 'MISSING',
+          email: userInfo?.email || 'MISSING', 
+          contact: userInfo?.contact || 'MISSING',
+          age: userInfo?.age || 'MISSING'
+        });
         throw new Error('Missing required user information');
       }
 
@@ -44,9 +50,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       // Insert quiz response
       console.log('Inserting quiz response...');
       const insertData = {
-        name: userInfo.name,
-        email: userInfo.email,
-        contact: userInfo.contact,
+        name: userInfo.name.trim(),
+        email: userInfo.email.trim(),
+        contact: userInfo.contact.trim(),
         age: parseInt(userInfo.age.toString()) || 0
       };
       console.log('Data being inserted:', insertData);
