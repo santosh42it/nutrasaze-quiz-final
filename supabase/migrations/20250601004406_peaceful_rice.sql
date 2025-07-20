@@ -40,6 +40,9 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     description TEXT,
     image_url TEXT,
+    url TEXT,
+    mrp DECIMAL(10,2),
+    srp DECIMAL(10,2),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

@@ -55,6 +55,8 @@ export interface Product {
   description: string;
   image_url?: string;
   url?: string;
+  mrp?: number;
+  srp?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;

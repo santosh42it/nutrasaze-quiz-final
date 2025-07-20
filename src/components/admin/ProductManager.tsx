@@ -9,6 +9,7 @@ import type { Product } from '../../types/database';
 export const ProductManager: React.FC = () => {
   const { products, tags, addProduct, updateProduct, deleteProduct } = useAdminStore();
   const [isAdding, setIsAdding] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
 
@@ -16,11 +17,43 @@ export const ProductManager: React.FC = () => {
     e.preventDefault();
     if (!newProduct.name || !newProduct.description) return;
 
-    await addProduct({
-      ...newProduct as Product,
-      is_active: true,
+    if (editingProduct) {
+      await updateProduct(editingProduct.id, {
+        ...newProduct,
+        mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
+        srp: newProduct.srp ? Number(newProduct.srp) : undefined,
+      });
+      setEditingProduct(null);
+    } else {
+      await addProduct({
+        ...newProduct as Product,
+        mrp: newProduct.mrp ? Number(newProduct.mrp) : undefined,
+        srp: newProduct.srp ? Number(newProduct.srp) : undefined,
+        is_active: true,
+      });
+      setIsAdding(false);
+    }
+    
+    setNewProduct({});
+    setSelectedTags([]);
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name,
+      description: product.description,
+      image_url: product.image_url,
+      url: product.url,
+      mrp: product.mrp,
+      srp: product.srp,
     });
     setIsAdding(false);
+  };
+
+  const handleCancel = () => {
+    setIsAdding(false);
+    setEditingProduct(null);
     setNewProduct({});
     setSelectedTags([]);
   };
@@ -32,7 +65,7 @@ export const ProductManager: React.FC = () => {
         <h2 className="[font-family:'DM_Serif_Display',Helvetica] text-2xl text-[#1d0917]">
           Product Management
         </h2>
-        {!isAdding && (
+        {!isAdding && !editingProduct && (
           <Button
             onClick={() => setIsAdding(true)}
             className="bg-[#913177] text-white hover:bg-[#913177]/90"
@@ -42,12 +75,12 @@ export const ProductManager: React.FC = () => {
         )}
       </div>
 
-      {/* Add New Product Form */}
-      {isAdding && (
+      {/* Add/Edit Product Form */}
+      {(isAdding || editingProduct) && (
         <Card className="border-[#e9d6e4] bg-white">
           <CardContent className="p-6">
             <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-xl text-[#1d0917] mb-4">
-              Add New Product
+              {editingProduct ? 'Edit Product' : 'Add New Product'}
             </h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,6 +107,36 @@ export const ProductManager: React.FC = () => {
                     value={newProduct.url || ''}
                     onChange={(e) => setNewProduct({ ...newProduct, url: e.target.value })}
                     placeholder="https://example.com/product"
+                    className="border-[#e9d6e4]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1d0917] mb-2">
+                    MRP (₹)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newProduct.mrp || ''}
+                    onChange={(e) => setNewProduct({ ...newProduct, mrp: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    placeholder="Enter MRP"
+                    className="border-[#e9d6e4]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#1d0917] mb-2">
+                    SRP (₹)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newProduct.srp || ''}
+                    onChange={(e) => setNewProduct({ ...newProduct, srp: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    placeholder="Enter SRP"
                     className="border-[#e9d6e4]"
                   />
                 </div>
@@ -135,15 +198,11 @@ export const ProductManager: React.FC = () => {
                   type="submit"
                   className="bg-[#913177] text-white hover:bg-[#913177]/90"
                 >
-                  Add Product
+                  {editingProduct ? 'Update Product' : 'Add Product'}
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => {
-                    setIsAdding(false);
-                    setNewProduct({});
-                    setSelectedTags([]);
-                  }}
+                  onClick={handleCancel}
                   variant="outline"
                   className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
                 >
@@ -195,6 +254,17 @@ export const ProductManager: React.FC = () => {
                     <h4 className="font-medium text-[#1d0917] text-lg">{product.name}</h4>
                     <p className="text-sm text-[#3d3d3d] line-clamp-2">{product.description}</p>
                     
+                    {(product.mrp || product.srp) && (
+                      <div className="flex items-center gap-2 text-sm">
+                        {product.mrp && (
+                          <span className="text-gray-500 line-through">MRP: ₹{product.mrp}</span>
+                        )}
+                        {product.srp && (
+                          <span className="text-[#913177] font-medium">SRP: ₹{product.srp}</span>
+                        )}
+                      </div>
+                    )}
+                    
                     {product.url && (
                       <a 
                         href={product.url} 
@@ -218,6 +288,12 @@ export const ProductManager: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEdit(product)}
+                          className="text-xs text-[#913177] hover:underline"
+                        >
+                          Edit
+                        </button>
                         <button
                           onClick={() => updateProduct(product.id, { is_active: !product.is_active })}
                           className="text-xs text-[#913177] hover:underline"
