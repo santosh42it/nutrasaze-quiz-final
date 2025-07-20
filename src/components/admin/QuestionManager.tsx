@@ -16,15 +16,16 @@ interface OptionWithTags {
   tags: number[];
 }
 
-interface QuestionFormProps {
+interface QuestionModalProps {
+  isOpen: boolean;
   question?: Question;
   options?: QuestionOption[];
   tags: Tag[];
   onSave: (questionData: Partial<Question>, questionOptions?: OptionWithTags[]) => void;
-  onCancel: () => void;
+  onClose: () => void;
 }
 
-const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, onSave, onCancel }) => {
+const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options, tags, onSave, onClose }) => {
   const { optionTags } = useAdminStore();
   
   const [formData, setFormData] = useState<Partial<Question>>({
@@ -41,20 +42,41 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
 
   const [questionOptions, setQuestionOptions] = useState<OptionWithTags[]>([]);
   const [newOption, setNewOption] = useState('');
+  const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
+  const [editingOptionText, setEditingOptionText] = useState('');
 
-  // Initialize options with their tags when editing
+  // Reset form when modal opens/closes
   useEffect(() => {
-    if (options && options.length > 0) {
-      const optionsWithTags = options.map(option => {
-        const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-        return {
-          option: option.option_text,
-          tags: optionTagsForOption.map(ot => ot.tag_id)
-        };
+    if (isOpen) {
+      setFormData({
+        question_text: question?.question_text || '',
+        question_type: question?.question_type || 'text',
+        placeholder: question?.placeholder || '',
+        description: question?.description || '',
+        has_text_area: question?.has_text_area || false,
+        has_file_upload: question?.has_file_upload || false,
+        text_area_placeholder: question?.text_area_placeholder || '',
+        accepted_file_types: question?.accepted_file_types || '',
+        status: question?.status || 'draft'
       });
-      setQuestionOptions(optionsWithTags);
+      
+      if (options && options.length > 0) {
+        const optionsWithTags = options.map(option => {
+          const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+          return {
+            option: option.option_text,
+            tags: optionTagsForOption.map(ot => ot.tag_id)
+          };
+        });
+        setQuestionOptions(optionsWithTags);
+      } else {
+        setQuestionOptions([]);
+      }
+      setNewOption('');
+      setEditingOptionIndex(null);
+      setEditingOptionText('');
     }
-  }, [options, optionTags]);
+  }, [isOpen, question, options, optionTags]);
 
   const isGenericQuestion = ['text', 'email', 'tel', 'number'].includes(formData.question_type || '');
 
@@ -70,6 +92,28 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
 
   const handleRemoveOption = (index: number) => {
     setQuestionOptions(questionOptions.filter((_, i) => i !== index));
+  };
+
+  const handleEditOption = (index: number) => {
+    setEditingOptionIndex(index);
+    setEditingOptionText(questionOptions[index].option);
+  };
+
+  const handleSaveOptionEdit = () => {
+    if (editingOptionIndex !== null && editingOptionText.trim()) {
+      setQuestionOptions(prev => prev.map((opt, index) => 
+        index === editingOptionIndex 
+          ? { ...opt, option: editingOptionText.trim() }
+          : opt
+      ));
+      setEditingOptionIndex(null);
+      setEditingOptionText('');
+    }
+  };
+
+  const handleCancelOptionEdit = () => {
+    setEditingOptionIndex(null);
+    setEditingOptionText('');
   };
 
   const handleOptionTagToggle = (optionIndex: number, tagId: number) => {
@@ -89,12 +133,25 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
     onSave(formData, formData.question_type === 'select' ? questionOptions : undefined);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Card className="border-[#e9d6e4] bg-white">
-      <CardContent className="p-6">
-        <h3 className="text-xl font-semibold text-[#1d0917] mb-6">
-          {question ? 'Edit Question' : 'Add New Question'}
-        </h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-[#1d0917]">
+              {question ? 'Edit Question' : 'Add New Question'}
+            </h3>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </Button>
+          </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Question Text */}
@@ -165,21 +222,69 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
               </label>
               <div className="space-y-4">
                 {questionOptions.map((optionWithTags, index) => (
-                  <div key={index} className="p-4 bg-[#fff4fc] rounded-md space-y-3">
+                  <div key={index} className="p-4 bg-[#fff4fc] rounded-md space-y-3 border border-[#e9d6e4]">
                     <div className="flex items-center gap-2">
-                      <span className="flex-1 font-medium">{optionWithTags.option}</span>
-                      <Button
-                        type="button"
-                        onClick={() => handleRemoveOption(index)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                      >
-                        Remove
-                      </Button>
+                      {editingOptionIndex === index ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input
+                            value={editingOptionText}
+                            onChange={(e) => setEditingOptionText(e.target.value)}
+                            className="border-[#e9d6e4]"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSaveOptionEdit();
+                              }
+                              if (e.key === 'Escape') {
+                                handleCancelOptionEdit();
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleSaveOptionEdit}
+                            size="sm"
+                            className="bg-green-600 text-white hover:bg-green-700"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleCancelOptionEdit}
+                            variant="ghost"
+                            size="sm"
+                            className="text-gray-600 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="flex-1 font-medium">{optionWithTags.option}</span>
+                          <Button
+                            type="button"
+                            onClick={() => handleEditOption(index)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-[#913177] hover:bg-[#fff4fc]"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveOption(index)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            Remove
+                          </Button>
+                        </>
+                      )}
                     </div>
                     
-                    {!isGenericQuestion && tags.length > 0 && (
+                    {!isGenericQuestion && tags.length > 0 && editingOptionIndex !== index && (
                       <div>
                         <p className="text-xs text-gray-600 mb-2">Tags for Product Recommendations:</p>
                         <div className="flex flex-wrap gap-2">
@@ -198,6 +303,9 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
                             </button>
                           ))}
                         </div>
+                        {optionWithTags.tags.length === 0 && (
+                          <p className="text-xs text-gray-400 mt-1">No tags selected</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -215,8 +323,9 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
                     type="button"
                     onClick={handleAddOption}
                     className="bg-[#913177] text-white hover:bg-[#913177]/90"
+                    disabled={!newOption.trim()}
                   >
-                    Add
+                    Add Option
                   </Button>
                 </div>
               </div>
@@ -292,7 +401,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6 border-t border-gray-200">
             <Button
               type="submit"
               className="bg-[#913177] text-white hover:bg-[#913177]/90"
@@ -301,7 +410,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
             </Button>
             <Button
               type="button"
-              onClick={onCancel}
+              onClick={onClose}
               variant="outline"
               className="border-[#e9d6e4] text-[#1d0917]"
             >
@@ -309,8 +418,9 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, options, tags, on
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -474,7 +584,7 @@ export const QuestionManager: React.FC = () => {
     fetchOptionTags
   } = useAdminStore();
   
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'draft'>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -572,7 +682,7 @@ export const QuestionManager: React.FC = () => {
         }
       }
       
-      setShowForm(false);
+      setShowModal(false);
       setEditingQuestion(null);
     } catch (error) {
       console.error('Error saving question:', error);
@@ -583,8 +693,13 @@ export const QuestionManager: React.FC = () => {
     const question = questions.find(q => q.id === id);
     if (question) {
       setEditingQuestion(question);
-      setShowForm(true);
+      setShowModal(true);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingQuestion(null);
   };
 
   const activeCount = questions.filter(q => q.status === 'active').length;
@@ -629,7 +744,7 @@ export const QuestionManager: React.FC = () => {
         <Button
           onClick={() => {
             setEditingQuestion(null);
-            setShowForm(true);
+            setShowModal(true);
           }}
           className="bg-[#913177] text-white hover:bg-[#913177]/90"
         >
@@ -648,20 +763,6 @@ export const QuestionManager: React.FC = () => {
         />
       </div>
 
-      {/* Question Form */}
-      {showForm && (
-        <QuestionForm
-          question={editingQuestion || undefined}
-          options={editingQuestion ? options.filter(o => o.question_id === editingQuestion.id) : undefined}
-          tags={tags}
-          onSave={handleSaveQuestion}
-          onCancel={() => {
-            setShowForm(false);
-            setEditingQuestion(null);
-          }}
-        />
-      )}
-
       {/* Questions List */}
       <Card className="border-[#e9d6e4] bg-white">
         <CardContent className="p-6">
@@ -674,7 +775,7 @@ export const QuestionManager: React.FC = () => {
                 <Button
                   onClick={() => {
                     setEditingQuestion(null);
-                    setShowForm(true);
+                    setShowModal(true);
                   }}
                   variant="outline"
                   className="border-[#e9d6e4] text-[#913177]"
@@ -705,6 +806,16 @@ export const QuestionManager: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Question Modal */}
+      <QuestionModal
+        isOpen={showModal}
+        question={editingQuestion || undefined}
+        options={editingQuestion ? options.filter(o => o.question_id === editingQuestion.id) : undefined}
+        tags={tags}
+        onSave={handleSaveQuestion}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };
