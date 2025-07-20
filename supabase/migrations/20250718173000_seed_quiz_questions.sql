@@ -15,7 +15,7 @@ ON CONFLICT DO NOTHING;
 
 -- Insert options for health goals question
 INSERT INTO question_options (question_id, option_text, order_index) 
-SELECT q.id, option_text, order_index FROM (
+SELECT q.id, options.option_text, options.order_index FROM (
   SELECT 'Weight management' as option_text, 0 as order_index UNION ALL
   SELECT 'Improved energy levels', 1 UNION ALL
   SELECT 'Better sleep quality', 2 UNION ALL
@@ -30,7 +30,7 @@ ON CONFLICT DO NOTHING;
 
 -- Insert options for yes/no questions
 INSERT INTO question_options (question_id, option_text, order_index)
-SELECT q.id, option_text, order_index FROM (
+SELECT q.id, options.option_text, options.order_index FROM (
   SELECT 'Yes' as option_text, 0 as order_index UNION ALL
   SELECT 'No', 1
 ) options
