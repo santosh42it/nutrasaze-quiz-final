@@ -119,11 +119,13 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     placeholder={question.placeholder}
                     value={inputValue}
                     onChange={(e) => {
-                      const value = e.target.value;
+                      let value = e.target.value;
                       if (question.id === "contact") {
-                        // Only allow digits and limit to 10 characters
-                        if (!/^\d*$/.test(value)) return;
-                        if (value.length > 10) return;
+                        // Only allow digits and limit to exactly 10 characters
+                        value = value.replace(/\D/g, ''); // Remove non-digits
+                        if (value.length > 10) {
+                          value = value.slice(0, 10); // Truncate to 10 digits
+                        }
                       }
                       if (question.id === "age" && !/^\d*$/.test(value)) return;
                       setInputValue(value);
