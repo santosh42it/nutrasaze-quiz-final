@@ -23,10 +23,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const extractedUserInfo = useMemo(() => {
     // Always extract from answers object since userInfo might be empty
     const extracted = {
-      name: answers.name || answers['1'] || '',  // Try both answer key formats
-      email: answers.email || answers['2'] || '',
-      contact: answers.contact || answers['3'] || '',
-      age: answers.age || answers['4'] || '0'
+      name: answers["name"] || answers['1'] || userInfo.name || '',  // Try both answer key formats
+      email: answers["email"] || answers['2'] || userInfo.email || '',
+      contact: answers["contact"] || answers['3'] || userInfo.contact || '',
+      age: answers["age"] || answers['4'] || userInfo.age || '0'
     };
 
     // If extracted data is valid, use it; otherwise fall back to userInfo
