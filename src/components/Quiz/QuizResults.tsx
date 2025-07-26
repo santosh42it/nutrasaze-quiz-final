@@ -21,13 +21,54 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
   // Extract user info from answers if userInfo is empty
   const extractedUserInfo = useMemo(() => {
-    // Always extract from answers object since userInfo might be empty
+    console.log('=== USER INFO EXTRACTION DEBUG ===');
+    console.log('Raw answers object:', answers);
+    console.log('UserInfo object:', userInfo);
+    console.log('Available answer keys:', Object.keys(answers));
+
+    // Try multiple strategies to extract user info
     const extracted = {
-      name: answers.name || answers['1'] || '',  // Try both answer key formats
-      email: answers.email || answers['2'] || '',
-      contact: answers.contact || answers['3'] || '',
-      age: answers.age || answers['4'] || '0'
+      name: '',
+      email: '',
+      contact: '',
+      age: '0'
     };
+
+    // Strategy 1: Direct property access
+    if (answers.name) extracted.name = answers.name;
+    if (answers.email) extracted.email = answers.email;
+    if (answers.contact) extracted.contact = answers.contact;
+    if (answers.age) extracted.age = answers.age;
+
+    // Strategy 2: Try numeric keys (question IDs from database)
+    Object.entries(answers).forEach(([key, value]) => {
+      if (typeof value === 'string' && value.trim()) {
+        // Check if it looks like a name (first few questions are usually personal info)
+        if (key === '1' || key.toLowerCase().includes('name')) {
+          if (!extracted.name) extracted.name = value;
+        }
+        // Check if it looks like an email
+        else if (value.includes('@') && value.includes('.')) {
+          extracted.email = value;
+        }
+        // Check if it looks like a phone number (10 digits)
+        else if (/^\d{10}$/.test(value)) {
+          extracted.contact = value;
+        }
+        // Check if it looks like an age (1-3 digits, reasonable range)
+        else if (/^\d{1,3}$/.test(value) && parseInt(value) > 0 && parseInt(value) < 150) {
+          extracted.age = value;
+        }
+      }
+    });
+
+    // Strategy 3: Fallback to userInfo
+    if (!extracted.name && userInfo.name) extracted.name = userInfo.name;
+    if (!extracted.email && userInfo.email) extracted.email = userInfo.email;
+    if (!extracted.contact && userInfo.contact) extracted.contact = userInfo.contact;
+    if ((!extracted.age || extracted.age === '0') && userInfo.age) extracted.age = userInfo.age;
+
+    console.log('Final extracted user info:', extracted);
 
     // If extracted data is valid, use it; otherwise fall back to userInfo
     if (extracted.name || extracted.email || extracted.contact || (extracted.age && extracted.age !== '0')) {
