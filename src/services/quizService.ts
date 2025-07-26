@@ -113,9 +113,8 @@ const FALLBACK_QUESTIONS: Question[] = [
     placeholder: "Enter 10-digit number",
     description: "We'll prefix +91 to your number",
     validation: (value: string) => {
-      if (value.length !== 10) return "Please enter exactly 10 digits";
-      if (!/^[6-9]\d{9}$/.test(value)) return "Indian mobile numbers must start with 6, 7, 8, or 9";
-      return "";
+      const phoneRegex = /^[0-9]{10}$/;
+      return phoneRegex.test(value) ? "" : "Please enter a 10-digit phone number";
     }
   },
   {

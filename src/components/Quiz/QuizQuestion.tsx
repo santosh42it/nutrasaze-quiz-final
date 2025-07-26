@@ -119,16 +119,8 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     placeholder={question.placeholder}
                     value={inputValue}
                     onChange={(e) => {
-                      if (question.id === "contact") {
-                        // For phone numbers: only allow digits, max 10 characters
-                        const digitsOnly = e.target.value.replace(/\D/g, '');
-                        const limitedValue = digitsOnly.slice(0, 10);
-                        setInputValue(limitedValue);
-                        setValidationError("");
-                        return;
-                      }
-                      
                       const value = e.target.value;
+                      if (question.id === "contact" && !/^\d*$/.test(value)) return;
                       if (question.id === "age" && !/^\d*$/.test(value)) return;
                       setInputValue(value);
                       setValidationError("");
@@ -138,8 +130,6 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       question.id === "contact" ? "pl-12" : "px-6"
                     } rounded-xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 focus:outline-none focus:border-[#913177] focus:bg-white/20 backdrop-blur-none`}
                     maxLength={question.id === "contact" ? 10 : undefined}
-                    inputMode={question.id === "contact" ? "numeric" : undefined}
-                    pattern={question.id === "contact" ? "[0-9]*" : undefined}
                     style={{ backdropFilter: 'none' }}
                   />
                 </div>
