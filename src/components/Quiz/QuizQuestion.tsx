@@ -120,7 +120,11 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     value={inputValue}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (question.id === "contact" && !/^\d*$/.test(value)) return;
+                      if (question.id === "contact") {
+                        // Only allow digits and limit to 10 characters
+                        if (!/^\d*$/.test(value)) return;
+                        if (value.length > 10) return;
+                      }
                       if (question.id === "age" && !/^\d*$/.test(value)) return;
                       setInputValue(value);
                       setValidationError("");

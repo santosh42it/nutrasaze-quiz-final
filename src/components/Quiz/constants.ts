@@ -17,8 +17,8 @@ export const questions = [
     description: "Our NutraSage will send you complementary personalized diet and exercise chart here",
     validation: (value: string) => {
       if (value.length === 0) return "Please enter your phone number";
-      if (value.length < 10) return "Please enter a valid 10-digit Indian phone number";
-      if (!/^[6-9]\d{9}$/.test(value)) return "Please enter a valid Indian phone number";
+      if (value.length !== 10) return "Please enter exactly 10 digits";
+      if (!/^[6-9]\d{9}$/.test(value)) return "Indian mobile numbers must start with 6, 7, 8, or 9";
       return "";
     }
   },
