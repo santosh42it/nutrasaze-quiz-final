@@ -61,7 +61,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     {option}
                   </Button>
                 ))}
-
+                
                 {showAdditionalInputs && (
                   <div className="space-y-4 mt-4">
                     {question.hasTextArea && (
@@ -122,31 +122,18 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       if (question.id === "contact") {
                         // For phone numbers: only allow digits, max 10 characters
                         const digitsOnly = e.target.value.replace(/\D/g, '');
-                        if (digitsOnly.length <= 10) {
-                          setInputValue(digitsOnly);
-                        }
+                        const limitedValue = digitsOnly.slice(0, 10);
+                        setInputValue(limitedValue);
                         setValidationError("");
                         return;
                       }
-
+                      
                       const value = e.target.value;
                       if (question.id === "age" && !/^\d*$/.test(value)) return;
                       setInputValue(value);
                       setValidationError("");
                     }}
                     onKeyPress={handleKeyPress}
-                    onKeyDown={(e) => {
-                      if (question.id === "contact") {
-                        // Only allow numbers, backspace, delete, tab, escape, enter
-                        if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                        // Prevent input if already at 10 digits and not deleting
-                        if (inputValue.length >= 10 && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }
-                    }}
                     className={`w-full h-12 ${
                       question.id === "contact" ? "pl-12" : "px-6"
                     } rounded-xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 focus:outline-none focus:border-[#913177] focus:bg-white/20 backdrop-blur-none`}
