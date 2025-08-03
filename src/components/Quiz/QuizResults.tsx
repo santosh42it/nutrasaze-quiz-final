@@ -26,37 +26,53 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     console.log('Raw userInfo:', userInfo);
     console.log('Answer keys:', Object.keys(answers));
     
-    // Try different extraction methods
+    // Initialize extracted info
     const extracted = {
-      name: answers["name"] || answers['1'] || userInfo.name || '',
-      email: answers["email"] || answers['2'] || userInfo.email || '',
-      contact: answers["contact"] || answers['3'] || userInfo.contact || '',
-      age: answers["age"] || answers['4'] || userInfo.age || '0'
+      name: '',
+      email: '',
+      contact: '',
+      age: '0'
     };
 
-    console.log('Extracted info:', extracted);
-    
-    // If extracted has empty values, try to find them by looking for specific patterns
-    if (!extracted.name || !extracted.email || !extracted.contact) {
-      Object.entries(answers).forEach(([key, value]) => {
-        console.log(`Checking answer: ${key} = ${value}`);
-        
-        // Try to match by question content or type
-        if (typeof value === 'string' && value.trim()) {
-          if (key.includes('name') || (key === '1' && !extracted.name)) {
-            extracted.name = value.trim();
-          } else if (key.includes('email') || value.includes('@') || (key === '2' && !extracted.email)) {
-            extracted.email = value.trim();
-          } else if (key.includes('contact') || key.includes('phone') || /^\d{10}$/.test(value) || (key === '3' && !extracted.contact)) {
-            extracted.contact = value.trim();
-          } else if (key.includes('age') || (/^\d{1,3}$/.test(value) && parseInt(value) > 0 && parseInt(value) < 150) || (key === '4' && !extracted.age)) {
-            extracted.age = value.trim();
-          }
-        }
-      });
-    }
+    // First try to get from userInfo if available
+    if (userInfo.name) extracted.name = userInfo.name;
+    if (userInfo.email) extracted.email = userInfo.email;
+    if (userInfo.contact) extracted.contact = userInfo.contact;
+    if (userInfo.age && userInfo.age !== '0') extracted.age = userInfo.age;
 
-    console.log('Final extracted info:', extracted);
+    // Then try to extract from answers using multiple strategies
+    Object.entries(answers).forEach(([key, value]) => {
+      if (!value || typeof value !== 'string' || !value.trim()) return;
+      
+      const cleanValue = value.trim();
+      console.log(`Processing answer: ${key} = ${cleanValue}`);
+      
+      // Strategy 1: Direct key matching
+      if (key === 'name' || key === '1') extracted.name = cleanValue;
+      else if (key === 'email' || key === '2') extracted.email = cleanValue;
+      else if (key === 'contact' || key === '3') extracted.contact = cleanValue;
+      else if (key === 'age' || key === '4') extracted.age = cleanValue;
+      
+      // Strategy 2: Content-based detection
+      else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
+        extracted.email = cleanValue;
+      }
+      else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
+        extracted.contact = cleanValue;
+      }
+      else if (!extracted.age && /^\d{1,3}$/.test(cleanValue)) {
+        const ageNum = parseInt(cleanValue);
+        if (ageNum > 0 && ageNum <= 120) {
+          extracted.age = cleanValue;
+        }
+      }
+      else if (!extracted.name && cleanValue.length > 1 && /^[a-zA-Z\s]+$/.test(cleanValue)) {
+        // If it looks like a name (only letters and spaces, more than 1 char)
+        extracted.name = cleanValue;
+      }
+    });
+
+    console.log('Extracted info:', extracted);
     return extracted;
   }, [userInfo, answers]);
 
@@ -74,10 +90,25 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Validate required fields with better error messages
       const missingFields = [];
-      if (!extractedUserInfo?.name?.trim()) missingFields.push('name');
-      if (!extractedUserInfo?.email?.trim()) missingFields.push('email');
-      if (!extractedUserInfo?.contact?.trim()) missingFields.push('contact');
-      if (!extractedUserInfo?.age?.trim() || extractedUserInfo.age === '0') missingFields.push('age');
+      
+      console.log('Validating extracted user info:', extractedUserInfo);
+      
+      if (!extractedUserInfo?.name?.trim() || extractedUserInfo.name.length < 2) {
+        missingFields.push('name');
+        console.error('Name validation failed:', extractedUserInfo?.name);
+      }
+      if (!extractedUserInfo?.email?.trim() || !extractedUserInfo.email.includes('@')) {
+        missingFields.push('email');
+        console.error('Email validation failed:', extractedUserInfo?.email);
+      }
+      if (!extractedUserInfo?.contact?.trim() || extractedUserInfo.contact.length !== 10) {
+        missingFields.push('contact');
+        console.error('Contact validation failed:', extractedUserInfo?.contact);
+      }
+      if (!extractedUserInfo?.age?.trim() || extractedUserInfo.age === '0' || parseInt(extractedUserInfo.age) < 1) {
+        missingFields.push('age');
+        console.error('Age validation failed:', extractedUserInfo?.age);
+      }
 
       if (missingFields.length > 0) {
         console.error('Missing required fields:', missingFields);
@@ -88,12 +119,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           age: extractedUserInfo?.age || 'MISSING'
         });
         
-        // Try to find missing data in answers one more time
-        console.log('Attempting to find missing data in answers...');
-        const allAnswerValues = Object.entries(answers);
-        console.log('All answer entries:', allAnswerValues);
+        // Debug: Show all available answers
+        console.log('All available answers for debugging:');
+        Object.entries(answers).forEach(([key, value]) => {
+          console.log(`  ${key}: "${value}"`);
+        });
         
-        throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered.`);
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
       }
 
       // Additional validation
@@ -336,13 +368,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     if (!isSubmitted) {
       saveResponses().catch((error) => {
         console.error('Error in saveResponses caught by useEffect:', error);
+        // Set a state to show error to user instead of just logging
+        setIsSubmitting(false);
       });
     }
 
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, []);
+  }, [isSubmitted, extractedUserInfo]); // Add dependencies
 
   return (
     <section className="bg-white min-h-screen">
