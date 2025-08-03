@@ -140,6 +140,16 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     maxLength={question.id === "contact" ? 10 : undefined}
                     inputMode={question.id === "contact" ? "numeric" : undefined}
                     pattern={question.id === "contact" ? "[0-9]*" : undefined}
+                    onKeyDown={question.id === "contact" ? (e) => {
+                      // Prevent typing if already at 10 digits (except backspace, delete, arrow keys)
+                      if (inputValue.length >= 10 && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                      // Only allow numbers and control keys
+                      if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    } : undefined}
                     style={{ backdropFilter: 'none' }}
                   />
                 </div>

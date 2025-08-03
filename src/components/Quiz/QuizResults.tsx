@@ -21,20 +21,43 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
   // Extract user info from answers if userInfo is empty
   const extractedUserInfo = useMemo(() => {
-    // Always extract from answers object since userInfo might be empty
+    console.log('=== USER INFO EXTRACTION DEBUG ===');
+    console.log('Raw answers:', answers);
+    console.log('Raw userInfo:', userInfo);
+    console.log('Answer keys:', Object.keys(answers));
+    
+    // Try different extraction methods
     const extracted = {
-      name: answers["name"] || answers['1'] || userInfo.name || '',  // Try both answer key formats
+      name: answers["name"] || answers['1'] || userInfo.name || '',
       email: answers["email"] || answers['2'] || userInfo.email || '',
       contact: answers["contact"] || answers['3'] || userInfo.contact || '',
       age: answers["age"] || answers['4'] || userInfo.age || '0'
     };
 
-    // If extracted data is valid, use it; otherwise fall back to userInfo
-    if (extracted.name || extracted.email || extracted.contact || (extracted.age && extracted.age !== '0')) {
-      return extracted;
+    console.log('Extracted info:', extracted);
+    
+    // If extracted has empty values, try to find them by looking for specific patterns
+    if (!extracted.name || !extracted.email || !extracted.contact) {
+      Object.entries(answers).forEach(([key, value]) => {
+        console.log(`Checking answer: ${key} = ${value}`);
+        
+        // Try to match by question content or type
+        if (typeof value === 'string' && value.trim()) {
+          if (key.includes('name') || (key === '1' && !extracted.name)) {
+            extracted.name = value.trim();
+          } else if (key.includes('email') || value.includes('@') || (key === '2' && !extracted.email)) {
+            extracted.email = value.trim();
+          } else if (key.includes('contact') || key.includes('phone') || /^\d{10}$/.test(value) || (key === '3' && !extracted.contact)) {
+            extracted.contact = value.trim();
+          } else if (key.includes('age') || (/^\d{1,3}$/.test(value) && parseInt(value) > 0 && parseInt(value) < 150) || (key === '4' && !extracted.age)) {
+            extracted.age = value.trim();
+          }
+        }
+      });
     }
 
-    return userInfo;
+    console.log('Final extracted info:', extracted);
+    return extracted;
   }, [userInfo, answers]);
 
   const saveResponses = async () => {
@@ -49,16 +72,44 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not found');
       console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Not found');
 
-      // Validate required fields
-      if (!extractedUserInfo?.name?.trim() || !extractedUserInfo?.email?.trim() || !extractedUserInfo?.contact?.trim() || !extractedUserInfo?.age?.trim()) {
-        console.error('Missing required fields:', { extractedUserInfo });
+      // Validate required fields with better error messages
+      const missingFields = [];
+      if (!extractedUserInfo?.name?.trim()) missingFields.push('name');
+      if (!extractedUserInfo?.email?.trim()) missingFields.push('email');
+      if (!extractedUserInfo?.contact?.trim()) missingFields.push('contact');
+      if (!extractedUserInfo?.age?.trim() || extractedUserInfo.age === '0') missingFields.push('age');
+
+      if (missingFields.length > 0) {
+        console.error('Missing required fields:', missingFields);
         console.error('Field validation details:', {
           name: extractedUserInfo?.name || 'MISSING',
           email: extractedUserInfo?.email || 'MISSING',
           contact: extractedUserInfo?.contact || 'MISSING',
           age: extractedUserInfo?.age || 'MISSING'
         });
-        throw new Error('Missing required user information');
+        
+        // Try to find missing data in answers one more time
+        console.log('Attempting to find missing data in answers...');
+        const allAnswerValues = Object.entries(answers);
+        console.log('All answer entries:', allAnswerValues);
+        
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered.`);
+      }
+
+      // Additional validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(extractedUserInfo.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(extractedUserInfo.contact)) {
+        throw new Error('Please enter a valid 10-digit phone number');
+      }
+
+      const age = parseInt(extractedUserInfo.age);
+      if (isNaN(age) || age < 1 || age > 120) {
+        throw new Error('Please enter a valid age between 1 and 120');
       }
 
       // Test current user session
@@ -252,7 +303,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.error('Error in saveResponses:', {
         error,
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        extractedUserInfo,
+        answersDebug: Object.keys(answers).length > 0 ? answers : 'No answers found'
       });
 
       let errorMessage = 'Unknown error occurred';
@@ -264,16 +317,31 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         errorMessage = String(error.message);
       }
 
-      alert(`There was an error saving your quiz response: ${errorMessage}. Please check the console for more details and try again.`);
+      // Show user-friendly error message
+      alert(`There was an error saving your quiz response: ${errorMessage}. Please check that all required fields are filled and try again.`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
+    // Add global error handler for unhandled promise rejections
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection in QuizResults:', event.reason);
+      event.preventDefault(); // Prevent the default unhandled rejection behavior
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
     if (!isSubmitted) {
-      saveResponses();
+      saveResponses().catch((error) => {
+        console.error('Error in saveResponses caught by useEffect:', error);
+      });
     }
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
   }, []);
 
   return (
