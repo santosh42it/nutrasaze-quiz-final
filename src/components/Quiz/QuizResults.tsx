@@ -25,6 +25,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     console.log('Raw answers:', answers);
     console.log('Raw userInfo:', userInfo);
     console.log('Answer keys:', Object.keys(answers));
+    console.log('Answer values:', Object.values(answers));
     
     // Initialize extracted info
     const extracted = {
@@ -35,10 +36,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     };
 
     // First try to get from userInfo if available
-    if (userInfo.name) extracted.name = userInfo.name;
-    if (userInfo.email) extracted.email = userInfo.email;
-    if (userInfo.contact) extracted.contact = userInfo.contact;
-    if (userInfo.age && userInfo.age !== '0') extracted.age = userInfo.age;
+    if (userInfo.name && userInfo.name.trim()) extracted.name = userInfo.name.trim();
+    if (userInfo.email && userInfo.email.trim()) extracted.email = userInfo.email.trim();
+    if (userInfo.contact && userInfo.contact.trim()) extracted.contact = userInfo.contact.trim();
+    if (userInfo.age && userInfo.age !== '0' && userInfo.age.trim()) extracted.age = userInfo.age.trim();
 
     // Then try to extract from answers using multiple strategies
     Object.entries(answers).forEach(([key, value]) => {
@@ -47,32 +48,69 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       const cleanValue = value.trim();
       console.log(`Processing answer: ${key} = ${cleanValue}`);
       
-      // Strategy 1: Direct key matching
-      if (key === 'name' || key === '1') extracted.name = cleanValue;
-      else if (key === 'email' || key === '2') extracted.email = cleanValue;
-      else if (key === 'contact' || key === '3') extracted.contact = cleanValue;
-      else if (key === 'age' || key === '4') extracted.age = cleanValue;
+      // Strategy 1: Direct key matching (including database IDs)
+      if (key === 'name' || key === '1' || key === 'name') extracted.name = cleanValue;
+      else if (key === 'email' || key === '2' || key === 'email') extracted.email = cleanValue;
+      else if (key === 'contact' || key === '3' || key === 'contact') extracted.contact = cleanValue;
+      else if (key === 'age' || key === '4' || key === 'age') extracted.age = cleanValue;
       
-      // Strategy 2: Content-based detection
+      // Strategy 2: Content-based detection with improved patterns
       else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
+        console.log('Detected email by content:', cleanValue);
         extracted.email = cleanValue;
       }
       else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
+        console.log('Detected contact by content:', cleanValue);
         extracted.contact = cleanValue;
       }
       else if (!extracted.age && /^\d{1,3}$/.test(cleanValue)) {
         const ageNum = parseInt(cleanValue);
         if (ageNum > 0 && ageNum <= 120) {
+          console.log('Detected age by content:', cleanValue);
           extracted.age = cleanValue;
         }
       }
-      else if (!extracted.name && cleanValue.length > 1 && /^[a-zA-Z\s]+$/.test(cleanValue)) {
-        // If it looks like a name (only letters and spaces, more than 1 char)
+      else if (!extracted.name && cleanValue.length > 1 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
+        // If it looks like a name (letters, spaces, dots, more than 1 char, no @)
+        console.log('Detected name by content:', cleanValue);
         extracted.name = cleanValue;
       }
     });
 
-    console.log('Extracted info:', extracted);
+    // Additional fallback: try to find by order of answers (first 4 answers are usually personal info)
+    if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
+      const answerEntries = Object.entries(answers);
+      console.log('Trying fallback extraction from answer order...');
+      
+      // Try to extract based on typical order: name, email, contact, age
+      answerEntries.forEach(([key, value], index) => {
+        if (!value || typeof value !== 'string' || !value.trim()) return;
+        const cleanValue = value.trim();
+        
+        // Try to determine field type by position and content
+        if (!extracted.name && index === 0 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
+          console.log('Setting name from position 0:', cleanValue);
+          extracted.name = cleanValue;
+        }
+        else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
+          console.log('Setting email from content match:', cleanValue);
+          extracted.email = cleanValue;
+        }
+        else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
+          console.log('Setting contact from content match:', cleanValue);
+          extracted.contact = cleanValue;
+        }
+        else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
+          const ageNum = parseInt(cleanValue);
+          if (ageNum > 0 && ageNum <= 120) {
+            console.log('Setting age from content match:', cleanValue);
+            extracted.age = cleanValue;
+          }
+        }
+      });
+    }
+
+    console.log('Final extracted info:', extracted);
     return extracted;
   }, [userInfo, answers]);
 
@@ -85,6 +123,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Answers Keys:', Object.keys(answers));
       console.log('Answers Count:', Object.keys(answers).length);
       console.log('Extracted User Info:', extractedUserInfo);
+      console.log('Detailed answers breakdown:');
+      Object.entries(answers).forEach(([key, value]) => {
+        console.log(`  Key: "${key}" -> Value: "${value}" (Type: ${typeof value})`);
+      });
       console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not found');
       console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Not found');
 
