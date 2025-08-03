@@ -26,7 +26,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     console.log('Raw userInfo:', userInfo);
     console.log('Answer keys:', Object.keys(answers));
     console.log('Answer values:', Object.values(answers));
-    
+
     // Initialize extracted info
     const extracted = {
       name: '',
@@ -44,16 +44,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     // Then try to extract from answers using multiple strategies
     Object.entries(answers).forEach(([key, value]) => {
       if (!value || typeof value !== 'string' || !value.trim()) return;
-      
+
       const cleanValue = value.trim();
       console.log(`Processing answer: ${key} = ${cleanValue}`);
-      
+
       // Strategy 1: Direct key matching (including database IDs)
       if (key === 'name' || key === '1' || key === 'name') extracted.name = cleanValue;
       else if (key === 'email' || key === '2' || key === 'email') extracted.email = cleanValue;
       else if (key === 'contact' || key === '3' || key === 'contact') extracted.contact = cleanValue;
       else if (key === 'age' || key === '4' || key === 'age') extracted.age = cleanValue;
-      
+
       // Strategy 2: Content-based detection with improved patterns
       else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
         console.log('Detected email by content:', cleanValue);
@@ -81,12 +81,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
       const answerEntries = Object.entries(answers);
       console.log('Trying fallback extraction from answer order...');
-      
+
       // Try to extract based on typical order: name, email, contact, age
       answerEntries.forEach(([key, value], index) => {
         if (!value || typeof value !== 'string' || !value.trim()) return;
         const cleanValue = value.trim();
-        
+
         // Try to determine field type by position and content
         if (!extracted.name && index === 0 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
           console.log('Setting name from position 0:', cleanValue);
@@ -132,9 +132,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Validate required fields with better error messages
       const missingFields = [];
-      
+
       console.log('Validating extracted user info:', extractedUserInfo);
-      
+
       if (!extractedUserInfo?.name?.trim() || extractedUserInfo.name.length < 2) {
         missingFields.push('name');
         console.error('Name validation failed:', extractedUserInfo?.name);
@@ -160,13 +160,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           contact: extractedUserInfo?.contact || 'MISSING',
           age: extractedUserInfo?.age || 'MISSING'
         });
-        
+
         // Debug: Show all available answers
         console.log('All available answers for debugging:');
         Object.entries(answers).forEach(([key, value]) => {
           console.log(`  ${key}: "${value}"`);
         });
-        
+
         throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
       }
 
@@ -421,117 +421,127 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   }, [isSubmitted, extractedUserInfo]); // Add dependencies
 
   return (
-    <section className="bg-white min-h-screen">
-      {/* Hero Section */}
-      <div className="relative bg-[#1d0917] text-white py-16 md:py-24">
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="[font-family:'DM_Serif_Display',Helvetica] text-[32px] md:text-[48px] lg:text-[56px] font-normal tracking-[2px] md:tracking-[4px] leading-[36px] md:leading-[52px] lg:leading-[60px] mb-6">
-              Your Personalized Health Plan is Ready!
-            </h1>
-            <p className="font-desktop-body-xl-regular text-[18px] md:text-[20px] lg:text-[24px] leading-[24px] md:leading-[28px] lg:leading-[32px] text-white/90 max-w-3xl mx-auto mb-8">
-              Based on your responses, we've created a custom supplement plan tailored to your unique health needs and goals. Get ready to transform your wellness journey!
-            </p>
-
-            {/* User Info Card */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-[#913177] rounded-full flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">
-                    {extractedUserInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="text-left">
-                  <h3 className="text-2xl font-bold">Hello, {extractedUserInfo?.name || 'User'}!</h3>
-                  <p className="text-white/80">Your personalized plan is ready</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#913177] bg-white rounded-lg py-2">3</div>
-                  <div className="text-sm mt-1">Custom Supplements</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#913177] bg-white rounded-lg py-2">30</div>
-                  <div className="text-sm mt-1">Days Supply</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#913177] bg-white rounded-lg py-2">100%</div>
-                  <div className="text-sm mt-1">Natural</div>
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#f8f4f6] to-white">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-[#1d0917]">NutraSage</h1>
+            <div className="text-sm text-gray-600">Quiz Complete</div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-6xl mx-auto">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
 
-          {/* Recommendations Section */}
-          <div className="mb-16">
-            <h2 className="[font-family:'DM_Serif_Display',Helvetica] text-[32px] md:text-[40px] font-normal text-[#1d0917] text-center tracking-[2px] mb-12">
-              Your Recommended Supplements
+          {/* Success Message */}
+          <div className="text-center mb-12">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-4xl font-bold text-[#1d0917] mb-4">
+              Congratulations, {extractedUserInfo?.name || 'User'}!
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Your personalized health assessment is complete. Based on your responses,
+              we've created a custom wellness plan just for you.
+            </p>
+          </div>
+
+          {/* User Info Card */}
+          <Card className="mb-8 border-0 shadow-lg bg-white">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-6 mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#913177] to-[#b54394] rounded-full flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">
+                    {extractedUserInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-[#1d0917] mb-1">
+                    {extractedUserInfo?.name || 'User'}
+                  </h3>
+                  <p className="text-gray-600">{extractedUserInfo?.email}</p>
+                  <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                    <span>Age: {extractedUserInfo?.age}</span>
+                    <span>•</span>
+                    <span>Contact: {extractedUserInfo?.contact}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-gradient-to-br from-[#f8f4f6] to-[#fff] rounded-xl">
+                  <div className="text-3xl font-bold text-[#913177] mb-2">15+</div>
+                  <div className="text-sm text-gray-600">Questions Answered</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-[#f8f4f6] to-[#fff] rounded-xl">
+                  <div className="text-3xl font-bold text-[#913177] mb-2">3</div>
+                  <div className="text-sm text-gray-600">Custom Supplements</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-[#f8f4f6] to-[#fff] rounded-xl">
+                  <div className="text-3xl font-bold text-[#913177] mb-2">100%</div>
+                  <div className="text-sm text-gray-600">Personalized</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recommended Products */}
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-[#1d0917] text-center mb-8">
+              Your Personalized Supplement Plan
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
-                  title: "Daily Energy & Focus Blend",
-                  description: "Boost your energy levels and mental clarity throughout the day",
-                  benefits: ["Increased Energy", "Better Focus", "Mental Clarity", "Reduced Fatigue"],
-                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400",
-                  price: "₹999"
+                  title: "Daily Energy Boost",
+                  description: "Natural energy enhancement for sustained vitality throughout your day",
+                  features: ["Increased Energy", "Mental Clarity", "Focus Enhancement"],
+                  price: "₹999",
+                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
                 },
                 {
-                  title: "Stress Management Complex",
-                  description: "Natural stress relief and mood support for better emotional balance",
-                  benefits: ["Stress Relief", "Mood Support", "Better Sleep", "Anxiety Reduction"],
-                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400",
-                  price: "₹899"
+                  title: "Stress Relief Complex",
+                  description: "Adaptogenic herbs to help manage stress and promote emotional balance",
+                  features: ["Stress Management", "Mood Support", "Better Sleep"],
+                  price: "₹899",
+                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
                 },
                 {
-                  title: "Sleep Support Formula",
-                  description: "Improve sleep quality and recovery for optimal rest",
-                  benefits: ["Better Sleep", "Faster Recovery", "Deep Rest", "Morning Freshness"],
-                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400",
-                  price: "₹1099"
+                  title: "Recovery & Immunity",
+                  description: "Support your body's natural healing and immune system function",
+                  features: ["Immune Support", "Recovery Aid", "Antioxidants"],
+                  price: "₹1099",
+                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
                 }
               ].map((product, index) => (
-                <Card key={index} className="border-[#e9d6e4] rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-                  <CardContent className="p-0">
-                    <div className="relative">
-                      <img
-                        src={product.image}
-                        alt={product.title}
-                        className="w-full h-48 object-cover rounded-t-2xl"
-                      />
-                      <div className="absolute top-4 right-4 bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold">
-                        {product.price}
-                      </div>
+                <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="absolute top-4 right-4 bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold">
+                      {product.price}
                     </div>
-
-                    <div className="p-6">
-                      <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-[20px] font-normal text-[#1d0917] mb-3 tracking-[1px]">
-                        {product.title}
-                      </h3>
-                      <p className="font-desktop-body-m-regular text-[#3d3d3d] text-sm mb-4 leading-relaxed">
-                        {product.description}
-                      </p>
-
-                      <div className="space-y-3">
-                        <div className="text-sm font-semibold text-[#1d0917]">Key Benefits:</div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {product.benefits.map((benefit, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
-                              <span className="text-xs text-[#3d3d3d]">{benefit}</span>
-                            </div>
-                          ))}
+                  </div>
+                  <CardContent className="p-6">
+                    <h3 className="text-xl font-bold text-[#1d0917] mb-3">{product.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4 leading-relaxed">{product.description}</p>
+                    <div className="space-y-2">
+                      {product.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
+                          <span className="text-sm text-gray-700">{feature}</span>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
@@ -540,116 +550,77 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           </div>
 
           {/* Pricing Section */}
-          <div className="bg-gradient-to-br from-[#fff4fc] to-white rounded-3xl p-8 md:p-12 shadow-xl">
-            <div className="text-center mb-8">
-              <h2 className="[font-family:'DM_Serif_Display',Helvetica] text-[32px] md:text-[40px] font-normal text-[#1d0917] tracking-[2px] mb-4">
-                Complete Health Package
-              </h2>
-              <p className="font-desktop-body-l-regular text-[#3d3d3d] text-lg">
-                Everything you need for optimal health and wellness
-              </p>
-            </div>
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-[#f8f4f6]">
+            <CardContent className="p-8 md:p-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-[#1d0917] mb-4">
+                  Complete Wellness Package
+                </h2>
+                <p className="text-lg text-gray-600">
+                  Everything you need to start your health transformation journey
+                </p>
+              </div>
 
-            <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-
-                {/* Pricing Info */}
-                <div className="text-center lg:text-left">
-                  <div className="flex items-center justify-center lg:justify-start gap-4 mb-6">
+                <div className="space-y-6">
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-5xl font-bold text-[#913177]">₹2,999</span>
                     <div>
-                      <div className="text-5xl md:text-6xl font-bold text-[#913177]">₹2,999</div>
-                      <div className="text-lg text-[#3d3d3d]">per month</div>
-                    </div>
-                    <div className="text-[#6d6d6e]">
-                      <span className="line-through text-2xl">₹4,500</span>
-                      <div className="bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold mt-1">
+                      <span className="text-lg text-gray-500 line-through">₹4,500</span>
+                      <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-sm font-bold ml-2">
                         33% OFF
-                      </div>
+                      </span>
                     </div>
                   </div>
+                  <p className="text-gray-600">per month</p>
 
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#913177] rounded-full flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M9 12l2 2 4-4"/>
-                        </svg>
+                  <div className="space-y-4">
+                    {[
+                      "3 Custom Supplements (30-day supply)",
+                      "Personalized Diet Plan",
+                      "Custom Exercise Routine",
+                      "Expert Consultation",
+                      "Monthly Progress Tracking",
+                      "Free Shipping & Support"
+                    ].map((feature, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="w-5 h-5 bg-[#913177] rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span className="text-gray-700">{feature}</span>
                       </div>
-                      <span className="font-desktop-body-m-regular text-[#1d0917]">3 Custom Supplements (30-day supply)</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#913177] rounded-full flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                      </div>
-                      <span className="font-desktop-body-m-regular text-[#1d0917]">Personalized Diet Plan</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#913177] rounded-full flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                      </div>
-                      <span className="font-desktop-body-m-regular text-[#1d0917]">Custom Exercise Routine</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#913177] rounded-full flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                      </div>
-                      <span className="font-desktop-body-m-regular text-[#1d0917]">Expert Consultation</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#913177] rounded-full flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                      </div>
-                      <span className="font-desktop-body-m-regular text-[#1d0917]">Monthly Progress Tracking</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#913177] rounded-full flex items-center justify-center">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M9 12l2 2 4-4"/>
-                        </svg>
-                      </div>
-                      <span className="font-desktop-body-m-regular text-[#1d0917]">Free Shipping & Support</span>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* CTA Section */}
                 <div className="text-center">
                   <div className="bg-white rounded-2xl p-8 shadow-lg">
-                    <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-[24px] font-normal text-[#1d0917] mb-4 tracking-[1px]">
+                    <h3 className="text-2xl font-bold text-[#1d0917] mb-4">
                       Ready to Transform Your Health?
                     </h3>
-                    <p className="font-desktop-body-m-regular text-[#3d3d3d] mb-6">
-                      Join thousands who have already started their wellness journey with NutraSage
+                    <p className="text-gray-600 mb-6">
+                      Join thousands who have already started their wellness journey
                     </p>
 
                     <Button
-                      className="w-full h-16 rounded-2xl bg-[#913177] text-white font-desktop-body-m-bold text-lg shadow-lg hover:bg-[#913177]/90 transition-all duration-300 transform hover:scale-105"
+                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7a2a66] hover:to-[#9c3a81] text-white rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Processing...' : 'Start Your Health Journey - ₹2,999/month'}
+                      {isSubmitting ? 'Processing...' : 'Start Your Journey - ₹2,999/month'}
                     </Button>
 
-                    <div className="flex items-center justify-center gap-6 mt-6 text-sm text-[#6d6d6e]">
+                    <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500">
                       <div className="flex items-center gap-2">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9 12l2 2 4-4"/>
-                          <circle cx="12" cy="12" r="10"/>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>30-day money back</span>
+                        <span>30-day guarantee</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                          <circle cx="12" cy="16" r="1"/>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                         <span>Secure payment</span>
                       </div>
@@ -657,20 +628,20 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Additional Info */}
-          <div className="text-center mt-12 space-y-4 max-w-3xl mx-auto">
-            <p className="font-desktop-body-l-regular text-[#3d3d3d] text-lg">
-              Our nutrition experts will review your responses and may contact you within 24 hours to finalize your personalized plan.
+          {/* Contact Info */}
+          <div className="text-center mt-8 space-y-2">
+            <p className="text-gray-600">
+              Our experts will review your responses and contact you within 24 hours to finalize your plan.
             </p>
-            <p className="font-desktop-body-m-regular text-[#6d6d6e]">
-              Questions? Contact our support team at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call <span className="text-[#913177] font-semibold">+91-XXXX-XXXX</span>
+            <p className="text-sm text-gray-500">
+              Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call <span className="text-[#913177] font-semibold">+91-XXXX-XXXX</span>
             </p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
