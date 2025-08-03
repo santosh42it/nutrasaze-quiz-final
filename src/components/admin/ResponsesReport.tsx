@@ -135,13 +135,12 @@ export const ResponsesReport: React.FC = () => {
       const questionStats: QuizReport['questionStats'] = {};
       responsesWithAnswers.forEach((response: DetailedResponse) => {
         response.answers?.forEach((answer: any) => {
-          const questionText = answer.questions?.question_text || `Question ID: ${answer.question_id}`;
+          const questionText = answer.questions?.question_text;
           const isPersonalInfo = questionText && (
             questionText.toLowerCase().includes('name') ||
             questionText.toLowerCase().includes('email') ||
             questionText.toLowerCase().includes('contact') ||
-            questionText.toLowerCase().includes('phone') ||
-            questionText.toLowerCase().includes('age')
+            questionText.toLowerCase().includes('phone')
           );
           
           if (questionText && !isPersonalInfo) {
@@ -827,10 +826,7 @@ export const ResponsesReport: React.FC = () => {
                           <span className="inline-flex items-center justify-center w-8 h-8 bg-[#913177] text-white rounded-full text-sm font-bold mr-3">
                             {index + 1}
                           </span>
-                          {answer.questions?.question_text ? 
-                            answer.questions.question_text : 
-                            `Question ID: ${answer.question_id} (Question text not found)`
-                          }
+                          {answer.questions?.question_text || `Question ID: ${answer.question_id}`}
                         </div>
                         
                         <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">

@@ -35,147 +35,75 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       age: '0'
     };
 
-    // First try to get from userInfo if available and valid
-    if (userInfo.name && userInfo.name.trim() && userInfo.name.length > 1) {
-      extracted.name = userInfo.name.trim();
-    }
-    if (userInfo.email && userInfo.email.trim() && userInfo.email.includes('@')) {
-      extracted.email = userInfo.email.trim();
-    }
-    if (userInfo.contact && userInfo.contact.trim() && /^[0-9]{10}$/.test(userInfo.contact.trim())) {
-      extracted.contact = userInfo.contact.trim();
-    }
-    if (userInfo.age && userInfo.age !== '0' && userInfo.age.trim()) {
-      const ageNum = parseInt(userInfo.age.trim());
-      if (!isNaN(ageNum) && ageNum > 0 && ageNum <= 120) {
-        extracted.age = userInfo.age.trim();
-      }
-    }
+    // First try to get from userInfo if available
+    if (userInfo.name && userInfo.name.trim()) extracted.name = userInfo.name.trim();
+    if (userInfo.email && userInfo.email.trim()) extracted.email = userInfo.email.trim();
+    if (userInfo.contact && userInfo.contact.trim()) extracted.contact = userInfo.contact.trim();
+    if (userInfo.age && userInfo.age !== '0' && userInfo.age.trim()) extracted.age = userInfo.age.trim();
 
-    // If we have complete info from userInfo, return it
-    const hasCompleteUserInfo = extracted.name && extracted.email && extracted.contact && extracted.age !== '0';
-    if (hasCompleteUserInfo) {
-      console.log('Using complete userInfo:', extracted);
-      return extracted;
-    }
-
-    // Otherwise, extract from answers with improved logic
-    const answerEntries = Object.entries(answers).filter(([key, value]) => 
-      value && typeof value === 'string' && value.trim()
-    );
-
-    console.log('Processing answer entries:', answerEntries);
-
-    // Strategy 1: Pattern-based extraction (most reliable)
-    answerEntries.forEach(([key, value]) => {
-      const cleanValue = value.trim();
+    // Then try to extract from answers using multiple strategies
+    Object.entries(answers).forEach(([key, value]) => {
+      if (!value || typeof value !== 'string' || !value.trim()) return;
       
-      // Email detection (highest priority for email field)
-      if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
-        console.log('Detected email by pattern:', cleanValue);
+      const cleanValue = value.trim();
+      console.log(`Processing answer: ${key} = ${cleanValue}`);
+      
+      // Strategy 1: Direct key matching (including database IDs)
+      if (key === 'name' || key === '1' || key === 'name') extracted.name = cleanValue;
+      else if (key === 'email' || key === '2' || key === 'email') extracted.email = cleanValue;
+      else if (key === 'contact' || key === '3' || key === 'contact') extracted.contact = cleanValue;
+      else if (key === 'age' || key === '4' || key === 'age') extracted.age = cleanValue;
+      
+      // Strategy 2: Content-based detection with improved patterns
+      else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
+        console.log('Detected email by content:', cleanValue);
         extracted.email = cleanValue;
       }
-      // Phone number detection (Indian format)
       else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
-        console.log('Detected contact by pattern:', cleanValue);
+        console.log('Detected contact by content:', cleanValue);
         extracted.contact = cleanValue;
       }
-      // Age detection
-      else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
+      else if (!extracted.age && /^\d{1,3}$/.test(cleanValue)) {
         const ageNum = parseInt(cleanValue);
         if (ageNum > 0 && ageNum <= 120) {
-          console.log('Detected age by pattern:', cleanValue);
+          console.log('Detected age by content:', cleanValue);
           extracted.age = cleanValue;
         }
       }
-      // Name detection (only alphabetic characters, spaces, and common name punctuation)
-      else if (!extracted.name && /^[a-zA-Z\s\.\-']{2,50}$/.test(cleanValue) && 
-               !cleanValue.includes('@') && 
-               !cleanValue.match(/^[6-9]\d{9}$/) &&
-               !cleanValue.match(/^\d{1,3}$/) &&
-               cleanValue.toLowerCase() !== 'male' &&
-               cleanValue.toLowerCase() !== 'female' &&
-               cleanValue.toLowerCase() !== 'yes' &&
-               cleanValue.toLowerCase() !== 'no') {
-        console.log('Detected name by pattern:', cleanValue);
+      else if (!extracted.name && cleanValue.length > 1 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
+        // If it looks like a name (letters, spaces, dots, more than 1 char, no @)
+        console.log('Detected name by content:', cleanValue);
         extracted.name = cleanValue;
       }
     });
 
-    // Strategy 2: Direct key matching for any remaining fields
-    answerEntries.forEach(([key, value]) => {
-      const cleanValue = value.trim();
-      const lowerKey = key.toLowerCase();
-      
-      if (!extracted.name && (lowerKey.includes('name') || key === '1')) {
-        if (/^[a-zA-Z\s\.\-']{2,50}$/.test(cleanValue) && 
-            cleanValue.toLowerCase() !== 'male' && 
-            cleanValue.toLowerCase() !== 'female') {
-          console.log('Setting name from key match:', cleanValue);
-          extracted.name = cleanValue;
-        }
-      }
-      else if (!extracted.email && (lowerKey.includes('email') || key === '2')) {
-        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
-          console.log('Setting email from key match:', cleanValue);
-          extracted.email = cleanValue;
-        }
-      }
-      else if (!extracted.contact && (lowerKey.includes('contact') || lowerKey.includes('phone') || key === '3')) {
-        if (/^[6-9]\d{9}$/.test(cleanValue)) {
-          console.log('Setting contact from key match:', cleanValue);
-          extracted.contact = cleanValue;
-        }
-      }
-      else if (extracted.age === '0' && (lowerKey.includes('age') || key === '4')) {
-        const ageNum = parseInt(cleanValue);
-        if (!isNaN(ageNum) && ageNum > 0 && ageNum <= 120) {
-          console.log('Setting age from key match:', cleanValue);
-          extracted.age = cleanValue;
-        }
-      }
-    });
-
-    // Strategy 3: Positional fallback (only if we're still missing critical info)
+    // Additional fallback: try to find by order of answers (first 4 answers are usually personal info)
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
-      console.log('Trying positional fallback...');
+      const answerEntries = Object.entries(answers);
+      console.log('Trying fallback extraction from answer order...');
       
-      // Sort entries by key to try positional matching
-      const sortedEntries = answerEntries.sort(([a], [b]) => {
-        // Try to sort by numeric keys first, then alphabetically
-        const aNum = parseInt(a);
-        const bNum = parseInt(b);
-        if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-        return a.localeCompare(b);
-      });
-
-      sortedEntries.forEach(([key, value], index) => {
+      // Try to extract based on typical order: name, email, contact, age
+      answerEntries.forEach(([key, value], index) => {
+        if (!value || typeof value !== 'string' || !value.trim()) return;
         const cleanValue = value.trim();
         
-        // Position 0: Usually name
-        if (!extracted.name && index === 0 && 
-            /^[a-zA-Z\s\.\-']{2,50}$/.test(cleanValue) && 
-            !cleanValue.includes('@') &&
-            cleanValue.toLowerCase() !== 'male' &&
-            cleanValue.toLowerCase() !== 'female') {
+        // Try to determine field type by position and content
+        if (!extracted.name && index === 0 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
           console.log('Setting name from position 0:', cleanValue);
           extracted.name = cleanValue;
         }
-        // Find email anywhere in sorted list
-        else if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
-          console.log('Setting email from position search:', cleanValue);
+        else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
+          console.log('Setting email from content match:', cleanValue);
           extracted.email = cleanValue;
         }
-        // Find phone anywhere in sorted list  
         else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
-          console.log('Setting contact from position search:', cleanValue);
+          console.log('Setting contact from content match:', cleanValue);
           extracted.contact = cleanValue;
         }
-        // Find age anywhere in sorted list
         else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
           const ageNum = parseInt(cleanValue);
           if (ageNum > 0 && ageNum <= 120) {
-            console.log('Setting age from position search:', cleanValue);
+            console.log('Setting age from content match:', cleanValue);
             extracted.age = cleanValue;
           }
         }
