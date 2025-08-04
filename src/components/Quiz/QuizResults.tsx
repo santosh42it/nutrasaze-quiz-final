@@ -19,6 +19,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  // Define generic question keys that should be saved in quiz_responses table
+  const GENERIC_QUESTION_KEYS = ['name', 'email', 'contact', 'age', 'gender'];
+
   // Extract user info from answers if userInfo is empty
   const extractedUserInfo = useMemo(() => {
     console.log('=== USER INFO EXTRACTION DEBUG ===');
@@ -32,7 +35,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       name: '',
       email: '',
       contact: '',
-      age: '0'
+      age: '0',
+      gender: ''
     };
 
     // First try to get from userInfo if available
@@ -53,6 +57,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       else if (key === 'email' || key === '2' || key === 'email') extracted.email = cleanValue;
       else if (key === 'contact' || key === '3' || key === 'contact') extracted.contact = cleanValue;
       else if (key === 'age' || key === '4' || key === 'age') extracted.age = cleanValue;
+      else if (key === 'gender' || key === '5' || key === 'gender') extracted.gender = cleanValue;
 
       // Strategy 2: Content-based detection with improved patterns
       else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
@@ -75,40 +80,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         console.log('Detected name by content:', cleanValue);
         extracted.name = cleanValue;
       }
+      else if (!extracted.gender && (cleanValue.toLowerCase() === 'male' || cleanValue.toLowerCase() === 'female' || cleanValue.toLowerCase() === 'other')) {
+        console.log('Detected gender by content:', cleanValue);
+        extracted.gender = cleanValue;
+      }
     });
-
-    // Additional fallback: try to find by order of answers (first 4 answers are usually personal info)
-    if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
-      const answerEntries = Object.entries(answers);
-      console.log('Trying fallback extraction from answer order...');
-
-      // Try to extract based on typical order: name, email, contact, age
-      answerEntries.forEach(([key, value], index) => {
-        if (!value || typeof value !== 'string' || !value.trim()) return;
-        const cleanValue = value.trim();
-
-        // Try to determine field type by position and content
-        if (!extracted.name && index === 0 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
-          console.log('Setting name from position 0:', cleanValue);
-          extracted.name = cleanValue;
-        }
-        else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
-          console.log('Setting email from content match:', cleanValue);
-          extracted.email = cleanValue;
-        }
-        else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
-          console.log('Setting contact from content match:', cleanValue);
-          extracted.contact = cleanValue;
-        }
-        else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
-          const ageNum = parseInt(cleanValue);
-          if (ageNum > 0 && ageNum <= 120) {
-            console.log('Setting age from content match:', cleanValue);
-            extracted.age = cleanValue;
-          }
-        }
-      });
-    }
 
     console.log('Final extracted info:', extracted);
     return extracted;
@@ -123,17 +99,25 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Answers Keys:', Object.keys(answers));
       console.log('Answers Count:', Object.keys(answers).length);
       console.log('Extracted User Info:', extractedUserInfo);
-      console.log('Detailed answers breakdown:');
+      console.log('Generic Question Keys:', GENERIC_QUESTION_KEYS);
+
+      // Separate generic questions from quiz questions
+      const genericAnswers: Record<string, string> = {};
+      const quizAnswers: Record<string, string> = {};
+
       Object.entries(answers).forEach(([key, value]) => {
-        console.log(`  Key: "${key}" -> Value: "${value}" (Type: ${typeof value})`);
+        if (GENERIC_QUESTION_KEYS.includes(key)) {
+          genericAnswers[key] = value;
+        } else if (!key.includes('_details')) {
+          quizAnswers[key] = value;
+        }
       });
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not found');
-      console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Not found');
 
-      // Validate required fields with better error messages
+      console.log('Generic answers:', genericAnswers);
+      console.log('Quiz answers:', quizAnswers);
+
+      // Validate required generic fields
       const missingFields = [];
-
-      console.log('Validating extracted user info:', extractedUserInfo);
 
       if (!extractedUserInfo?.name?.trim() || extractedUserInfo.name.length < 2) {
         missingFields.push('name');
@@ -154,19 +138,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       if (missingFields.length > 0) {
         console.error('Missing required fields:', missingFields);
-        console.error('Field validation details:', {
-          name: extractedUserInfo?.name || 'MISSING',
-          email: extractedUserInfo?.email || 'MISSING',
-          contact: extractedUserInfo?.contact || 'MISSING',
-          age: extractedUserInfo?.age || 'MISSING'
-        });
-
-        // Debug: Show all available answers
-        console.log('All available answers for debugging:');
-        Object.entries(answers).forEach(([key, value]) => {
-          console.log(`  ${key}: "${value}"`);
-        });
-
         throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
       }
 
@@ -186,23 +157,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         throw new Error('Please enter a valid age between 1 and 120');
       }
 
-      // Test current user session
-      console.log('Checking current session...');
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log('Session user:', sessionData?.session?.user?.id || 'No user');
-      console.log('Session role:', sessionData?.session?.user?.role || 'anon');
-      console.log('Session error:', sessionError);
-
-      // Insert quiz response
-      console.log('Inserting quiz response...');
-      const insertData = {
+      // Insert quiz response with generic information
+      console.log('Inserting quiz response with generic info...');
+      const insertData: any = {
         name: extractedUserInfo.name.trim(),
         email: extractedUserInfo.email.trim(),
         contact: extractedUserInfo.contact.trim(),
         age: parseInt(extractedUserInfo.age.toString()) || 0
       };
-      console.log('Data being inserted:', insertData);
-      console.log('Current timestamp:', new Date().toISOString());
+
+      // Add gender if available
+      if (extractedUserInfo.gender && extractedUserInfo.gender.trim()) {
+        insertData.gender = extractedUserInfo.gender.trim();
+      }
+
+      console.log('Data being inserted into quiz_responses:', insertData);
 
       const { data: responseData, error: responseError } = await supabase
         .from('quiz_responses')
@@ -211,47 +180,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         .single();
 
       if (responseError) {
-        console.error('Error saving quiz response:', {
-          error: responseError,
-          message: responseError.message,
-          details: responseError.details,
-          hint: responseError.hint,
-          code: responseError.code,
-          insertData,
-          userAgent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
-          supabaseConfig: {
-            url: import.meta.env.VITE_SUPABASE_URL,
-            hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
-          }
-        });
+        console.error('Error saving quiz response:', responseError);
         throw new Error(`Failed to save quiz response: ${responseError.message}`);
       }
 
       console.log('Quiz response saved successfully:', responseData);
 
-      // Filter and prepare answers for insertion
-      const validAnswers = Object.entries(answers)
-        .filter(([key, value]) => {
-          // Skip detail keys and empty values
-          if (key.includes('_details') || !value || value.trim() === '') {
-            return false;
-          }
-          return true;
-        });
-
-      console.log('Valid answers to save:', validAnswers);
-      console.log('Selected file for upload:', selectedFile ? selectedFile.name : 'No file');
-
-      if (validAnswers.length === 0) {
-        console.log('No valid answers to save, skipping answers insertion');
+      // Now save the quiz questions (non-generic questions) as quiz_answers
+      if (Object.keys(quizAnswers).length === 0) {
+        console.log('No quiz questions to save, only generic info saved');
         setIsSubmitted(true);
         return;
       }
 
-      // Insert individual answers
-      // Get actual question IDs from database
-      console.log('Fetching question IDs from database...');
+      // Get active questions from database for proper mapping
+      console.log('Fetching questions from database for quiz answers...');
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select('id, question_text')
@@ -260,41 +203,30 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       if (questionsError) {
         console.error('Error fetching questions:', questionsError);
-        // Continue without saving answers if we can't get question IDs
         setIsSubmitted(true);
         return;
       }
 
       console.log('Questions from database:', questionsData);
 
-      // Create a mapping from question text/type to database ID
-      const questionIdMap: { [key: string]: number } = {};
-
-      // Map based on question content patterns
-      questionsData?.forEach(q => {
+      // Filter questions to exclude generic ones for quiz_answers
+      const quizQuestions = questionsData?.filter(q => {
         const text = q.question_text.toLowerCase();
-        if (text.includes('name')) questionIdMap['name'] = q.id;
-        else if (text.includes('contact') || text.includes('phone')) questionIdMap['contact'] = q.id;
-        else if (text.includes('email')) questionIdMap['email'] = q.id;
-        else if (text.includes('age')) questionIdMap['age'] = q.id;
-        else if (text.includes('gender')) questionIdMap['gender'] = q.id;
-        else if (text.includes('stress') || text.includes('anxious')) questionIdMap['mental_stress'] = q.id;
-        else if (text.includes('energy')) questionIdMap['energy_levels'] = q.id;
-        else if (text.includes('joint') || text.includes('pain')) questionIdMap['joint_pain'] = q.id;
-        else if (text.includes('skin')) questionIdMap['skin_condition'] = q.id;
-        else if (text.includes('sleep')) questionIdMap['sleep_quality'] = q.id;
-        else if (text.includes('digestive') || text.includes('bloating')) questionIdMap['digestive_issues'] = q.id;
-        else if (text.includes('active') || text.includes('exercise')) questionIdMap['physical_activity'] = q.id;
-        else if (text.includes('supplement')) questionIdMap['supplements'] = q.id;
-        else if (text.includes('health condition') || text.includes('allergies')) questionIdMap['health_conditions'] = q.id;
-        else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
-      });
+        return !(
+          text.includes('name') || 
+          text.includes('email') || 
+          text.includes('contact') || 
+          text.includes('phone') || 
+          text.includes('age') ||
+          text.includes('gender')
+        );
+      }) || [];
 
-      console.log('Question ID mapping:', questionIdMap);
+      console.log('Filtered quiz questions (non-generic):', quizQuestions);
 
       const answersToInsert = [];
 
-      // First, handle file upload if there's a selected file
+      // Handle file upload if there's a selected file
       let uploadedFileUrl = null;
       if (selectedFile) {
         try {
@@ -320,44 +252,47 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       }
 
-      for (const [questionId, answer] of validAnswers) {
-        const mappedQuestionId = questionIdMap[questionId];
-        if (!mappedQuestionId) {
-          console.warn(`No mapping found for question ID: ${questionId}, using first available question ID`);
+      // Map quiz answers to database questions
+      const quizAnswerEntries = Object.entries(quizAnswers);
+      console.log('Quiz answer entries to process:', quizAnswerEntries);
+
+      quizAnswerEntries.forEach(([answerKey, answerValue], index) => {
+        if (!answerValue || answerValue.trim() === '') return;
+
+        // Try to map to the corresponding quiz question by index
+        const questionIndex = index;
+        const correspondingQuestion = quizQuestions[questionIndex];
+
+        if (correspondingQuestion) {
+          // Check if this question should have the uploaded file attached
+          let fileUrl = null;
+          const questionText = correspondingQuestion.question_text.toLowerCase();
+          const shouldAttachFile = questionText.includes('blood test') ||
+                                 questionText.includes('upload') ||
+                                 questionText.includes('file') ||
+                                 answerValue.toLowerCase().includes('upload') ||
+                                 answerValue.toLowerCase().includes('yes') && questionText.includes('lab');
+
+          if (shouldAttachFile && uploadedFileUrl) {
+            fileUrl = uploadedFileUrl;
+            console.log(`Attaching file to question: ${correspondingQuestion.question_text}`);
+          }
+
           answersToInsert.push({
             response_id: responseData.id,
-            question_id: questionsData?.[0]?.id || 1,
-            answer_text: `${questionId}: ${String(answer).substring(0, 500)}`,
-            additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
-            file_url: null
+            question_id: correspondingQuestion.id,
+            answer_text: String(answerValue).substring(0, 500),
+            additional_info: answers[`${answerKey}_details`] ? String(answers[`${answerKey}_details`]).substring(0, 1000) : null,
+            file_url: fileUrl
           });
-          continue;
+
+          console.log(`Mapped answer "${answerKey}" to question "${correspondingQuestion.question_text}"`);
+        } else {
+          console.warn(`No corresponding question found for answer key: ${answerKey} at index ${questionIndex}`);
         }
+      });
 
-        // Check if this question should have the uploaded file attached
-        let fileUrl = null;
-        const questionText = questionsData?.find(q => q.id === mappedQuestionId)?.question_text?.toLowerCase() || '';
-        const shouldAttachFile = questionId === 'blood_test' ||
-                               questionText.includes('blood test') ||
-                               questionText.includes('upload') ||
-                               questionText.includes('file') ||
-                               String(answer).toLowerCase().includes('upload');
-
-        if (shouldAttachFile && uploadedFileUrl) {
-          fileUrl = uploadedFileUrl;
-          console.log(`Attaching file to question: ${questionId} (${questionText})`);
-        }
-
-        answersToInsert.push({
-          response_id: responseData.id,
-          question_id: mappedQuestionId,
-          answer_text: String(answer).substring(0, 500),
-          additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
-          file_url: fileUrl
-        });
-      }
-
-      console.log('Answers to insert:', answersToInsert);
+      console.log('Quiz answers to insert:', answersToInsert);
 
       if (answersToInsert.length > 0) {
         const { error: answersError } = await supabase
@@ -365,7 +300,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           .insert(answersToInsert);
 
         if (answersError) {
-          console.error('Error saving quiz answers:', answersError.message, answersError);
+          console.error('Error saving quiz answers:', answersError);
           throw new Error(`Failed to save quiz answers: ${answersError.message}`);
         } else {
           console.log('Quiz answers saved successfully');
@@ -374,13 +309,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error('Error in saveResponses:', {
-        error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        extractedUserInfo,
-        answersDebug: Object.keys(answers).length > 0 ? answers : 'No answers found'
-      });
+      console.error('Error in saveResponses:', error);
 
       let errorMessage = 'Unknown error occurred';
       if (error instanceof Error) {
@@ -391,7 +320,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         errorMessage = String(error.message);
       }
 
-      // Show user-friendly error message
       alert(`There was an error saving your quiz response: ${errorMessage}. Please check that all required fields are filled and try again.`);
     } finally {
       setIsSubmitting(false);
@@ -399,10 +327,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   };
 
   useEffect(() => {
-    // Add global error handler for unhandled promise rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection in QuizResults:', event.reason);
-      event.preventDefault(); // Prevent the default unhandled rejection behavior
+      event.preventDefault();
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
@@ -410,7 +337,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     if (!isSubmitted) {
       saveResponses().catch((error) => {
         console.error('Error in saveResponses caught by useEffect:', error);
-        // Set a state to show error to user instead of just logging
         setIsSubmitting(false);
       });
     }
@@ -418,7 +344,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, [isSubmitted, extractedUserInfo]); // Add dependencies
+  }, [isSubmitted, extractedUserInfo]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f4f6] to-white">
@@ -470,6 +396,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                     <span>Age: {extractedUserInfo?.age}</span>
                     <span>•</span>
                     <span>Contact: {extractedUserInfo?.contact}</span>
+                    {extractedUserInfo?.gender && (
+                      <>
+                        <span>•</span>
+                        <span>Gender: {extractedUserInfo.gender}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
