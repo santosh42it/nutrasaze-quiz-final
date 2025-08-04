@@ -267,38 +267,27 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       console.log('Questions from database:', questionsData);
 
-      // Create a mapping from question order/index to database ID
+      // Create a mapping from question text/type to database ID
       const questionIdMap: { [key: string]: number } = {};
-      
-      // Sort questions by order_index to maintain proper sequence
-      const sortedQuestions = questionsData?.sort((a, b) => a.order_index - b.order_index) || [];
-      
-      console.log('Sorted questions from database:', sortedQuestions.map(q => ({ id: q.id, text: q.question_text, order: q.order_index })));
 
-      // Map questions by their expected order/content
-      sortedQuestions.forEach((q, index) => {
+      // Map based on question content patterns
+      questionsData?.forEach(q => {
         const text = q.question_text.toLowerCase();
-        
-        // Map by question content and also by index (for fallback)
-        if (text.includes('name')) {
-          questionIdMap['name'] = q.id;
-          questionIdMap['1'] = q.id; // fallback mapping
-        } else if (text.includes('email')) {
-          questionIdMap['email'] = q.id;
-          questionIdMap['2'] = q.id;
-        } else if (text.includes('contact') || text.includes('phone')) {
-          questionIdMap['contact'] = q.id;
-          questionIdMap['3'] = q.id;
-        } else if (text.includes('age')) {
-          questionIdMap['age'] = q.id;
-          questionIdMap['4'] = q.id;
-        } else if (text.includes('gender')) {
-          questionIdMap['gender'] = q.id;
-          questionIdMap['5'] = q.id;
-        } else {
-          // For other questions, map by index as fallback
-          questionIdMap[`${index + 1}`] = q.id;
-        }
+        if (text.includes('name')) questionIdMap['name'] = q.id;
+        else if (text.includes('contact') || text.includes('phone')) questionIdMap['contact'] = q.id;
+        else if (text.includes('email')) questionIdMap['email'] = q.id;
+        else if (text.includes('age')) questionIdMap['age'] = q.id;
+        else if (text.includes('gender')) questionIdMap['gender'] = q.id;
+        else if (text.includes('stress') || text.includes('anxious')) questionIdMap['mental_stress'] = q.id;
+        else if (text.includes('energy')) questionIdMap['energy_levels'] = q.id;
+        else if (text.includes('joint') || text.includes('pain')) questionIdMap['joint_pain'] = q.id;
+        else if (text.includes('skin')) questionIdMap['skin_condition'] = q.id;
+        else if (text.includes('sleep')) questionIdMap['sleep_quality'] = q.id;
+        else if (text.includes('digestive') || text.includes('bloating')) questionIdMap['digestive_issues'] = q.id;
+        else if (text.includes('active') || text.includes('exercise')) questionIdMap['physical_activity'] = q.id;
+        else if (text.includes('supplement')) questionIdMap['supplements'] = q.id;
+        else if (text.includes('health condition') || text.includes('allergies')) questionIdMap['health_conditions'] = q.id;
+        else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
       });
 
       console.log('Question ID mapping:', questionIdMap);
@@ -331,60 +320,39 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       }
 
-      // Process answers in a more structured way
-      const answerKeys = Object.keys(answers).filter(key => !key.includes('_details'));
-      console.log('Processing answer keys:', answerKeys);
-
-      for (let i = 0; i < answerKeys.length; i++) {
-        const answerKey = answerKeys[i];
-        const answerValue = answers[answerKey];
-        
-        if (!answerValue || answerValue.trim() === '') continue;
-
-        console.log(`Processing answer ${i + 1}: key="${answerKey}", value="${answerValue}"`);
-
-        // Try to find the correct question ID
-        let questionId = null;
-        
-        // First try direct mapping
-        if (questionIdMap[answerKey]) {
-          questionId = questionIdMap[answerKey];
+      for (const [questionId, answer] of validAnswers) {
+        const mappedQuestionId = questionIdMap[questionId];
+        if (!mappedQuestionId) {
+          console.warn(`No mapping found for question ID: ${questionId}, using first available question ID`);
+          answersToInsert.push({
+            response_id: responseData.id,
+            question_id: questionsData?.[0]?.id || 1,
+            answer_text: `${questionId}: ${String(answer).substring(0, 500)}`,
+            additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
+            file_url: null
+          });
+          continue;
         }
-        // Then try by index (1-based)
-        else if (questionIdMap[`${i + 1}`]) {
-          questionId = questionIdMap[`${i + 1}`];
-        }
-        // Then try by sequence in sorted questions
-        else if (sortedQuestions[i]) {
-          questionId = sortedQuestions[i].id;
-        }
-        // Finally, fallback to first question
-        else {
-          questionId = sortedQuestions[0]?.id || 1;
-          console.warn(`No mapping found for answer key: ${answerKey} at index ${i}, using fallback question ID: ${questionId}`);
-        }
-
-        console.log(`Mapped answer "${answerKey}" to question ID: ${questionId}`);
 
         // Check if this question should have the uploaded file attached
         let fileUrl = null;
-        const questionText = sortedQuestions.find(q => q.id === questionId)?.question_text?.toLowerCase() || '';
-        const shouldAttachFile = answerKey === 'blood_test' ||
+        const questionText = questionsData?.find(q => q.id === mappedQuestionId)?.question_text?.toLowerCase() || '';
+        const shouldAttachFile = questionId === 'blood_test' ||
                                questionText.includes('blood test') ||
                                questionText.includes('upload') ||
                                questionText.includes('file') ||
-                               String(answerValue).toLowerCase().includes('upload');
+                               String(answer).toLowerCase().includes('upload');
 
         if (shouldAttachFile && uploadedFileUrl) {
           fileUrl = uploadedFileUrl;
-          console.log(`Attaching file to question: ${answerKey} (${questionText})`);
+          console.log(`Attaching file to question: ${questionId} (${questionText})`);
         }
 
         answersToInsert.push({
           response_id: responseData.id,
-          question_id: questionId,
-          answer_text: String(answerValue).substring(0, 500),
-          additional_info: answers[`${answerKey}_details`] ? String(answers[`${answerKey}_details`]).substring(0, 1000) : null,
+          question_id: mappedQuestionId,
+          answer_text: String(answer).substring(0, 500),
+          additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
           file_url: fileUrl
         });
       }

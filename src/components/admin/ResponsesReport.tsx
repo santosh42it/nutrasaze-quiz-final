@@ -820,13 +820,11 @@ export const ResponsesReport: React.FC = () => {
                 
                 {selectedResponse.answers && selectedResponse.answers.length > 0 ? (
                   <div className="grid gap-6">
-                    {selectedResponse.answers
-                      .sort((a, b) => a.question_id - b.question_id) // Sort by question ID to maintain order
-                      .map((answer, index) => (
+                    {selectedResponse.answers.map((answer, index) => (
                       <div key={answer.id} className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md border-l-4 border-[#913177]">
                         <div className="font-bold text-[#1d0917] mb-3 text-lg">
                           <span className="inline-flex items-center justify-center w-8 h-8 bg-[#913177] text-white rounded-full text-sm font-bold mr-3">
-                            {answer.question_id}
+                            {index + 1}
                           </span>
                           {answer.questions?.question_text || `Question ID: ${answer.question_id}`}
                         </div>
