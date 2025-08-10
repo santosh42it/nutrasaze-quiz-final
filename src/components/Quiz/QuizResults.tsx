@@ -176,7 +176,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       }
 
       const phoneRegex = /^[0-9]{10}$/;
-      const contactForValidation = extractedUserInfo.contact.replace(/^\+91/, '');
+      // Use the existing contactForValidation variable from above
       if (!phoneRegex.test(contactForValidation)) {
         throw new Error('Please enter a valid 10-digit phone number');
       }
