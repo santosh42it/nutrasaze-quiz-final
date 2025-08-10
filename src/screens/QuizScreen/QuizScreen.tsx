@@ -113,7 +113,7 @@ export const QuizScreen = (): JSX.Element => {
     const currentQuestionData = questions[currentQuestion];
     const newAnswers = { ...answers };
 
-    // Store the selected option
+    // Store the selected option using the question ID
     newAnswers[currentQuestionData.id] = option;
 
     // If the question has additional inputs and "yes" is selected, wait for those inputs

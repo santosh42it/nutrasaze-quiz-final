@@ -332,56 +332,84 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       }
 
       // Save quiz answers for all questions - ensure correct question ID mapping
-      for (const [questionIndex, answer] of Object.entries(answers)) {
-        // Get the actual question from the questions array using the index
-        const questionArrayIndex = parseInt(questionIndex);
-        const question = fetchedQuestions ? fetchedQuestions[questionArrayIndex] : null;
-
-
-        if (!question || !question.id) {
-          // If question not found by index, try to map by key
-          const mappedQuestionId = questionIdMap[questionIndex];
-          if (mappedQuestionId) {
-            console.log(`Mapping answer for key "${questionIndex}" to question ID ${mappedQuestionId}`);
-            answersToInsert.push({
-              response_id: responseData.id,
-              question_id: mappedQuestionId,
-              answer_text: String(answer).substring(0, 500),
-              additional_info: answers[`${questionIndex}_details`] ? String(answers[`${questionIndex}_details`]).substring(0, 1000) : null,
-              file_url: null // File URL logic is handled separately for specific questions
-            });
-          } else {
-            console.warn(`Question not found for index ${questionIndex} and no key mapping found. Skipping answer.`);
-          }
+      for (const [answerKey, answer] of Object.entries(answers)) {
+        // Skip detail keys and empty values
+        if (answerKey.includes('_details') || !answer || String(answer).trim() === '') {
           continue;
         }
 
-        const actualQuestionId = question.id;
-        let answerText = '';
-        let additionalInfo = null;
-        let fileUrl = null;
+        // First try to map by answer key to question ID
+        let actualQuestionId = questionIdMap[answerKey];
+        let question = null;
 
-        if (typeof answer === 'string') {
-          answerText = answer;
-        } else if (answer && typeof answer === 'object') {
-          if ('selectedOption' in answer) {
-            answerText = answer.selectedOption || '';
-            additionalInfo = answer.textInput || null;
-          } else if ('value' in answer) {
-            answerText = answer.value || '';
-          } else if ('text' in answer) {
-            answerText = answer.text || '';
-            additionalInfo = answer.additionalInfo || null;
-            fileUrl = answer.fileUrl || null;
+        // If not found by key mapping, try to find by question text patterns
+        if (!actualQuestionId && fetchedQuestions) {
+          // Create more specific mappings based on answer key patterns
+          if (answerKey === 'name' || answerKey === '1') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
+          } else if (answerKey === 'email' || answerKey === '2') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
+          } else if (answerKey === 'contact' || answerKey === '3') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
+          } else if (answerKey === 'age' || answerKey === '4') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
+          } else if (answerKey === 'gender' || answerKey === '6') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('gender'));
+          } else if (answerKey === 'mental_stress' || answerKey === '7') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious'));
+          } else if (answerKey === 'energy_levels' || answerKey === '8') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('energy'));
+          } else if (answerKey === 'joint_pain' || answerKey === '9') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain'));
+          } else if (answerKey === 'skin_condition' || answerKey === '10') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('skin'));
+          } else if (answerKey === 'sleep_quality' || answerKey === '11') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('sleep'));
+          } else if (answerKey === 'digestive_issues' || answerKey === '12') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating'));
+          } else if (answerKey === 'physical_activity' || answerKey === '13') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise'));
+          } else if (answerKey === 'supplements' || answerKey === '14') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('supplement'));
+          } else if (answerKey === 'health_conditions' || answerKey === '15') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies'));
+          } else if (answerKey === 'blood_test' || answerKey === '16') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('blood test'));
+          } else {
+            // Try to parse as number and get from array index
+            const questionIndex = parseInt(answerKey);
+            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < fetchedQuestions.length) {
+              question = fetchedQuestions[questionIndex];
+            }
+          }
+
+          if (question) {
+            actualQuestionId = question.id;
           }
         }
 
-        if (answerText) {
-          console.log(`Saving answer for question ID ${actualQuestionId} (index ${questionIndex}, text: "${question.question_text}"): ${answerText}`);
+        if (!actualQuestionId) {
+          console.warn(`Could not map answer key "${answerKey}" to any question. Skipping.`);
+          continue;
+        }
+        // Extract answer text (always treat as string for simplicity)
+        const answerText = String(answer).trim();
+        let additionalInfo = null;
+        let fileUrl = null;
 
-          // Check if this question should have the uploaded file attached
+        // Get additional info if it exists
+        const detailsKey = `${answerKey}_details`;
+        if (answers[detailsKey]) {
+          additionalInfo = String(answers[detailsKey]).substring(0, 1000);
+        }
+
+        console.log(`Saving answer for question ID ${actualQuestionId} (key: "${answerKey}"): ${answerText}`);
+
+        // Check if this question should have the uploaded file attached
+        if (question) {
           const questionTextLower = question.question_text.toLowerCase();
-          const shouldAttachFile = questionIndex === 'blood_test' || // Explicit mapping for blood_test answer key
+          const shouldAttachFile = answerKey === 'blood_test' || 
+                                 answerKey === '16' ||
                                  questionTextLower.includes('blood test') ||
                                  questionTextLower.includes('upload') ||
                                  questionTextLower.includes('file');
@@ -390,15 +418,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             fileUrl = uploadedFileUrl;
             console.log(`Attaching file to question: ${question.question_text}`);
           }
-
-          answersToInsert.push({
-            response_id: responseData.id,
-            question_id: actualQuestionId, // Use the actual question ID from database
-            answer_text: String(answerText).substring(0, 500),
-            additional_info: additionalInfo,
-            file_url: fileUrl
-          });
         }
+
+        answersToInsert.push({
+          response_id: responseData.id,
+          question_id: actualQuestionId,
+          answer_text: answerText.substring(0, 500),
+          additional_info: additionalInfo,
+          file_url: fileUrl
+        });
       }
 
       console.log('Answers to insert:', answersToInsert);
@@ -451,8 +479,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
-    // Only save once when component mounts and not already submitted
-    if (!isSubmitted) {
+    // Only save once when component mounts and not already submitted or submitting
+    if (!isSubmitted && !isSubmitting) {
       saveResponses().catch((error) => {
         console.error('Error in saveResponses caught by useEffect:', error);
         setIsSubmitting(false);
@@ -462,7 +490,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, []); // Remove dependencies to only run once on mount
+  }, [isSubmitted, isSubmitting]); // Add dependencies to prevent duplicate runs
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f4f6] to-white">
