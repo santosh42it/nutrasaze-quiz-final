@@ -115,6 +115,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   }, [userInfo, answers]);
 
   const saveResponses = async () => {
+    // Prevent multiple submissions
+    if (isSubmitting || isSubmitted) {
+      console.log('Submission already in progress or completed, skipping...');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       console.log('=== QUIZ SAVE DEBUG ===');
@@ -410,10 +416,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
+    // Only save once when component mounts and not already submitted
     if (!isSubmitted) {
       saveResponses().catch((error) => {
         console.error('Error in saveResponses caught by useEffect:', error);
-        // Set a state to show error to user instead of just logging
         setIsSubmitting(false);
       });
     }
@@ -421,7 +427,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, [isSubmitted, extractedUserInfo]); // Add dependencies
+  }, []); // Remove dependencies to only run once on mount
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f4f6] to-white">
