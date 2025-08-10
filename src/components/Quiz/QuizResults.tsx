@@ -37,11 +37,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     // Always try to extract from answers as backup/primary source
     console.log('Extracting from answers...');
-
+    
     // Direct key matching strategy - map by question IDs and keys
     // First, let's identify which questions contain what based on the database structure
     const questionMappings: Record<string, string> = {};
-
+    
     // Map question IDs to field types based on actual database questions
     if (questions.length > 0) {
       questions.forEach(q => {
@@ -61,7 +61,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Use the question mapping to determine field type
       const fieldType = questionMappings[key];
-
+      
       if (fieldType === 'name' && (!extracted.name || extracted.name === '')) {
         console.log('Found name by question mapping, key:', key, '->', cleanValue);
         extracted.name = cleanValue;
@@ -360,43 +360,43 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         let question = null;
 
         // If not found by key mapping, try to find by question text patterns
-        if (!actualQuestionId && questions) { // Changed from fetchedQuestions to questions
+        if (!actualQuestionId && fetchedQuestions) {
           // Create more specific mappings based on answer key patterns
           if (answerKey === 'name' || answerKey === '1') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('name'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
           } else if (answerKey === 'email' || answerKey === '2') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('email'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
           } else if (answerKey === 'contact' || answerKey === '3') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
           } else if (answerKey === 'age' || answerKey === '4') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('age'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
           } else if (answerKey === 'gender' || answerKey === '6') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('gender'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('gender'));
           } else if (answerKey === 'mental_stress' || answerKey === '7') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious'));
           } else if (answerKey === 'energy_levels' || answerKey === '8') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('energy'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('energy'));
           } else if (answerKey === 'joint_pain' || answerKey === '9') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain'));
           } else if (answerKey === 'skin_condition' || answerKey === '10') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('skin'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('skin'));
           } else if (answerKey === 'sleep_quality' || answerKey === '11') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('sleep'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('sleep'));
           } else if (answerKey === 'digestive_issues' || answerKey === '12') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating'));
           } else if (answerKey === 'physical_activity' || answerKey === '13') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise'));
           } else if (answerKey === 'supplements' || answerKey === '14') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('supplement'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('supplement'));
           } else if (answerKey === 'health_conditions' || answerKey === '15') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies'));
           } else if (answerKey === 'blood_test' || answerKey === '16') {
-            question = questions.find(q => q.question_text.toLowerCase().includes('blood test'));
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('blood test'));
           } else {
             // Try to parse as number and get from array index
             const questionIndex = parseInt(answerKey);
-            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < questions.length) {
-              question = questions[questionIndex];
+            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < fetchedQuestions.length) {
+              question = fetchedQuestions[questionIndex];
             }
           }
 
@@ -495,7 +495,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     if (!isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
       hasInitiatedSave.current = true;
       console.log('Initiating quiz save...');
-
+      
       // Use async function with proper error handling
       const initiateSave = async () => {
         try {
