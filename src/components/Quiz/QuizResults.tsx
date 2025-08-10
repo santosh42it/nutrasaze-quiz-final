@@ -39,23 +39,56 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     console.log('Extracting from answers...');
     
     // Direct key matching strategy - map by question IDs and keys
+    // First, let's identify which questions contain what based on the database structure
+    const questionMappings: Record<string, string> = {};
+    
+    // Map question IDs to field types based on actual database questions
+    if (questions.length > 0) {
+      questions.forEach(q => {
+        const text = q.question_text.toLowerCase();
+        if (text.includes('name')) questionMappings[q.id.toString()] = 'name';
+        else if (text.includes('email')) questionMappings[q.id.toString()] = 'email';
+        else if (text.includes('contact') || text.includes('phone')) questionMappings[q.id.toString()] = 'contact';
+        else if (text.includes('age')) questionMappings[q.id.toString()] = 'age';
+      });
+    }
+
+    console.log('Question mappings:', questionMappings);
+
     Object.entries(answers).forEach(([key, value]) => {
       if (!value || typeof value !== 'string' || !value.trim()) return;
       const cleanValue = value.trim();
 
-      // Map by question IDs (from database structure)
-      if ((key === '1' || key === 'name') && (!extracted.name || extracted.name === '')) {
-        console.log('Found name by key:', key, '->', cleanValue);
+      // Use the question mapping to determine field type
+      const fieldType = questionMappings[key];
+      
+      if (fieldType === 'name' && (!extracted.name || extracted.name === '')) {
+        console.log('Found name by question mapping, key:', key, '->', cleanValue);
+        extracted.name = cleanValue;
+      } else if (fieldType === 'email' && (!extracted.email || extracted.email === '')) {
+        console.log('Found email by question mapping, key:', key, '->', cleanValue);
+        extracted.email = cleanValue;
+      } else if (fieldType === 'contact' && (!extracted.contact || extracted.contact === '')) {
+        console.log('Found contact by question mapping, key:', key, '->', cleanValue);
+        // Remove +91 prefix if present for validation
+        extracted.contact = cleanValue.replace(/^\+91/, '');
+      } else if (fieldType === 'age' && (extracted.age === '0' || !extracted.age)) {
+        console.log('Found age by question mapping, key:', key, '->', cleanValue);
+        extracted.age = cleanValue;
+      }
+      // Fallback to legacy key matching for compatibility
+      else if ((key === '1' || key === 'name') && (!extracted.name || extracted.name === '')) {
+        console.log('Found name by legacy key:', key, '->', cleanValue);
         extracted.name = cleanValue;
       } else if ((key === '2' || key === 'email') && (!extracted.email || extracted.email === '')) {
-        console.log('Found email by key:', key, '->', cleanValue);
+        console.log('Found email by legacy key:', key, '->', cleanValue);
         extracted.email = cleanValue;
       } else if ((key === '3' || key === 'contact') && (!extracted.contact || extracted.contact === '')) {
-        console.log('Found contact by key:', key, '->', cleanValue);
+        console.log('Found contact by legacy key:', key, '->', cleanValue);
         // Remove +91 prefix if present for validation
         extracted.contact = cleanValue.replace(/^\+91/, '');
       } else if ((key === '4' || key === 'age') && (extracted.age === '0' || !extracted.age)) {
-        console.log('Found age by key:', key, '->', cleanValue);
+        console.log('Found age by legacy key:', key, '->', cleanValue);
         extracted.age = cleanValue;
       }
     });
