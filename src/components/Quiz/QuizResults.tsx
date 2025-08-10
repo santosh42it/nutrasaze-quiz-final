@@ -507,7 +507,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       };
 
-      initiateSave();
+      // Catch any unhandled promise rejections
+      initiateSave().catch((error) => {
+        console.error('Unhandled error in initiateSave:', error);
+        setIsSubmitting(false);
+        hasInitiatedSave.current = false;
+      });
     }
   }, []); // Remove dependencies to ensure it only runs once on mount
 
