@@ -252,7 +252,7 @@ export const QuizScreen = (): JSX.Element => {
               userInfo={{
                 name: answers['1'] || answers.name || '',
                 email: answers['2'] || answers.email || '',
-                contact: answers['3'] || answers.contact || '',
+                contact: (answers['3'] || answers.contact || '').replace(/^\+91/, ''),
                 age: answers['4'] || answers.age || '0'
               }}
               selectedFile={selectedFile}

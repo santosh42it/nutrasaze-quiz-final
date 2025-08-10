@@ -35,59 +35,63 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       age: userInfo.age && userInfo.age !== '0' && userInfo.age.trim() ? userInfo.age.trim() : '0'
     };
 
-    // Only extract from answers if userInfo is empty or incomplete
+    // Always try to extract from answers as backup/primary source
+    console.log('Extracting from answers...');
+    
+    // Direct key matching strategy - map by question IDs and keys
+    Object.entries(answers).forEach(([key, value]) => {
+      if (!value || typeof value !== 'string' || !value.trim()) return;
+      const cleanValue = value.trim();
+
+      // Map by question IDs (from database structure)
+      if ((key === '1' || key === 'name') && (!extracted.name || extracted.name === '')) {
+        console.log('Found name by key:', key, '->', cleanValue);
+        extracted.name = cleanValue;
+      } else if ((key === '2' || key === 'email') && (!extracted.email || extracted.email === '')) {
+        console.log('Found email by key:', key, '->', cleanValue);
+        extracted.email = cleanValue;
+      } else if ((key === '3' || key === 'contact') && (!extracted.contact || extracted.contact === '')) {
+        console.log('Found contact by key:', key, '->', cleanValue);
+        // Remove +91 prefix if present for validation
+        extracted.contact = cleanValue.replace(/^\+91/, '');
+      } else if ((key === '4' || key === 'age') && (extracted.age === '0' || !extracted.age)) {
+        console.log('Found age by key:', key, '->', cleanValue);
+        extracted.age = cleanValue;
+      }
+    });
+
+    // Content-based detection as final fallback
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
-      console.log('UserInfo incomplete, extracting from answers...');
-      
-      // Direct key matching strategy - be more specific about question IDs
+      console.log('Running content-based detection...');
       Object.entries(answers).forEach(([key, value]) => {
         if (!value || typeof value !== 'string' || !value.trim()) return;
         const cleanValue = value.trim();
 
-        // Use specific question patterns from the database
-        if ((key === 'name' || key === '1') && !extracted.name) {
-          extracted.name = cleanValue;
-        } else if ((key === 'email' || key === '2') && !extracted.email) {
+        // Email detection
+        if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
+          console.log('Detected email by pattern:', cleanValue);
           extracted.email = cleanValue;
-        } else if ((key === 'contact' || key === '3') && !extracted.contact) {
-          extracted.contact = cleanValue;
-        } else if ((key === 'age' || key === '4') && extracted.age === '0') {
-          extracted.age = cleanValue;
+        }
+        // Contact detection (Indian mobile numbers with or without +91)
+        else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
+          console.log('Detected contact by pattern:', cleanValue);
+          extracted.contact = cleanValue.replace(/^\+91/, ''); // Remove +91 for validation
+        }
+        // Age detection
+        else if ((!extracted.age || extracted.age === '0') && /^\d{1,3}$/.test(cleanValue)) {
+          const ageNum = parseInt(cleanValue);
+          if (ageNum > 0 && ageNum <= 120) {
+            console.log('Detected age by pattern:', cleanValue);
+            extracted.age = cleanValue;
+          }
+        }
+        // Name detection (be more restrictive)
+        else if (!extracted.name && cleanValue.length >= 2 && /^[a-zA-Z][a-zA-Z\s\.]*$/.test(cleanValue) && 
+                 !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue)) {
+          console.log('Detected name by pattern:', cleanValue);
+          extracted.name = cleanValue;
         }
       });
-
-      // Content-based detection as fallback - but be more careful
-      if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
-        Object.entries(answers).forEach(([key, value]) => {
-          if (!value || typeof value !== 'string' || !value.trim()) return;
-          const cleanValue = value.trim();
-
-          // Email detection
-          if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
-            console.log('Detected email by pattern:', cleanValue);
-            extracted.email = cleanValue;
-          }
-          // Contact detection (Indian mobile numbers)
-          else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
-            console.log('Detected contact by pattern:', cleanValue);
-            extracted.contact = cleanValue;
-          }
-          // Age detection
-          else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
-            const ageNum = parseInt(cleanValue);
-            if (ageNum > 0 && ageNum <= 120) {
-              console.log('Detected age by pattern:', cleanValue);
-              extracted.age = cleanValue;
-            }
-          }
-          // Name detection (be more restrictive)
-          else if (!extracted.name && cleanValue.length >= 2 && /^[a-zA-Z][a-zA-Z\s\.]*$/.test(cleanValue) && 
-                   !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue)) {
-            console.log('Detected name by pattern:', cleanValue);
-            extracted.name = cleanValue;
-          }
-        });
-      }
     }
 
     console.log('Final extracted info:', extracted);
@@ -137,9 +141,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         missingFields.push('email');
         console.error('Email validation failed:', extractedUserInfo?.email);
       }
-      if (!extractedUserInfo?.contact?.trim() || extractedUserInfo.contact.length !== 10) {
+      const contactForValidation = extractedUserInfo?.contact?.replace(/^\+91/, '') || '';
+      if (!contactForValidation.trim() || contactForValidation.length !== 10) {
         missingFields.push('contact');
-        console.error('Contact validation failed:', extractedUserInfo?.contact);
+        console.error('Contact validation failed:', extractedUserInfo?.contact, 'cleaned:', contactForValidation);
       }
       if (!extractedUserInfo?.age?.trim() || extractedUserInfo.age === '0' || parseInt(extractedUserInfo.age) < 1) {
         missingFields.push('age');
@@ -171,7 +176,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       }
 
       const phoneRegex = /^[0-9]{10}$/;
-      if (!phoneRegex.test(extractedUserInfo.contact)) {
+      const contactForValidation = extractedUserInfo.contact.replace(/^\+91/, '');
+      if (!phoneRegex.test(contactForValidation)) {
         throw new Error('Please enter a valid 10-digit phone number');
       }
 
