@@ -18,6 +18,8 @@ interface QuizResultsProps {
 export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, selectedFile }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
+
 
   // Extract user info from answers if userInfo is empty
   const extractedUserInfo = useMemo(() => {
@@ -255,10 +257,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         return;
       }
 
-      // Insert individual answers
-      // Get actual question IDs from database
-      console.log('Fetching question IDs from database...');
-      const { data: questionsData, error: questionsError } = await supabase
+      // Fetch questions from the database to map answers correctly
+      console.log('Fetching questions from database...');
+      const { data: fetchedQuestions, error: questionsError } = await supabase
         .from('questions')
         .select('id, question_text')
         .eq('status', 'active')
@@ -270,14 +271,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         setIsSubmitted(true);
         return;
       }
+      setQuestions(fetchedQuestions || []); // Store questions for answer mapping
 
-      console.log('Questions from database:', questionsData);
+      console.log('Questions from database:', fetchedQuestions);
 
       // Create a mapping from question text/type to database ID
       const questionIdMap: { [key: string]: number } = {};
 
       // Map based on question content patterns
-      questionsData?.forEach(q => {
+      fetchedQuestions?.forEach(q => {
         const text = q.question_text.toLowerCase();
         if (text.includes('name')) questionIdMap['name'] = q.id;
         else if (text.includes('contact') || text.includes('phone')) questionIdMap['contact'] = q.id;
@@ -296,7 +298,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
       });
 
-      console.log('All questions from DB:', questionsData?.map(q => ({ id: q.id, text: q.question_text })));
+      console.log('All questions from DB:', fetchedQuestions?.map(q => ({ id: q.id, text: q.question_text })));
       console.log('Question ID mapping created:', questionIdMap);
       console.log('User Info extracted:', extractedUserInfo);
       console.log('All answers to process:', Object.entries(answers));
@@ -329,41 +331,74 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       }
 
-      for (const [questionId, answer] of validAnswers) {
-        const mappedQuestionId = questionIdMap[questionId];
-        if (!mappedQuestionId) {
-          console.warn(`No mapping found for question ID: ${questionId}, using first available question ID`);
-          answersToInsert.push({
-            response_id: responseData.id,
-            question_id: questionsData?.[0]?.id || 1,
-            answer_text: `${questionId}: ${String(answer).substring(0, 500)}`,
-            additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
-            file_url: null
-          });
+      // Save quiz answers for all questions - ensure correct question ID mapping
+      for (const [questionIndex, answer] of Object.entries(answers)) {
+        // Get the actual question from the questions array using the index
+        const questionArrayIndex = parseInt(questionIndex);
+        const question = fetchedQuestions ? fetchedQuestions[questionArrayIndex] : null;
+
+
+        if (!question || !question.id) {
+          // If question not found by index, try to map by key
+          const mappedQuestionId = questionIdMap[questionIndex];
+          if (mappedQuestionId) {
+            console.log(`Mapping answer for key "${questionIndex}" to question ID ${mappedQuestionId}`);
+            answersToInsert.push({
+              response_id: responseData.id,
+              question_id: mappedQuestionId,
+              answer_text: String(answer).substring(0, 500),
+              additional_info: answers[`${questionIndex}_details`] ? String(answers[`${questionIndex}_details`]).substring(0, 1000) : null,
+              file_url: null // File URL logic is handled separately for specific questions
+            });
+          } else {
+            console.warn(`Question not found for index ${questionIndex} and no key mapping found. Skipping answer.`);
+          }
           continue;
         }
 
-        // Check if this question should have the uploaded file attached
+        const actualQuestionId = question.id;
+        let answerText = '';
+        let additionalInfo = null;
         let fileUrl = null;
-        const questionText = questionsData?.find(q => q.id === mappedQuestionId)?.question_text?.toLowerCase() || '';
-        const shouldAttachFile = questionId === 'blood_test' ||
-                               questionText.includes('blood test') ||
-                               questionText.includes('upload') ||
-                               questionText.includes('file') ||
-                               String(answer).toLowerCase().includes('upload');
 
-        if (shouldAttachFile && uploadedFileUrl) {
-          fileUrl = uploadedFileUrl;
-          console.log(`Attaching file to question: ${questionId} (${questionText})`);
+        if (typeof answer === 'string') {
+          answerText = answer;
+        } else if (answer && typeof answer === 'object') {
+          if ('selectedOption' in answer) {
+            answerText = answer.selectedOption || '';
+            additionalInfo = answer.textInput || null;
+          } else if ('value' in answer) {
+            answerText = answer.value || '';
+          } else if ('text' in answer) {
+            answerText = answer.text || '';
+            additionalInfo = answer.additionalInfo || null;
+            fileUrl = answer.fileUrl || null;
+          }
         }
 
-        answersToInsert.push({
-          response_id: responseData.id,
-          question_id: mappedQuestionId,
-          answer_text: String(answer).substring(0, 500),
-          additional_info: answers[`${questionId}_details`] ? String(answers[`${questionId}_details`]).substring(0, 1000) : null,
-          file_url: fileUrl
-        });
+        if (answerText) {
+          console.log(`Saving answer for question ID ${actualQuestionId} (index ${questionIndex}, text: "${question.question_text}"): ${answerText}`);
+
+          // Check if this question should have the uploaded file attached
+          const questionTextLower = question.question_text.toLowerCase();
+          const shouldAttachFile = questionIndex === 'blood_test' || // Explicit mapping for blood_test answer key
+                                 questionTextLower.includes('blood test') ||
+                                 questionTextLower.includes('upload') ||
+                                 questionTextLower.includes('file');
+
+          if (shouldAttachFile && uploadedFileUrl) {
+            fileUrl = uploadedFileUrl;
+            console.log(`Attaching file to question: ${question.question_text}`);
+          }
+
+          answersToInsert.push({
+            response_id: responseData.id,
+            question_id: actualQuestionId, // Use the actual question ID from database
+            answer_text: String(answerText).substring(0, 500),
+            additional_info: additionalInfo,
+            file_url: fileUrl
+          });
+        }
       }
 
       console.log('Answers to insert:', answersToInsert);
