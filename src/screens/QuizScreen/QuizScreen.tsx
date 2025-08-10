@@ -84,7 +84,7 @@ export const QuizScreen = (): JSX.Element => {
       return;
     }
 
-    const finalValue = currentQuestionData.id === "contact" ? 
+    const finalValue = currentQuestionData.id === "3" ? 
       `+91${inputValue}` : inputValue;
 
     const newAnswers = {
@@ -96,6 +96,8 @@ export const QuizScreen = (): JSX.Element => {
         [`${currentQuestionData.id}_details`]: additionalInfo
       })
     };
+    
+    console.log(`Setting answer for question ${currentQuestionData.id}: ${finalValue}`);
     setAnswers(newAnswers);
 
     if (currentQuestion === questions.length - 1) {

@@ -275,28 +275,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       console.log('Questions from database:', fetchedQuestions);
 
-      // Create a mapping from question text/type to database ID
-      const questionIdMap: { [key: string]: number } = {};
-
-      // Map based on question content patterns
-      fetchedQuestions?.forEach(q => {
-        const text = q.question_text.toLowerCase();
-        if (text.includes('name')) questionIdMap['name'] = q.id;
-        else if (text.includes('contact') || text.includes('phone')) questionIdMap['contact'] = q.id;
-        else if (text.includes('email')) questionIdMap['email'] = q.id;
-        else if (text.includes('age')) questionIdMap['age'] = q.id;
-        else if (text.includes('gender')) questionIdMap['gender'] = q.id;
-        else if (text.includes('stress') || text.includes('anxious')) questionIdMap['mental_stress'] = q.id;
-        else if (text.includes('energy')) questionIdMap['energy_levels'] = q.id;
-        else if (text.includes('joint') || text.includes('pain')) questionIdMap['joint_pain'] = q.id;
-        else if (text.includes('skin')) questionIdMap['skin_condition'] = q.id;
-        else if (text.includes('sleep')) questionIdMap['sleep_quality'] = q.id;
-        else if (text.includes('digestive') || text.includes('bloating')) questionIdMap['digestive_issues'] = q.id;
-        else if (text.includes('active') || text.includes('exercise')) questionIdMap['physical_activity'] = q.id;
-        else if (text.includes('supplement')) questionIdMap['supplements'] = q.id;
-        else if (text.includes('health condition') || text.includes('allergies')) questionIdMap['health_conditions'] = q.id;
-        else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
+      // Create ordered mapping based on the question order from database
+      const questionOrderMap: { [key: number]: number } = {};
+      
+      // Sort questions by order_index to ensure correct mapping
+      const sortedQuestions = [...(fetchedQuestions || [])].sort((a, b) => a.order_index - b.order_index);
+      
+      // Map order indices to question IDs
+      sortedQuestions.forEach((q, index) => {
+        questionOrderMap[index] = q.id;
       });
+
+      console.log('Question order mapping:', questionOrderMap);
+      console.log('Sorted questions:', sortedQuestions.map(q => ({ id: q.id, order: q.order_index, text: q.question_text })));
 
       console.log('All questions from DB:', fetchedQuestions?.map(q => ({ id: q.id, text: q.question_text })));
       console.log('Question ID mapping created:', questionIdMap);
@@ -331,65 +322,53 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       }
 
-      // Save quiz answers for all questions - ensure correct question ID mapping
-      for (const [answerKey, answer] of Object.entries(answers)) {
-        // Skip detail keys and empty values
-        if (answerKey.includes('_details') || !answer || String(answer).trim() === '') {
-          continue;
-        }
+      // Process answers using correct question mapping
+      const answerEntries = Object.entries(answers).filter(([key, value]) => 
+        !key.includes('_details') && value && String(value).trim() !== ''
+      );
 
-        // First try to map by answer key to question ID
-        let actualQuestionId = questionIdMap[answerKey];
+      console.log('Processing answer entries:', answerEntries);
+
+      for (const [answerKey, answer] of answerEntries) {
+        let actualQuestionId = null;
         let question = null;
 
-        // If not found by key mapping, try to find by question text patterns
-        if (!actualQuestionId && fetchedQuestions) {
-          // Create more specific mappings based on answer key patterns
-          if (answerKey === 'name' || answerKey === '1') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
-          } else if (answerKey === 'email' || answerKey === '2') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
-          } else if (answerKey === 'contact' || answerKey === '3') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
-          } else if (answerKey === 'age' || answerKey === '4') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
-          } else if (answerKey === 'gender' || answerKey === '6') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('gender'));
-          } else if (answerKey === 'mental_stress' || answerKey === '7') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious'));
-          } else if (answerKey === 'energy_levels' || answerKey === '8') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('energy'));
-          } else if (answerKey === 'joint_pain' || answerKey === '9') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain'));
-          } else if (answerKey === 'skin_condition' || answerKey === '10') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('skin'));
-          } else if (answerKey === 'sleep_quality' || answerKey === '11') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('sleep'));
-          } else if (answerKey === 'digestive_issues' || answerKey === '12') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating'));
-          } else if (answerKey === 'physical_activity' || answerKey === '13') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise'));
-          } else if (answerKey === 'supplements' || answerKey === '14') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('supplement'));
-          } else if (answerKey === 'health_conditions' || answerKey === '15') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies'));
-          } else if (answerKey === 'blood_test' || answerKey === '16') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('blood test'));
-          } else {
-            // Try to parse as number and get from array index
-            const questionIndex = parseInt(answerKey);
-            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < fetchedQuestions.length) {
-              question = fetchedQuestions[questionIndex];
-            }
+        // Strategy 1: Map by question order if answerKey is numeric
+        const questionIndex = parseInt(answerKey);
+        if (!isNaN(questionIndex) && questionOrderMap[questionIndex]) {
+          actualQuestionId = questionOrderMap[questionIndex];
+          question = sortedQuestions[questionIndex];
+          console.log(`Mapped by order: ${answerKey} -> question ID ${actualQuestionId} (${question?.question_text})`);
+        }
+        
+        // Strategy 2: Map by question ID directly
+        else if (!isNaN(questionIndex) && sortedQuestions.find(q => q.id === questionIndex)) {
+          actualQuestionId = questionIndex;
+          question = sortedQuestions.find(q => q.id === questionIndex);
+          console.log(`Mapped by ID: ${answerKey} -> question ID ${actualQuestionId} (${question?.question_text})`);
+        }
+        
+        // Strategy 3: Map by content type for known fields
+        else {
+          if (answerKey === 'name') {
+            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
+          } else if (answerKey === 'email') {
+            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
+          } else if (answerKey === 'contact') {
+            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
+          } else if (answerKey === 'age') {
+            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
           }
-
+          
           if (question) {
             actualQuestionId = question.id;
+            console.log(`Mapped by content: ${answerKey} -> question ID ${actualQuestionId} (${question.question_text})`);
           }
         }
 
-        if (!actualQuestionId) {
-          console.warn(`Could not map answer key "${answerKey}" to any question. Skipping.`);
+        if (!actualQuestionId || !question) {
+          console.warn(`Could not map answer key "${answerKey}" to any question. Available questions:`, 
+            sortedQuestions.map(q => ({ id: q.id, text: q.question_text })));
           continue;
         }
         // Extract answer text (always treat as string for simplicity)
@@ -479,8 +458,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
-    // Only save once when component mounts and not already submitted or submitting
-    if (!isSubmitted && !isSubmitting) {
+    // Only save once when component mounts - use a ref to prevent multiple calls
+    let hasAttemptedSave = false;
+    
+    if (!isSubmitted && !isSubmitting && !hasAttemptedSave) {
+      hasAttemptedSave = true;
       saveResponses().catch((error) => {
         console.error('Error in saveResponses caught by useEffect:', error);
         setIsSubmitting(false);
@@ -490,7 +472,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     return () => {
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, [isSubmitted, isSubmitting]); // Add dependencies to prevent duplicate runs
+  }, []); // Remove dependencies to ensure it only runs once on mount
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f4f6] to-white">
