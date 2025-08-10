@@ -290,7 +290,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
       });
 
-      console.log('Question ID mapping:', questionIdMap);
+      console.log('All questions from DB:', questionsData?.map(q => ({ id: q.id, text: q.question_text })));
+      console.log('Question ID mapping created:', questionIdMap);
+      console.log('User Info extracted:', extractedUserInfo);
+      console.log('All answers to process:', Object.entries(answers));
 
       const answersToInsert = [];
 
