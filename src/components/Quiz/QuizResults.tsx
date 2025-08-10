@@ -21,95 +21,73 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
 
 
-  // Extract user info from answers if userInfo is empty
+  // Extract user info from answers - improved logic to avoid mismatched data
   const extractedUserInfo = useMemo(() => {
     console.log('=== USER INFO EXTRACTION DEBUG ===');
     console.log('Raw answers:', answers);
     console.log('Raw userInfo:', userInfo);
-    console.log('Answer keys:', Object.keys(answers));
-    console.log('Answer values:', Object.values(answers));
 
-    // Initialize extracted info
+    // Initialize extracted info - prioritize userInfo from QuizScreen
     const extracted = {
-      name: '',
-      email: '',
-      contact: '',
-      age: '0'
+      name: userInfo.name && userInfo.name.trim() ? userInfo.name.trim() : '',
+      email: userInfo.email && userInfo.email.trim() ? userInfo.email.trim() : '',
+      contact: userInfo.contact && userInfo.contact.trim() ? userInfo.contact.trim() : '',
+      age: userInfo.age && userInfo.age !== '0' && userInfo.age.trim() ? userInfo.age.trim() : '0'
     };
 
-    // First try to get from userInfo if available
-    if (userInfo.name && userInfo.name.trim()) extracted.name = userInfo.name.trim();
-    if (userInfo.email && userInfo.email.trim()) extracted.email = userInfo.email.trim();
-    if (userInfo.contact && userInfo.contact.trim()) extracted.contact = userInfo.contact.trim();
-    if (userInfo.age && userInfo.age !== '0' && userInfo.age.trim()) extracted.age = userInfo.age.trim();
-
-    // Then try to extract from answers using multiple strategies
-    Object.entries(answers).forEach(([key, value]) => {
-      if (!value || typeof value !== 'string' || !value.trim()) return;
-
-      const cleanValue = value.trim();
-      console.log(`Processing answer: ${key} = ${cleanValue}`);
-
-      // Strategy 1: Direct key matching (including database IDs)
-      if (key === 'name' || key === '1' || key === 'name') extracted.name = cleanValue;
-      else if (key === 'email' || key === '2' || key === 'email') extracted.email = cleanValue;
-      else if (key === 'contact' || key === '3' || key === 'contact') extracted.contact = cleanValue;
-      else if (key === 'age' || key === '4' || key === 'age') extracted.age = cleanValue;
-
-      // Strategy 2: Content-based detection with improved patterns
-      else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
-        console.log('Detected email by content:', cleanValue);
-        extracted.email = cleanValue;
-      }
-      else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
-        console.log('Detected contact by content:', cleanValue);
-        extracted.contact = cleanValue;
-      }
-      else if (!extracted.age && /^\d{1,3}$/.test(cleanValue)) {
-        const ageNum = parseInt(cleanValue);
-        if (ageNum > 0 && ageNum <= 120) {
-          console.log('Detected age by content:', cleanValue);
-          extracted.age = cleanValue;
-        }
-      }
-      else if (!extracted.name && cleanValue.length > 1 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
-        // If it looks like a name (letters, spaces, dots, more than 1 char, no @)
-        console.log('Detected name by content:', cleanValue);
-        extracted.name = cleanValue;
-      }
-    });
-
-    // Additional fallback: try to find by order of answers (first 4 answers are usually personal info)
+    // Only extract from answers if userInfo is empty or incomplete
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
-      const answerEntries = Object.entries(answers);
-      console.log('Trying fallback extraction from answer order...');
-
-      // Try to extract based on typical order: name, email, contact, age
-      answerEntries.forEach(([key, value], index) => {
+      console.log('UserInfo incomplete, extracting from answers...');
+      
+      // Direct key matching strategy - be more specific about question IDs
+      Object.entries(answers).forEach(([key, value]) => {
         if (!value || typeof value !== 'string' || !value.trim()) return;
         const cleanValue = value.trim();
 
-        // Try to determine field type by position and content
-        if (!extracted.name && index === 0 && /^[a-zA-Z\s\.]+$/.test(cleanValue) && !cleanValue.includes('@')) {
-          console.log('Setting name from position 0:', cleanValue);
+        // Use specific question patterns from the database
+        if ((key === 'name' || key === '1') && !extracted.name) {
           extracted.name = cleanValue;
-        }
-        else if (!extracted.email && cleanValue.includes('@') && cleanValue.includes('.')) {
-          console.log('Setting email from content match:', cleanValue);
+        } else if ((key === 'email' || key === '2') && !extracted.email) {
           extracted.email = cleanValue;
-        }
-        else if (!extracted.contact && /^[6-9]\d{9}$/.test(cleanValue)) {
-          console.log('Setting contact from content match:', cleanValue);
+        } else if ((key === 'contact' || key === '3') && !extracted.contact) {
           extracted.contact = cleanValue;
-        }
-        else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
-          const ageNum = parseInt(cleanValue);
-          if (ageNum > 0 && ageNum <= 120) {
-            console.log('Setting age from content match:', cleanValue);
-            extracted.age = cleanValue;
-          }
+        } else if ((key === 'age' || key === '4') && extracted.age === '0') {
+          extracted.age = cleanValue;
         }
       });
+
+      // Content-based detection as fallback - but be more careful
+      if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
+        Object.entries(answers).forEach(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return;
+          const cleanValue = value.trim();
+
+          // Email detection
+          if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
+            console.log('Detected email by pattern:', cleanValue);
+            extracted.email = cleanValue;
+          }
+          // Contact detection (Indian mobile numbers)
+          else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
+            console.log('Detected contact by pattern:', cleanValue);
+            extracted.contact = cleanValue;
+          }
+          // Age detection
+          else if (extracted.age === '0' && /^\d{1,3}$/.test(cleanValue)) {
+            const ageNum = parseInt(cleanValue);
+            if (ageNum > 0 && ageNum <= 120) {
+              console.log('Detected age by pattern:', cleanValue);
+              extracted.age = cleanValue;
+            }
+          }
+          // Name detection (be more restrictive)
+          else if (!extracted.name && cleanValue.length >= 2 && /^[a-zA-Z][a-zA-Z\s\.]*$/.test(cleanValue) && 
+                   !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue)) {
+            console.log('Detected name by pattern:', cleanValue);
+            extracted.name = cleanValue;
+          }
+        });
+      }
     }
 
     console.log('Final extracted info:', extracted);
@@ -117,11 +95,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   }, [userInfo, answers]);
 
   const saveResponses = async () => {
-    // Prevent multiple submissions
+    // Prevent multiple submissions with more robust checking
     if (isSubmitting || isSubmitted) {
       console.log('Submission already in progress or completed, skipping...');
       return;
     }
+
+    // Add a flag to prevent race conditions
+    const submissionKey = `quiz_submission_${Date.now()}`;
+    if (window.localStorage.getItem(submissionKey)) {
+      console.log('Duplicate submission attempt detected, skipping...');
+      return;
+    }
+    window.localStorage.setItem(submissionKey, 'true');
 
     try {
       setIsSubmitting(true);
@@ -275,19 +261,28 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       console.log('Questions from database:', fetchedQuestions);
 
-      // Create ordered mapping based on the question order from database
-      const questionOrderMap: { [key: number]: number } = {};
-      
-      // Sort questions by order_index to ensure correct mapping
-      const sortedQuestions = [...(fetchedQuestions || [])].sort((a, b) => a.order_index - b.order_index);
-      
-      // Map order indices to question IDs
-      sortedQuestions.forEach((q, index) => {
-        questionOrderMap[index] = q.id;
-      });
+      // Create a mapping from question text/type to database ID
+      const questionIdMap: { [key: string]: number } = {};
 
-      console.log('Question order mapping:', questionOrderMap);
-      console.log('Sorted questions:', sortedQuestions.map(q => ({ id: q.id, order: q.order_index, text: q.question_text })));
+      // Map based on question content patterns
+      fetchedQuestions?.forEach(q => {
+        const text = q.question_text.toLowerCase();
+        if (text.includes('name')) questionIdMap['name'] = q.id;
+        else if (text.includes('contact') || text.includes('phone')) questionIdMap['contact'] = q.id;
+        else if (text.includes('email')) questionIdMap['email'] = q.id;
+        else if (text.includes('age')) questionIdMap['age'] = q.id;
+        else if (text.includes('gender')) questionIdMap['gender'] = q.id;
+        else if (text.includes('stress') || text.includes('anxious')) questionIdMap['mental_stress'] = q.id;
+        else if (text.includes('energy')) questionIdMap['energy_levels'] = q.id;
+        else if (text.includes('joint') || text.includes('pain')) questionIdMap['joint_pain'] = q.id;
+        else if (text.includes('skin')) questionIdMap['skin_condition'] = q.id;
+        else if (text.includes('sleep')) questionIdMap['sleep_quality'] = q.id;
+        else if (text.includes('digestive') || text.includes('bloating')) questionIdMap['digestive_issues'] = q.id;
+        else if (text.includes('active') || text.includes('exercise')) questionIdMap['physical_activity'] = q.id;
+        else if (text.includes('supplement')) questionIdMap['supplements'] = q.id;
+        else if (text.includes('health condition') || text.includes('allergies')) questionIdMap['health_conditions'] = q.id;
+        else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
+      });
 
       console.log('All questions from DB:', fetchedQuestions?.map(q => ({ id: q.id, text: q.question_text })));
       console.log('Question ID mapping created:', questionIdMap);
@@ -322,53 +317,65 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       }
 
-      // Process answers using correct question mapping
-      const answerEntries = Object.entries(answers).filter(([key, value]) => 
-        !key.includes('_details') && value && String(value).trim() !== ''
-      );
+      // Save quiz answers for all questions - ensure correct question ID mapping
+      for (const [answerKey, answer] of Object.entries(answers)) {
+        // Skip detail keys and empty values
+        if (answerKey.includes('_details') || !answer || String(answer).trim() === '') {
+          continue;
+        }
 
-      console.log('Processing answer entries:', answerEntries);
-
-      for (const [answerKey, answer] of answerEntries) {
-        let actualQuestionId = null;
+        // First try to map by answer key to question ID
+        let actualQuestionId = questionIdMap[answerKey];
         let question = null;
 
-        // Strategy 1: Map by question order if answerKey is numeric
-        const questionIndex = parseInt(answerKey);
-        if (!isNaN(questionIndex) && questionOrderMap[questionIndex]) {
-          actualQuestionId = questionOrderMap[questionIndex];
-          question = sortedQuestions[questionIndex];
-          console.log(`Mapped by order: ${answerKey} -> question ID ${actualQuestionId} (${question?.question_text})`);
-        }
-        
-        // Strategy 2: Map by question ID directly
-        else if (!isNaN(questionIndex) && sortedQuestions.find(q => q.id === questionIndex)) {
-          actualQuestionId = questionIndex;
-          question = sortedQuestions.find(q => q.id === questionIndex);
-          console.log(`Mapped by ID: ${answerKey} -> question ID ${actualQuestionId} (${question?.question_text})`);
-        }
-        
-        // Strategy 3: Map by content type for known fields
-        else {
-          if (answerKey === 'name') {
-            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
-          } else if (answerKey === 'email') {
-            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
-          } else if (answerKey === 'contact') {
-            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
-          } else if (answerKey === 'age') {
-            question = sortedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
+        // If not found by key mapping, try to find by question text patterns
+        if (!actualQuestionId && fetchedQuestions) {
+          // Create more specific mappings based on answer key patterns
+          if (answerKey === 'name' || answerKey === '1') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
+          } else if (answerKey === 'email' || answerKey === '2') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
+          } else if (answerKey === 'contact' || answerKey === '3') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
+          } else if (answerKey === 'age' || answerKey === '4') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
+          } else if (answerKey === 'gender' || answerKey === '6') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('gender'));
+          } else if (answerKey === 'mental_stress' || answerKey === '7') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious'));
+          } else if (answerKey === 'energy_levels' || answerKey === '8') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('energy'));
+          } else if (answerKey === 'joint_pain' || answerKey === '9') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain'));
+          } else if (answerKey === 'skin_condition' || answerKey === '10') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('skin'));
+          } else if (answerKey === 'sleep_quality' || answerKey === '11') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('sleep'));
+          } else if (answerKey === 'digestive_issues' || answerKey === '12') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating'));
+          } else if (answerKey === 'physical_activity' || answerKey === '13') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise'));
+          } else if (answerKey === 'supplements' || answerKey === '14') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('supplement'));
+          } else if (answerKey === 'health_conditions' || answerKey === '15') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies'));
+          } else if (answerKey === 'blood_test' || answerKey === '16') {
+            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('blood test'));
+          } else {
+            // Try to parse as number and get from array index
+            const questionIndex = parseInt(answerKey);
+            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < fetchedQuestions.length) {
+              question = fetchedQuestions[questionIndex];
+            }
           }
-          
+
           if (question) {
             actualQuestionId = question.id;
-            console.log(`Mapped by content: ${answerKey} -> question ID ${actualQuestionId} (${question.question_text})`);
           }
         }
 
-        if (!actualQuestionId || !question) {
-          console.warn(`Could not map answer key "${answerKey}" to any question. Available questions:`, 
-            sortedQuestions.map(q => ({ id: q.id, text: q.question_text })));
+        if (!actualQuestionId) {
+          console.warn(`Could not map answer key "${answerKey}" to any question. Skipping.`);
           continue;
         }
         // Extract answer text (always treat as string for simplicity)
@@ -446,6 +453,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       alert(`There was an error saving your quiz response: ${errorMessage}. Please check that all required fields are filled and try again.`);
     } finally {
       setIsSubmitting(false);
+      // Clean up the submission flag
+      setTimeout(() => {
+        const submissionKeys = Object.keys(localStorage).filter(key => key.startsWith('quiz_submission_'));
+        submissionKeys.forEach(key => localStorage.removeItem(key));
+      }, 1000);
     }
   };
 
@@ -458,14 +470,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
-    // Only save once when component mounts - use a ref to prevent multiple calls
-    let hasAttemptedSave = false;
-    
-    if (!isSubmitted && !isSubmitting && !hasAttemptedSave) {
-      hasAttemptedSave = true;
+    // Use a ref to track if we've already initiated a save
+    const hasInitiatedSave = React.useRef(false);
+
+    // Only save once when component mounts and not already submitted or submitting
+    if (!isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
+      hasInitiatedSave.current = true;
+      console.log('Initiating quiz save...');
+      
       saveResponses().catch((error) => {
         console.error('Error in saveResponses caught by useEffect:', error);
         setIsSubmitting(false);
+        hasInitiatedSave.current = false; // Allow retry on error
       });
     }
 

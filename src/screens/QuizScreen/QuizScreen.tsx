@@ -250,10 +250,10 @@ export const QuizScreen = (): JSX.Element => {
             <QuizResults 
               answers={answers}
               userInfo={{
-                name: answers.name || '',
-                email: answers.email || '',
-                contact: answers.contact || '',
-                age: answers.age || '0'
+                name: answers['1'] || answers.name || '',
+                email: answers['2'] || answers.email || '',
+                contact: answers['3'] || answers.contact || '',
+                age: answers['4'] || answers.age || '0'
               }}
               selectedFile={selectedFile}
             />
