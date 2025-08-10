@@ -1,0 +1,88 @@
+10:30:44 AM: Netlify Build                                                 
+10:30:44 AM: ────────────────────────────────────────────────────────────────
+10:30:44 AM: ​
+10:30:44 AM: ❯ Version
+10:30:44 AM:   @netlify/build 35.0.5
+10:30:44 AM: ​
+10:30:44 AM: ❯ Flags
+10:30:44 AM:   accountId: 678512845c803f0edae1a152
+10:30:44 AM:   baseRelDir: true
+10:30:44 AM:   buildId: 6898276c6ad27f00084ee6d2
+10:30:44 AM:   deployId: 6898276c6ad27f00084ee6d4
+10:30:44 AM: ​
+10:30:44 AM: ❯ Current directory
+10:30:44 AM:   /opt/build/repo
+10:30:44 AM: ​
+10:30:44 AM: ❯ Config file
+10:30:44 AM:   /opt/build/repo/netlify.toml
+10:30:44 AM: ​
+10:30:44 AM: ❯ Context
+10:30:44 AM:   production
+10:30:45 AM: ​
+10:30:45 AM: build.command from netlify.toml                               
+10:30:45 AM: ────────────────────────────────────────────────────────────────
+10:30:45 AM: ​
+10:30:45 AM: $ npm run build
+10:30:45 AM: > build
+10:30:45 AM: > vite build
+10:30:45 AM: The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+vite v5.4.19 building for production...
+10:30:45 AM: transforming...
+10:30:46 AM: ✓ 217 modules transformed.
+10:30:47 AM: rendering chunks...
+10:30:47 AM: computing gzip size...
+10:30:47 AM: dist/index.html                    0.55 kB │ gzip:   0.36 kB
+10:30:47 AM: dist/assets/index-Bny4hGvW.css    46.99 kB │ gzip:   8.56 kB
+10:30:47 AM: dist/assets/browser-5J87loR5.js    0.30 kB │ gzip:   0.25 kB
+10:30:47 AM: dist/assets/index-a4WTg9Un.js    485.99 kB │ gzip: 143.33 kB
+10:30:47 AM: ✓ built in 1.82s
+10:30:47 AM: ​
+10:30:47 AM: (build.command completed in 2.2s)
+10:30:48 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+10:30:48 AM: ​
+10:30:48 AM: Scanning for secrets in code and build output.                
+10:30:48 AM: ────────────────────────────────────────────────────────────────
+10:30:48 AM: ​
+10:30:48 AM: ​
+10:30:48 AM: ❯ Scanning complete. 191 file(s) scanned. Secrets scanning found 1 instance(s) of secrets in build output or repo code.
+10:30:48 AM: ​
+10:30:48 AM: Secret env var "VITE_SUPABASE_ANON_KEY"'s value detected:
+  found value at line 73 in dist/assets/index-a4WTg9Un.js
+10:30:48 AM: ​
+10:30:48 AM: To prevent exposing secrets, the build will fail until these secret values are not found in build output or repo files.
+10:30:48 AM: ​
+10:30:48 AM: If these are expected, use SECRETS_SCAN_OMIT_PATHS, SECRETS_SCAN_OMIT_KEYS, or SECRETS_SCAN_ENABLED to prevent detecting.
+10:30:48 AM: ​
+10:30:48 AM: For more information on secrets scanning, see the Netlify Docs: https://ntl.fyi/configure-secrets-scanning
+10:30:48 AM: ​
+10:30:48 AM: Secrets scanning detected secrets in files during build.      
+10:30:48 AM: ────────────────────────────────────────────────────────────────
+10:30:48 AM: ​
+10:30:48 AM:   Error message
+10:30:48 AM:   Secrets scanning found secrets in build.
+10:30:48 AM: ​
+10:30:48 AM:   Resolved config
+10:30:48 AM:   build:
+10:30:48 AM:     command: npm run build
+10:30:48 AM:     commandOrigin: config
+10:30:48 AM:     environment:
+10:30:48 AM:       - VITE_SUPABASE_ANON_KEY
+10:30:48 AM:       - VITE_SUPABASE_URL
+10:30:48 AM:       - NODE_VERSION
+10:30:48 AM:     publish: /opt/build/repo/dist
+10:30:48 AM:     publishOrigin: config
+10:30:48 AM:   headers:
+10:30:48 AM:     - for: /*
+      values:
+        X-Content-Type-Options: nosniff
+        X-Frame-Options: DENY
+        X-XSS-Protection: 1; mode=block
+  headersOrigin: config
+  redirects:
+    - from: /*
+      status: 200
+      to: /index.html
+  redirectsOrigin: config
+10:30:48 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
+10:30:48 AM: Failing build: Failed to build site
+10:30:49 AM: Finished processing build request in 19.191s
