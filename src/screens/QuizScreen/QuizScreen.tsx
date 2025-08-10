@@ -101,6 +101,7 @@ export const QuizScreen = (): JSX.Element => {
     setAnswers(newAnswers);
 
     if (currentQuestion === questions.length - 1) {
+      console.log('Quiz completed, showing results with answers:', newAnswers);
       setShowResults(true);
     } else {
       setCurrentQuestion(currentQuestion + 1);
@@ -129,6 +130,7 @@ export const QuizScreen = (): JSX.Element => {
     // If "no" is selected or no additional inputs are needed, proceed to next question
     setAnswers(newAnswers);
     if (currentQuestion === questions.length - 1) {
+      console.log('Quiz completed via option select, showing results with answers:', newAnswers);
       setShowResults(true);
     } else {
       setCurrentQuestion(currentQuestion + 1);

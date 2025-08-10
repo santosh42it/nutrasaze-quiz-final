@@ -105,14 +105,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       return;
     }
 
-    // Add a flag to prevent race conditions
-    const submissionKey = `quiz_submission_${Date.now()}`;
-    if (window.localStorage.getItem(submissionKey)) {
-      console.log('Duplicate submission attempt detected, skipping...');
-      return;
-    }
-    window.localStorage.setItem(submissionKey, 'true');
-
     try {
       setIsSubmitting(true);
       console.log('=== QUIZ SAVE DEBUG ===');
@@ -459,41 +451,31 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       alert(`There was an error saving your quiz response: ${errorMessage}. Please check that all required fields are filled and try again.`);
     } finally {
       setIsSubmitting(false);
-      // Clean up the submission flag
-      setTimeout(() => {
-        const submissionKeys = Object.keys(localStorage).filter(key => key.startsWith('quiz_submission_'));
-        submissionKeys.forEach(key => localStorage.removeItem(key));
-      }, 1000);
     }
   };
 
+  // Use a ref to track if we've already initiated a save to prevent multiple calls
+  const hasInitiatedSave = React.useRef(false);
+
   useEffect(() => {
-    // Add global error handler for unhandled promise rejections
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection in QuizResults:', event.reason);
-      event.preventDefault(); // Prevent the default unhandled rejection behavior
-    };
-
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    // Use a ref to track if we've already initiated a save
-    const hasInitiatedSave = React.useRef(false);
-
     // Only save once when component mounts and not already submitted or submitting
     if (!isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
       hasInitiatedSave.current = true;
       console.log('Initiating quiz save...');
       
-      saveResponses().catch((error) => {
-        console.error('Error in saveResponses caught by useEffect:', error);
-        setIsSubmitting(false);
-        hasInitiatedSave.current = false; // Allow retry on error
-      });
-    }
+      // Use async function with proper error handling
+      const initiateSave = async () => {
+        try {
+          await saveResponses();
+        } catch (error) {
+          console.error('Error in saveResponses:', error);
+          setIsSubmitting(false);
+          hasInitiatedSave.current = false; // Allow retry on error
+        }
+      };
 
-    return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
+      initiateSave();
+    }
   }, []); // Remove dependencies to ensure it only runs once on mount
 
   return (
