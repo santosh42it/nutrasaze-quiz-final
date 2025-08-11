@@ -368,53 +368,57 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           continue;
         }
 
-        // First try to map by answer key to question ID
-        let actualQuestionId = questionIdMap[answerKey];
+        let actualQuestionId = null;
         let question = null;
 
-        // If not found by key mapping, try to find by question text patterns
+        // Direct mapping by question ID (most reliable)
+        const directQuestionId = parseInt(answerKey);
+        if (!isNaN(directQuestionId) && fetchedQuestions) {
+          question = fetchedQuestions.find(q => q.id === directQuestionId);
+          if (question) {
+            actualQuestionId = question.id;
+            console.log(`Direct mapping: key "${answerKey}" -> question ID ${actualQuestionId} (${question.question_text})`);
+          }
+        }
+
+        // If direct mapping failed, try legacy key mapping patterns
         if (!actualQuestionId && fetchedQuestions) {
-          // Create more specific mappings based on answer key patterns
-          if (answerKey === 'name' || answerKey === '1') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('name'));
-          } else if (answerKey === 'email' || answerKey === '2') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('email'));
-          } else if (answerKey === 'contact' || answerKey === '3') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone'));
-          } else if (answerKey === 'age' || answerKey === '4') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('age'));
-          } else if (answerKey === 'gender' || answerKey === '6') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('gender'));
-          } else if (answerKey === 'mental_stress' || answerKey === '7') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious'));
-          } else if (answerKey === 'energy_levels' || answerKey === '8') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('energy'));
-          } else if (answerKey === 'joint_pain' || answerKey === '9') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain'));
-          } else if (answerKey === 'skin_condition' || answerKey === '10') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('skin'));
-          } else if (answerKey === 'sleep_quality' || answerKey === '11') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('sleep'));
-          } else if (answerKey === 'digestive_issues' || answerKey === '12') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating'));
-          } else if (answerKey === 'physical_activity' || answerKey === '13') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise'));
-          } else if (answerKey === 'supplements' || answerKey === '14') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('supplement'));
-          } else if (answerKey === 'health_conditions' || answerKey === '15') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies'));
-          } else if (answerKey === 'blood_test' || answerKey === '16') {
-            question = fetchedQuestions.find(q => q.question_text.toLowerCase().includes('blood test'));
-          } else {
-            // Try to parse as number and get from array index
-            const questionIndex = parseInt(answerKey);
-            if (!isNaN(questionIndex) && questionIndex >= 0 && questionIndex < fetchedQuestions.length) {
-              question = fetchedQuestions[questionIndex];
-            }
+          // Legacy key mapping based on question patterns and IDs from database
+          if (answerKey === '38' || answerKey === 'name') {
+            question = fetchedQuestions.find(q => q.id === 38 || q.question_text.toLowerCase().includes('name'));
+          } else if (answerKey === '39' || answerKey === 'email') {
+            question = fetchedQuestions.find(q => q.id === 39 || q.question_text.toLowerCase().includes('email'));
+          } else if (answerKey === '3' || answerKey === 'contact') {
+            question = fetchedQuestions.find(q => q.id === 3 || (q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone')));
+          } else if (answerKey === '41' || answerKey === 'age') {
+            question = fetchedQuestions.find(q => q.id === 41 || q.question_text.toLowerCase().includes('age'));
+          } else if (answerKey === '6' || answerKey === 'gender') {
+            question = fetchedQuestions.find(q => q.id === 6 || q.question_text.toLowerCase().includes('gender'));
+          } else if (answerKey === '7' || answerKey === 'mental_stress') {
+            question = fetchedQuestions.find(q => q.id === 7 || (q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious')));
+          } else if (answerKey === '8' || answerKey === 'energy_levels') {
+            question = fetchedQuestions.find(q => q.id === 8 || q.question_text.toLowerCase().includes('energy'));
+          } else if (answerKey === '9' || answerKey === 'joint_pain') {
+            question = fetchedQuestions.find(q => q.id === 9 || (q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain')));
+          } else if (answerKey === '10' || answerKey === 'skin_condition') {
+            question = fetchedQuestions.find(q => q.id === 10 || q.question_text.toLowerCase().includes('skin'));
+          } else if (answerKey === '11' || answerKey === 'sleep_quality') {
+            question = fetchedQuestions.find(q => q.id === 11 || q.question_text.toLowerCase().includes('sleep'));
+          } else if (answerKey === '12' || answerKey === 'digestive_issues') {
+            question = fetchedQuestions.find(q => q.id === 12 || (q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating')));
+          } else if (answerKey === '13' || answerKey === 'physical_activity') {
+            question = fetchedQuestions.find(q => q.id === 13 || (q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise')));
+          } else if (answerKey === '14' || answerKey === 'supplements') {
+            question = fetchedQuestions.find(q => q.id === 14 || q.question_text.toLowerCase().includes('supplement'));
+          } else if (answerKey === '15' || answerKey === 'health_conditions') {
+            question = fetchedQuestions.find(q => q.id === 15 || (q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies')));
+          } else if (answerKey === '16' || answerKey === 'blood_test') {
+            question = fetchedQuestions.find(q => q.id === 16 || q.question_text.toLowerCase().includes('blood test'));
           }
 
           if (question) {
             actualQuestionId = question.id;
+            console.log(`Legacy mapping: key "${answerKey}" -> question ID ${actualQuestionId} (${question.question_text})`);
           }
         }
 

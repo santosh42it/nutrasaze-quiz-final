@@ -96,7 +96,7 @@ export const QuizScreen = (): JSX.Element => {
         [`${currentQuestionData.id}_details`]: additionalInfo
       })
     };
-    
+
     console.log(`Setting answer for question ${currentQuestionData.id}: ${finalValue}`);
     setAnswers(newAnswers);
 
@@ -252,10 +252,10 @@ export const QuizScreen = (): JSX.Element => {
             <QuizResults 
               answers={answers}
               userInfo={{
-                name: answers['1'] || answers.name || '',
-                email: answers['2'] || answers.email || '',
-                contact: (answers['3'] || answers.contact || '').replace(/^\+91/, ''),
-                age: answers['4'] || answers.age || '0'
+                name: answers['38'] || answers.name || '', // Question ID 38 is the name question
+                email: answers['39'] || answers.email || '', // Question ID 39 is the email question  
+                contact: (answers['3'] || answers.contact || '').replace(/^\+91/, ''), // Question ID 3 is contact
+                age: answers['41'] || answers.age || '0' // Question ID 41 is age
               }}
               selectedFile={selectedFile}
             />
