@@ -4,12 +4,13 @@ import { QuestionManager } from './QuestionManager';
 import { TagManager } from './TagManager';
 import { ProductManager } from './ProductManager';
 import { ResponsesReport } from './ResponsesReport';
+import { AnswerKeyManager } from './AnswerKeyManager';
 import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
 
 export const AdminPanel: React.FC = () => {
-  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags } = useAdminStore();
-  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses'>('responses');
+  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys } = useAdminStore();
+  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses' | 'answerkey'>('responses');
 
   useEffect(() => {
     fetchQuestions();
@@ -18,7 +19,8 @@ export const AdminPanel: React.FC = () => {
     fetchProducts();
     fetchQuestionTags();
     fetchOptionTags();
-  }, [fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags]);
+    fetchAnswerKeys();
+  }, [fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys]);
 
   return (
     <div className="min-h-screen bg-[#fff4fc]">
@@ -45,7 +47,8 @@ export const AdminPanel: React.FC = () => {
                 { key: 'responses', label: 'Quiz Responses' },
                 { key: 'questions', label: 'Quiz Questions' },
                 { key: 'tags', label: 'Tags' },
-                { key: 'products', label: 'Products' }
+                { key: 'products', label: 'Products' },
+                { key: 'answerkey', label: 'Answer Key' }
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -69,6 +72,7 @@ export const AdminPanel: React.FC = () => {
             {activeTab === 'questions' && <QuestionManager />}
             {activeTab === 'tags' && <TagManager />}
             {activeTab === 'products' && <ProductManager />}
+            {activeTab === 'answerkey' && <AnswerKeyManager />}
           </div>
         </div>
       </div>

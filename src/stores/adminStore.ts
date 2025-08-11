@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Question, QuestionOption, Tag, Product, OptionTag } from '../types/database';
+import type { Question, QuestionOption, Tag, Product, OptionTag, AnswerKey } from '../types/database';
 
 interface AdminStore {
   // State
@@ -9,6 +9,7 @@ interface AdminStore {
   tags: Tag[];
   products: Product[];
   optionTags: OptionTag[];
+  answerKeys: AnswerKey[]; // Added for answer key management
   loading: boolean;
   error: string | null;
 
@@ -40,6 +41,12 @@ interface AdminStore {
   fetchOptionTags: () => Promise<void>;
   updateOptionTags: (optionId: number, tagIds: number[]) => Promise<void>;
 
+  // Answer Key methods (Added)
+  fetchAnswerKeys: () => Promise<void>;
+  addAnswerKey: (answerKey: Partial<AnswerKey>) => Promise<void>;
+  updateAnswerKey: (id: number, updates: Partial<AnswerKey>) => Promise<void>;
+  deleteAnswerKey: (id: number) => Promise<void>;
+
   // Question Tags methods (deprecated - moved to options)
   fetchQuestionTags: () => Promise<void>;
   addQuestionTag: (questionId: number, tagId: number) => Promise<void>;
@@ -54,6 +61,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   tags: [],
   products: [],
   optionTags: [],
+  answerKeys: [], // Initialize answerKeys state
   loading: false,
   error: null,
 
@@ -169,12 +177,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .single();
 
       if (error) throw error;
-      
+
       // Update local state
       set({ 
         questions: [...get().questions, data]
       });
-      
+
       return { data, error: null };
     } catch (error) {
       set({ error: (error as Error).message });
@@ -192,12 +200,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .single();
 
       if (error) throw error;
-      
+
       // Update local state
       set({ 
         questions: get().questions.map(q => q.id === id ? data : q)
       });
-      
+
       return { data, error: null };
     } catch (error) {
       set({ error: (error as Error).message });
@@ -228,12 +236,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .single();
 
       if (error) throw error;
-      
+
       // Update local state
       set({ 
         options: [...get().options, data]
       });
-      
+
       return { data, error: null };
     } catch (error) {
       set({ error: (error as Error).message });
@@ -332,11 +340,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
       if (error) throw error;
 
-      set({ 
-        products: get().products.filter(p => p.id !== id) 
-      });
+      set(state => ({
+        products: state.products.filter(product => product.id !== id)
+      }));
     } catch (error) {
-      set({ error: (error as Error).message });
+      console.error('Error deleting product:', error);
+      throw error;
     }
   },
 
@@ -345,12 +354,13 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('option_tags')
-        .select('*');
+        .select('*')
+        .order('id');
 
       if (error) throw error;
-      set({ optionTags: data });
+      set({ optionTags: data || [] });
     } catch (error) {
-      set({ error: (error as Error).message });
+      console.error('Error fetching option tags:', error);
     }
   },
 
@@ -393,6 +403,80 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       }
     } catch (error) {
       set({ error: (error as Error).message });
+    }
+  },
+
+  // Answer Key methods
+  fetchAnswerKeys: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('answer_key')
+        .select('*')
+        .order('tag_combination');
+
+      if (error) throw error;
+      set({ answerKeys: data || [] });
+    } catch (error) {
+      console.error('Error fetching answer keys:', error);
+    }
+  },
+
+  addAnswerKey: async (answerKey: Partial<AnswerKey>) => {
+    try {
+      const { data, error } = await supabase
+        .from('answer_key')
+        .insert([answerKey])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        answerKeys: [...state.answerKeys, data]
+      }));
+    } catch (error) {
+      console.error('Error adding answer key:', error);
+      throw error;
+    }
+  },
+
+  updateAnswerKey: async (id: number, updates: Partial<AnswerKey>) => {
+    try {
+      const { data, error } = await supabase
+        .from('answer_key')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        answerKeys: state.answerKeys.map(answerKey => 
+          answerKey.id === id ? data : answerKey
+        )
+      }));
+    } catch (error) {
+      console.error('Error updating answer key:', error);
+      throw error;
+    }
+  },
+
+  deleteAnswerKey: async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('answer_key')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set(state => ({
+        answerKeys: state.answerKeys.filter(answerKey => answerKey.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting answer key:', error);
+      throw error;
     }
   },
 

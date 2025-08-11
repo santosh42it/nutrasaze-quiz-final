@@ -69,6 +69,14 @@ export interface Product {
   updated_at: string;
 }
 
+export interface AnswerKey {
+  id: number;
+  tag_combination: string;
+  recommended_products: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface QuizReport {
   totalResponses: number;
   ageDistribution: {

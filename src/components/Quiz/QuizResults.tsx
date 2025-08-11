@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
-import type { QuizResponse, QuizAnswer } from "../../types/database";
+import type { QuizResponse, QuizAnswer, Product } from "../../types/database";
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -19,6 +19,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
 
 
   // Extract user info from answers - improved logic to avoid mismatched data
@@ -143,6 +144,144 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     console.log('Final extracted info:', extracted);
     return extracted;
   }, [userInfo, answers, questions]);
+
+  // Function to get recommended products based on quiz answers
+  const getRecommendedProducts = async () => {
+    try {
+      console.log('Getting recommended products based on quiz answers...');
+      
+      // First, get all the user's answers and their associated tags
+      const { data: fetchedQuestions, error: questionsError } = await supabase
+        .from('questions')
+        .select(`
+          id, 
+          question_text,
+          question_options (
+            id,
+            option_text,
+            option_tags (
+              tag_id,
+              tags (
+                name
+              )
+            )
+          )
+        `)
+        .eq('status', 'active');
+
+      if (questionsError) {
+        console.error('Error fetching questions for recommendations:', questionsError);
+        return;
+      }
+
+      // Collect all unique tags from user's answers
+      const userTags = new Set<string>();
+      
+      Object.entries(answers).forEach(([questionId, answerValue]) => {
+        const question = fetchedQuestions?.find(q => q.id === parseInt(questionId));
+        if (question && question.question_options) {
+          // Find the selected option
+          const selectedOption = question.question_options.find(opt => 
+            opt.option_text === answerValue
+          );
+          
+          if (selectedOption && selectedOption.option_tags) {
+            selectedOption.option_tags.forEach((optionTag: any) => {
+              if (optionTag.tags && optionTag.tags.name) {
+                userTags.add(optionTag.tags.name);
+              }
+            });
+          }
+        }
+      });
+
+      console.log('User tags collected:', Array.from(userTags));
+
+      if (userTags.size === 0) {
+        console.log('No tags found for user answers');
+        return;
+      }
+
+      // Sort tags alphabetically to match the answer key format
+      const sortedTags = Array.from(userTags).sort().join(',');
+      console.log('Sorted tag combination:', sortedTags);
+
+      // Look for exact match first
+      let { data: answerKeyData, error: answerKeyError } = await supabase
+        .from('answer_key')
+        .select('recommended_products')
+        .eq('tag_combination', sortedTags)
+        .single();
+
+      if (answerKeyError || !answerKeyData) {
+        console.log('No exact match found, looking for subset matches...');
+        
+        // If no exact match, try to find the best subset match
+        const { data: allAnswerKeys, error: allKeysError } = await supabase
+          .from('answer_key')
+          .select('*')
+          .order('tag_combination');
+
+        if (allKeysError) {
+          console.error('Error fetching all answer keys:', allKeysError);
+          return;
+        }
+
+        // Find the best matching answer key (highest number of matching tags)
+        let bestMatch = null;
+        let maxMatches = 0;
+
+        allAnswerKeys?.forEach(key => {
+          const keyTags = new Set(key.tag_combination.split(','));
+          const matchCount = Array.from(userTags).filter(tag => keyTags.has(tag)).length;
+          
+          if (matchCount > maxMatches && matchCount > 0) {
+            maxMatches = matchCount;
+            bestMatch = key;
+          }
+        });
+
+        if (bestMatch) {
+          console.log('Best match found:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
+          answerKeyData = bestMatch;
+        }
+      }
+
+      if (answerKeyData && answerKeyData.recommended_products) {
+        const productNames = answerKeyData.recommended_products.split(',').map(name => name.trim());
+        console.log('Recommended product names:', productNames);
+
+        // Fetch the actual product details
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('name', productNames)
+          .eq('is_active', true);
+
+        if (productsError) {
+          console.error('Error fetching recommended products:', productsError);
+          return;
+        }
+
+        console.log('Fetched recommended products:', products);
+        setRecommendedProducts(products || []);
+      } else {
+        console.log('No matching answer key found, showing default products');
+        // Fallback to some default products
+        const { data: defaultProducts, error: defaultError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true)
+          .limit(3);
+
+        if (!defaultError && defaultProducts) {
+          setRecommendedProducts(defaultProducts);
+        }
+      }
+    } catch (error) {
+      console.error('Error getting recommended products:', error);
+    }
+  };
 
   const saveResponses = async () => {
     // Prevent multiple submissions with more robust checking
@@ -478,6 +617,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       }
 
+      // Get recommended products after successful save
+      await getRecommendedProducts();
+      
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error in saveResponses:', {
@@ -611,54 +753,103 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  title: "Daily Energy Boost",
-                  description: "Natural energy enhancement for sustained vitality throughout your day",
-                  features: ["Increased Energy", "Mental Clarity", "Focus Enhancement"],
-                  price: "₹999",
-                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                },
-                {
-                  title: "Stress Relief Complex",
-                  description: "Adaptogenic herbs to help manage stress and promote emotional balance",
-                  features: ["Stress Management", "Mood Support", "Better Sleep"],
-                  price: "₹899",
-                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                },
-                {
-                  title: "Recovery & Immunity",
-                  description: "Support your body's natural healing and immune system function",
-                  features: ["Immune Support", "Recovery Aid", "Antioxidants"],
-                  price: "₹1099",
-                  image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                }
-              ].map((product, index) => (
-                <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+              {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
+                <Card key={product.id} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                   <div className="relative">
                     <img
-                      src={product.image}
-                      alt={product.title}
+                      src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                      alt={product.name}
                       className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                      }}
                     />
                     <div className="absolute top-4 right-4 bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold">
-                      {product.price}
+                      ₹{product.srp || product.mrp || '999'}
                     </div>
                   </div>
                   <CardContent className="p-6">
-                    <h3 className="text-xl font-bold text-[#1d0917] mb-3">{product.title}</h3>
+                    <h3 className="text-xl font-bold text-[#1d0917] mb-3">{product.name}</h3>
                     <p className="text-gray-600 text-sm mb-4 leading-relaxed">{product.description}</p>
                     <div className="space-y-2">
-                      {product.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
-                          <span className="text-sm text-gray-700">{feature}</span>
-                        </div>
-                      ))}
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
+                        <span className="text-sm text-gray-700">Personalized Formula</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
+                        <span className="text-sm text-gray-700">Premium Quality</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
+                        <span className="text-sm text-gray-700">Science-Backed</span>
+                      </div>
                     </div>
+                    {product.url && (
+                      <div className="mt-4">
+                        <a 
+                          href={product.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[#913177] hover:underline text-sm"
+                        >
+                          Learn More →
+                        </a>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
+              )) : (
+                // Fallback products if no recommendations found
+                [
+                  {
+                    title: "Daily Energy Boost",
+                    description: "Natural energy enhancement for sustained vitality throughout your day",
+                    features: ["Increased Energy", "Mental Clarity", "Focus Enhancement"],
+                    price: "₹999",
+                    image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  },
+                  {
+                    title: "Stress Relief Complex",
+                    description: "Adaptogenic herbs to help manage stress and promote emotional balance",
+                    features: ["Stress Management", "Mood Support", "Better Sleep"],
+                    price: "₹899",
+                    image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  },
+                  {
+                    title: "Recovery & Immunity",
+                    description: "Support your body's natural healing and immune system function",
+                    features: ["Immune Support", "Recovery Aid", "Antioxidants"],
+                    price: "₹1099",
+                    image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
+                  }
+                ].map((product, index) => (
+                  <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                    <div className="relative">
+                      <img
+                        src={product.image}
+                        alt={product.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-4 right-4 bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold">
+                        {product.price}
+                      </div>
+                    </div>
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-bold text-[#1d0917] mb-3">{product.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">{product.description}</p>
+                      <div className="space-y-2">
+                        {product.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
+                            <span className="text-sm text-gray-700">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
 
@@ -677,11 +868,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div className="space-y-6">
                   <div className="flex items-baseline gap-4">
-                    <span className="text-5xl font-bold text-[#913177]">₹2,999</span>
+                    <span className="text-5xl font-bold text-[#913177]">
+                      ₹{recommendedProducts.length > 0 
+                        ? recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0)
+                        : '2,999'
+                      }
+                    </span>
                     <div>
-                      <span className="text-lg text-gray-500 line-through">₹4,500</span>
+                      <span className="text-lg text-gray-500 line-through">
+                        ₹{recommendedProducts.length > 0 
+                          ? recommendedProducts.reduce((total, product) => total + (product.mrp || product.srp || 999), 0)
+                          : '4,500'
+                        }
+                      </span>
                       <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-sm font-bold ml-2">
-                        33% OFF
+                        Best Price
                       </span>
                     </div>
                   </div>
@@ -689,9 +890,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
                   <div className="space-y-4">
                     {[
-                      "3 Custom Supplements (30-day supply)",
+                      `${recommendedProducts.length || 3} Custom Supplements (30-day supply)`,
                       "Personalized Diet Plan",
-                      "Custom Exercise Routine",
+                      "Custom Exercise Routine", 
                       "Expert Consultation",
                       "Monthly Progress Tracking",
                       "Free Shipping & Support"
@@ -721,7 +922,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                       className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7a2a66] hover:to-[#9c3a81] text-white rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Processing...' : 'Start Your Journey - ₹2,999/month'}
+                      {isSubmitting ? 'Processing...' : `Start Your Journey - ₹${recommendedProducts.length > 0 
+                        ? recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0)
+                        : '2,999'
+                      }/month`}
                     </Button>
 
                     <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500">
