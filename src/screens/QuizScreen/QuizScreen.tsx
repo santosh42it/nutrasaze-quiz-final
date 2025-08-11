@@ -116,7 +116,8 @@ export const QuizScreen = (): JSX.Element => {
     const currentQuestionData = questions[currentQuestion];
     const newAnswers = { ...answers };
 
-    // Store the selected option using the question ID
+    // Store the selected option using the correct question ID
+    // Ensure we're using the actual question ID, not overwriting user info
     newAnswers[currentQuestionData.id] = option;
 
     // If the question has additional inputs and "yes" is selected, wait for those inputs
@@ -252,10 +253,10 @@ export const QuizScreen = (): JSX.Element => {
             <QuizResults 
               answers={answers}
               userInfo={{
-                name: answers['1'] || answers.name || '',
-                email: answers['2'] || answers.email || '',
-                contact: (answers['3'] || answers.contact || '').replace(/^\+91/, ''),
-                age: answers['4'] || answers.age || '0'
+                name: answers['1'] || '',
+                email: answers['2'] || '',
+                contact: (answers['3'] || '').replace(/^\+91/, ''),
+                age: answers['4'] || '0'
               }}
               selectedFile={selectedFile}
             />
