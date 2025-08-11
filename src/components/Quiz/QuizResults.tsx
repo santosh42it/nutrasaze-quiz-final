@@ -205,6 +205,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       // Sort tags alphabetically to match the answer key format
       const sortedTags = Array.from(userTags).sort().join(',');
       console.log('Sorted tag combination:', sortedTags);
+      console.log('All collected user tags:', Array.from(userTags));
 
       // Look for exact match first
       let { data: answerKeyData, error: answerKeyError } = await supabase
@@ -230,16 +231,38 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         // Find the best matching answer key (highest number of matching tags)
         let bestMatch = null;
         let maxMatches = 0;
+        let exactSubsetMatch = null;
 
         allAnswerKeys?.forEach(key => {
-          const keyTags = new Set(key.tag_combination.split(','));
-          const matchCount = Array.from(userTags).filter(tag => keyTags.has(tag)).length;
+          const keyTags = new Set(key.tag_combination.split(',').map(tag => tag.trim()));
+          const userTagsArray = Array.from(userTags);
+          const matchCount = userTagsArray.filter(tag => keyTags.has(tag)).length;
           
+          // Check if user tags are a subset of this key's tags
+          const isSubset = userTagsArray.every(tag => keyTags.has(tag));
+          
+          // Prefer exact subset matches
+          if (isSubset && matchCount === userTagsArray.length) {
+            if (!exactSubsetMatch || keyTags.size < new Set(exactSubsetMatch.tag_combination.split(',')).size) {
+              exactSubsetMatch = key;
+            }
+          }
+          
+          // Also track the best partial match
           if (matchCount > maxMatches && matchCount > 0) {
             maxMatches = matchCount;
             bestMatch = key;
           }
         });
+
+        // Prefer exact subset match over partial match
+        if (exactSubsetMatch) {
+          console.log('Found exact subset match:', exactSubsetMatch.tag_combination, 'for user tags:', Array.from(userTags));
+          answerKeyData = exactSubsetMatch;
+        } else if (bestMatch) {
+          console.log('Best partial match found:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
+          answerKeyData = bestMatch;
+        }
 
         if (bestMatch) {
           console.log('Best match found:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
