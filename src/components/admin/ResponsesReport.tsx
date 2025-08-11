@@ -780,6 +780,16 @@ export const ResponsesReport: React.FC = () => {
                       <span className="text-[#3d3d3d] ml-2">{selectedResponse.contact}</span>
                     </div>
                     <div className="flex items-center">
+                      <span className="font-semibold text-[#6d6d6e] w-16">Gender:</span>
+                      <span className="text-[#3d3d3d] ml-2">
+                        {selectedResponse.answers?.find(a => 
+                          a.questions?.question_text?.toLowerCase().includes('gender') || 
+                          a.questions?.question_text?.toLowerCase().includes('male') ||
+                          a.questions?.question_text?.toLowerCase().includes('female')
+                        )?.answer_text || 'Not specified'}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
                       <span className="font-semibold text-[#6d6d6e] w-16">Age:</span>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-[#913177]/10 text-[#913177] ml-2">
                         {selectedResponse.age} years
@@ -820,7 +830,19 @@ export const ResponsesReport: React.FC = () => {
                 
                 {selectedResponse.answers && selectedResponse.answers.length > 0 ? (
                   <div className="grid gap-6">
-                    {selectedResponse.answers.map((answer, index) => (
+                    {selectedResponse.answers.filter((answer) => {
+                      const questionText = answer.questions?.question_text?.toLowerCase() || '';
+                      // Filter out personal information questions
+                      const isPersonalInfo = questionText.includes('name') ||
+                                            questionText.includes('email') ||
+                                            questionText.includes('contact') ||
+                                            questionText.includes('phone') ||
+                                            questionText.includes('gender') ||
+                                            questionText.includes('age') ||
+                                            questionText.includes('male') ||
+                                            questionText.includes('female');
+                      return !isPersonalInfo;
+                    }).map((answer, index) => (
                       <div key={answer.id} className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md border-l-4 border-[#913177]">
                         <div className="font-bold text-[#1d0917] mb-3 text-lg">
                           <span className="inline-flex items-center justify-center w-8 h-8 bg-[#913177] text-white rounded-full text-sm font-bold mr-3">
