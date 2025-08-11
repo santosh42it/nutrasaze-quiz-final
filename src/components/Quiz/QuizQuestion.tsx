@@ -28,24 +28,30 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                               answers[question.id].toLowerCase().includes("yes");
 
   return (
-    <section className="relative w-full min-h-screen bg-[#1d0917] px-4 md:px-8 py-20 md:py-24">
+    <section className="relative w-full min-h-screen bg-[#1d0917] flex flex-col">
       <ProgressBar 
         currentQuestion={currentQuestion} 
         totalQuestions={totalQuestions} 
       />
 
-      <div className="max-w-[700px] mx-auto mt-16">
-        <div className="flex flex-col items-center gap-8">
-          <h2 className="[font-family:'DM_Serif_Display',Helvetica] font-normal text-white text-2xl md:text-[32px] text-center tracking-[2.50px] leading-[1.2] md:leading-[48px]">
-            {question.question}
-          </h2>
-          {question.description && (
-            <p className="text-white text-center text-base md:text-lg max-w-[600px]">
-              {question.description}
-            </p>
-          )}
+      <div className="flex-1 flex items-center justify-center px-4 md:px-8 py-8">
+        <div className="max-w-[700px] w-full">
+          <div className="flex flex-col items-center gap-8">
+            <h2 className="[font-family:'DM_Serif_Display',Helvetica] font-normal text-white text-2xl md:text-[32px] text-center tracking-[2.50px] leading-[1.2] md:leading-[48px]">
+              {question.question}
+            </h2>
+            {question.description && (
+              <p className="text-white text-center text-base md:text-lg max-w-[600px]">
+                {question.description}
+              </p>
+            )}
 
-          <div className="w-full space-y-4">
+            <div className="w-full space-y-4"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
             {question.type === "select" ? (
               <div className="grid grid-cols-1 gap-4 w-full">
                 {question.options?.map((option) => (
@@ -96,7 +102,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     )}
                     <Button
                       onClick={handleNext}
-                      className="w-full h-12 rounded-3xl bg-[#913177] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full h-12 rounded-3xl bg-[#913177] hover:bg-[#7a2a66] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
                       Continue
                     </Button>
@@ -109,7 +115,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
             ) : (
               <div className="space-y-2 w-full">
                 <div className="relative">
-                  {question.id === "contact" && (
+                  {(question.id === "contact" || question.id === "3") && (
                     <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white font-semibold select-none z-10">
                       +91
                     </div>
@@ -119,7 +125,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     placeholder={question.placeholder}
                     value={inputValue}
                     onChange={(e) => {
-                      if (question.id === "contact") {
+                      if (question.id === "contact" || question.id === "3") {
                         // For phone numbers: only allow digits, max 10 characters
                         const digitsOnly = e.target.value.replace(/\D/g, '');
                         const limitedValue = digitsOnly.slice(0, 10);
@@ -129,18 +135,18 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       }
                       
                       const value = e.target.value;
-                      if (question.id === "age" && !/^\d*$/.test(value)) return;
+                      if ((question.id === "age" || question.id === "4") && !/^\d*$/.test(value)) return;
                       setInputValue(value);
                       setValidationError("");
                     }}
                     onKeyPress={handleKeyPress}
                     className={`w-full h-12 ${
-                      question.id === "contact" ? "pl-12" : "px-6"
+                      (question.id === "contact" || question.id === "3") ? "pl-12" : "px-6"
                     } rounded-xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 focus:outline-none focus:border-[#913177] focus:bg-white/20 backdrop-blur-none`}
-                    maxLength={question.id === "contact" ? 10 : undefined}
-                    inputMode={question.id === "contact" ? "numeric" : undefined}
-                    pattern={question.id === "contact" ? "[0-9]*" : undefined}
-                    onKeyDown={question.id === "contact" ? (e) => {
+                    maxLength={(question.id === "contact" || question.id === "3") ? 10 : undefined}
+                    inputMode={(question.id === "contact" || question.id === "3") ? "numeric" : undefined}
+                    pattern={(question.id === "contact" || question.id === "3") ? "[0-9]*" : undefined}
+                    onKeyDown={(question.id === "contact" || question.id === "3") ? (e) => {
                       // Prevent typing if already at 10 digits (except backspace, delete, arrow keys)
                       if (inputValue.length >= 10 && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
                         e.preventDefault();
@@ -158,7 +164,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                 )}
                 <Button
                   onClick={handleNext}
-                  className="w-full h-12 rounded-3xl bg-[#913177] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary"
+                  className="w-full h-12 rounded-3xl bg-[#913177] hover:bg-[#7a2a66] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary transition-colors duration-200"
                 >
                   Continue
                 </Button>

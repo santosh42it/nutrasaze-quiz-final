@@ -55,7 +55,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     console.log('Question mappings:', questionMappings);
 
-    Object.entries(answers).forEach(([key, value]) => {
+    // Process answers with priority order for name extraction
+    const answerEntries = Object.entries(answers);
+    
+    // First pass: Extract based on question mappings and known keys
+    answerEntries.forEach(([key, value]) => {
       if (!value || typeof value !== 'string' || !value.trim()) return;
       const cleanValue = value.trim();
 
@@ -76,7 +80,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         console.log('Found age by question mapping, key:', key, '->', cleanValue);
         extracted.age = cleanValue;
       }
-      // Fallback to legacy key matching for compatibility
+      // Fallback to legacy key matching for compatibility - prioritize name extraction
       else if ((key === '1' || key === 'name') && (!extracted.name || extracted.name === '')) {
         console.log('Found name by legacy key:', key, '->', cleanValue);
         extracted.name = cleanValue;
@@ -93,10 +97,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       }
     });
 
-    // Content-based detection as final fallback
+    // Second pass: Content-based detection only if we still don't have the required fields
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
       console.log('Running content-based detection...');
-      Object.entries(answers).forEach(([key, value]) => {
+      
+      // Sort answers by key to prioritize earlier questions for name
+      const sortedAnswers = answerEntries.sort((a, b) => {
+        const aNum = parseInt(a[0]) || 999;
+        const bNum = parseInt(b[0]) || 999;
+        return aNum - bNum;
+      });
+
+      sortedAnswers.forEach(([key, value]) => {
         if (!value || typeof value !== 'string' || !value.trim()) return;
         const cleanValue = value.trim();
 
@@ -118,9 +130,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             extracted.age = cleanValue;
           }
         }
-        // Name detection (be more restrictive)
+        // Name detection (be more restrictive and prioritize first valid name found)
         else if (!extracted.name && cleanValue.length >= 2 && /^[a-zA-Z][a-zA-Z\s\.]*$/.test(cleanValue) && 
-                 !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue)) {
+                 !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue) &&
+                 !['Male', 'Female', 'Other', 'Yes', 'No', 'male', 'female', 'other', 'yes', 'no'].includes(cleanValue)) {
           console.log('Detected name by pattern:', cleanValue);
           extracted.name = cleanValue;
         }
@@ -129,7 +142,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     console.log('Final extracted info:', extracted);
     return extracted;
-  }, [userInfo, answers]);
+  }, [userInfo, answers, questions]);
 
   const saveResponses = async () => {
     // Prevent multiple submissions with more robust checking
