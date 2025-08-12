@@ -54,13 +54,13 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     <Button
                       key={option}
                       onClick={() => handleOptionSelect(option)}
-                      className={`w-full h-auto py-4 px-6 rounded-xl border-2 ${
+                      className={`w-full h-auto min-h-[60px] py-4 px-6 rounded-xl border-2 ${
                         answers[question.id] === option
                           ? "bg-[#913177] border-[#913177] text-white"
                           : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                      } transition-all duration-300 text-left text-base md:text-lg backdrop-blur-none`}
+                      } transition-all duration-300 text-left text-base md:text-lg backdrop-blur-none whitespace-normal break-words leading-relaxed`}
                     >
-                      {option}
+                      <span className="block w-full">{option}</span>
                     </Button>
                   ))}
                   
