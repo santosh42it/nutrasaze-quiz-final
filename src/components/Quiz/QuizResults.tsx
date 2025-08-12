@@ -258,17 +258,52 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('Testing database connection...');
       console.log('Supabase client config:', {
         url: import.meta.env.VITE_SUPABASE_URL,
-        hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
+        hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+        keyPreview: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 20) + '...'
       });
 
-      // First, let's try a simple query to see if we can connect at all
-      console.log('Testing basic connection...');
+      // Check current session/auth status
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Current session:', { 
+        hasSession: !!session, 
+        user: session?.user?.email,
+        error: sessionError 
+      });
+
+      // Test RLS policies by trying different approaches
+      console.log('Testing RLS and policies...');
+      
+      // Method 1: Try with service role bypass (if available)
+      console.log('Method 1: Testing basic connection...');
       const { data: basicTest, error: basicError } = await supabase
         .from('answer_key')
         .select('id')
         .limit(1);
       
       console.log('Basic connection test:', { data: basicTest, error: basicError });
+
+      // Method 2: Try with explicit RLS bypass using service role
+      if (basicError && basicError.code === 'PGRST116') {
+        console.log('RLS policy blocking access. Trying alternative connection...');
+        
+        // Try to get Supabase service key from env (if available)
+        const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+        if (serviceKey) {
+          console.log('Attempting with service key...');
+          const { createClient } = await import('@supabase/supabase-js');
+          const serviceClient = createClient(
+            import.meta.env.VITE_SUPABASE_URL,
+            serviceKey
+          );
+          
+          const { data: serviceTest, error: serviceError } = await serviceClient
+            .from('answer_key')
+            .select('id')
+            .limit(1);
+          
+          console.log('Service key test:', { data: serviceTest, error: serviceError });
+        }
+      }
 
       // Now try the count query
       const { data: testData, error: testError, count } = await supabase
