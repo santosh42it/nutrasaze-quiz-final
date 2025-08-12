@@ -256,6 +256,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Test database connection first
       console.log('Testing database connection...');
+      console.log('Supabase client config:', {
+        url: import.meta.env.VITE_SUPABASE_URL,
+        hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
+      });
+
+      // First, let's try a simple query to see if we can connect at all
+      console.log('Testing basic connection...');
+      const { data: basicTest, error: basicError } = await supabase
+        .from('answer_key')
+        .select('id')
+        .limit(1);
+      
+      console.log('Basic connection test:', { data: basicTest, error: basicError });
+
+      // Now try the count query
       const { data: testData, error: testError, count } = await supabase
         .from('answer_key')
         .select('*', { count: 'exact', head: true });
@@ -264,10 +279,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Get all answer keys for debugging
       console.log('Fetching all answer keys...');
+      // Try different approaches to fetch answer keys
+      console.log('Attempting to fetch answer keys with different methods...');
+      
+      // Method 1: Simple select all
       const { data: allAnswerKeys, error: allKeysError } = await supabase
         .from('answer_key')
-        .select('*')
-        .order('tag_combination');
+        .select('*');
+
+      console.log('Method 1 - Simple select result:', { data: allAnswerKeys, error: allKeysError });
 
       if (allKeysError) {
         console.error('Error fetching all answer keys:', allKeysError);
@@ -277,6 +297,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           hint: allKeysError.hint,
           code: allKeysError.code
         });
+
+        // Method 2: Try with explicit columns
+        console.log('Trying Method 2 - explicit columns...');
+        const { data: explicitData, error: explicitError } = await supabase
+          .from('answer_key')
+          .select('id, tag_combination, recommended_products');
+        
+        console.log('Method 2 result:', { data: explicitData, error: explicitError });
+
+        // Method 3: Try to check if table exists by querying a specific ID
+        console.log('Trying Method 3 - check if table exists...');
+        const { data: tableCheck, error: tableError } = await supabase
+          .rpc('version');
+        
+        console.log('Database version check:', { data: tableCheck, error: tableError });
+        
         return;
       }
 
