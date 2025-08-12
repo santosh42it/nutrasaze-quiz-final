@@ -145,23 +145,25 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   fetchProducts: async () => {
     set({ loading: true });
     try {
+      console.log('Fetching products from database...');
+      
+      // Simplified query without joins to avoid potential issues
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          product_tags (
-            tag_id,
-            tags (
-              id,
-              name
-            )
-          )
-        `)
+        .select('*')
         .order('name');
 
-      if (error) throw error;
-      set({ products: data });
+      console.log('Products query result:', { data, error });
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        throw error;
+      }
+      
+      console.log('Products fetched successfully:', data?.length || 0);
+      set({ products: data || [] });
     } catch (error) {
+      console.error('Products fetch error:', error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });

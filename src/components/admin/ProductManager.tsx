@@ -189,10 +189,28 @@ export const ProductManager: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, fetchProducts } = useAdminStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; product: Product | null }>({
     isOpen: false,
     product: null
   });
+
+  // Load products when component mounts
+  React.useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        await fetchProducts();
+        console.log('Products loaded:', products);
+      } catch (error) {
+        console.error('Error loading products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [fetchProducts]);
 
   const handleSave = async (productData: Partial<Product>) => {
     if (editingProduct) {
@@ -296,7 +314,20 @@ export const ProductManager: React.FC = () => {
           Existing Products ({products.length})
         </h3>
 
-        {products.length === 0 ? (
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+            Debug: Products loaded: {products.length} | Loading: {loading ? 'Yes' : 'No'}
+          </div>
+        )}
+
+        {loading ? (
+          <Card className="border-[#e9d6e4] bg-white">
+            <CardContent className="p-8 text-center">
+              <p className="text-[#3d3d3d]">Loading products...</p>
+            </CardContent>
+          </Card>
+        ) : products.length === 0 ? (
           <Card className="border-[#e9d6e4] bg-white">
             <CardContent className="p-8 text-center">
               <p className="text-[#3d3d3d] mb-4">No products created yet</p>
