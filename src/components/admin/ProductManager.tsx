@@ -10,12 +10,11 @@ import type { Product } from '../../types/database';
 interface ProductModalProps {
   isOpen: boolean;
   product: Product | null;
-  onSave: (productData: Partial<Product>, selectedTags: number[]) => Promise<void>;
+  onSave: (productData: Partial<Product>) => Promise<void>;
   onClose: () => void;
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, onClose }) => {
-  const { tags } = useAdminStore();
   const [formData, setFormData] = useState<Partial<Product>>({
     name: product?.name || '',
     description: product?.description || '',
@@ -24,7 +23,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
     mrp: product?.mrp || undefined,
     srp: product?.srp || undefined,
   });
-  const [selectedTags, setSelectedTags] = useState<number[]>([]);
 
   React.useEffect(() => {
     if (product) {
@@ -36,24 +34,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
         mrp: product.mrp,
         srp: product.srp,
       });
-
-      // Fetch existing tags for this product
-      const fetchProductTags = async () => {
-        try {
-          const { data: productTags } = await supabase
-            .from('product_tags')
-            .select('tag_id')
-            .eq('product_id', product.id);
-
-          if (productTags) {
-            setSelectedTags(productTags.map(pt => pt.tag_id));
-          }
-        } catch (error) {
-          console.error('Error fetching product tags:', error);
-        }
-      };
-
-      fetchProductTags();
     } else {
       setFormData({
         name: '',
@@ -63,7 +43,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
         mrp: undefined,
         srp: undefined,
       });
-      setSelectedTags([]);
     }
   }, [product]);
 
@@ -72,7 +51,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
     if (!formData.name || !formData.description) return;
 
     try {
-      await onSave(formData, selectedTags);
+      await onSave(formData);
       onClose();
     } catch (error) {
       console.error('Error saving product:', error);
@@ -182,30 +161,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[#1d0917] mb-2">
-              Tags
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border rounded p-3">
-              {tags.map((tag) => (
-                <label key={tag.id} className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedTags.includes(tag.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedTags([...selectedTags, tag.id]);
-                      } else {
-                        setSelectedTags(selectedTags.filter(id => id !== tag.id));
-                      }
-                    }}
-                    className="rounded border-[#e9d6e4] text-[#913177] focus:ring-[#913177]"
-                  />
-                  <span className="ml-2 text-sm text-[#1d0917]">{tag.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          
 
           <div className="flex items-center gap-4 pt-4">
             <Button
@@ -230,7 +186,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
 };
 
 export const ProductManager: React.FC = () => {
-  const { products, tags, addProduct, updateProduct, deleteProduct, fetchProducts } = useAdminStore();
+  const { products, addProduct, updateProduct, deleteProduct, fetchProducts } = useAdminStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; product: Product | null }>({
@@ -238,9 +194,9 @@ export const ProductManager: React.FC = () => {
     product: null
   });
 
-  const handleSave = async (productData: Partial<Product>, selectedTags: number[]) => {
+  const handleSave = async (productData: Partial<Product>) => {
     if (editingProduct) {
-      // Update product details directly through Supabase to ensure all fields are updated
+      // Update product details directly through Supabase
       const updateData = {
         name: productData.name,
         description: productData.description,
@@ -260,68 +216,20 @@ export const ProductManager: React.FC = () => {
         console.error('Product update error:', updateError);
         throw updateError;
       }
-
-      // Update product tags
-      // First, remove all existing tag associations
-      const { error: deleteTagsError } = await supabase
-        .from('product_tags')
-        .delete()
-        .eq('product_id', editingProduct.id);
-
-      if (deleteTagsError) {
-        console.error('Delete tags error:', deleteTagsError);
-        throw deleteTagsError;
-      }
-
-      // Then add the new tag associations
-      if (selectedTags.length > 0) {
-        const tagInserts = selectedTags.map(tagId => ({
-          product_id: editingProduct.id,
-          tag_id: tagId
-        }));
-
-        const { error: insertTagsError } = await supabase
-          .from('product_tags')
-          .insert(tagInserts);
-
-        if (insertTagsError) {
-          console.error('Insert tags error:', insertTagsError);
-          throw insertTagsError;
-        }
-      }
     } else {
       // Create new product
-      const { data: productData, error: productError } = await supabase
+      const { error: productError } = await supabase
         .from('products')
         .insert([{
           ...productData as Product,
           mrp: productData.mrp ? Number(productData.mrp) : undefined,
           srp: productData.srp ? Number(productData.srp) : undefined,
           is_active: true,
-        }])
-        .select()
-        .single();
+        }]);
 
       if (productError) {
         console.error('Product creation error:', productError);
         throw productError;
-      }
-
-      // Add tag associations for new product
-      if (selectedTags.length > 0 && productData) {
-        const tagInserts = selectedTags.map(tagId => ({
-          product_id: productData.id,
-          tag_id: tagId
-        }));
-
-        const { error: insertTagsError } = await supabase
-          .from('product_tags')
-          .insert(tagInserts);
-
-        if (insertTagsError) {
-          console.error('Insert new product tags error:', insertTagsError);
-          throw insertTagsError;
-        }
       }
     }
 
