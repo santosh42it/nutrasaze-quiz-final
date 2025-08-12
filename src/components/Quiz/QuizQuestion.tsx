@@ -35,57 +35,59 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
         totalQuestions={totalQuestions} 
       />
 
-      <div className="flex-1 flex items-center justify-center px-4 md:px-8 py-8">
-        <div className="max-w-[700px] w-full px-4">
-          <div className="flex flex-col items-center gap-6 md:gap-8">
-            <h2 className="[font-family:'DM_Serif_Display',Helvetica] font-normal text-white text-2xl md:text-[32px] text-center tracking-[1.5px] md:tracking-[2.50px] leading-[1.3] md:leading-[1.4] px-4 break-words hyphens-auto">
-              {question.question}
-            </h2>
-            {question.description && (
-              <p className="text-white text-center text-base md:text-lg max-w-[600px]">
-                {question.description}
-              </p>
-            )}
+      <div className="flex-1 flex items-center justify-center px-6 md:px-12 py-6 md:py-12">
+        <div className="max-w-[800px] w-full">
+          <div className="flex flex-col items-center gap-8 md:gap-12">
+            <div className="text-center space-y-4 md:space-y-6">
+              <h2 className="[font-family:'DM_Serif_Display',Helvetica] font-normal text-white text-xl sm:text-2xl md:text-3xl lg:text-[32px] text-center tracking-[1px] sm:tracking-[1.5px] md:tracking-[2px] lg:tracking-[2.50px] leading-[1.4] sm:leading-[1.35] md:leading-[1.3] max-w-[700px] mx-auto word-wrap break-words">
+                {question.question}
+              </h2>
+              {question.description && (
+                <p className="text-white/90 text-center text-sm sm:text-base md:text-lg max-w-[600px] mx-auto leading-relaxed">
+                  {question.description}
+                </p>
+              )}
+            </div>
 
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-3 md:space-y-4 max-w-[600px] mx-auto">
               {question.type === "select" ? (
-                <div className="grid grid-cols-1 gap-4 w-full">
+                <div className="grid grid-cols-1 gap-3 md:gap-4 w-full">
                   {question.options?.map((option) => (
                     <Button
                       key={option}
                       onClick={() => handleOptionSelect(option)}
-                      className={`w-full h-auto min-h-[60px] py-4 px-6 rounded-xl border-2 ${
+                      className={`w-full h-auto min-h-[56px] md:min-h-[64px] py-4 md:py-5 px-5 md:px-6 rounded-2xl border-2 ${
                         answers[question.id] === option
-                          ? "bg-[#913177] border-[#913177] text-white"
-                          : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                      } transition-all duration-300 text-left text-base md:text-lg backdrop-blur-none whitespace-normal break-words leading-relaxed`}
+                          ? "bg-[#913177] border-[#913177] text-white shadow-lg"
+                          : "bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30"
+                      } transition-all duration-300 text-left text-sm sm:text-base md:text-lg backdrop-blur-none whitespace-normal break-words leading-relaxed font-medium`}
                     >
-                      <span className="block w-full">{option}</span>
+                      <span className="block w-full text-left">{option}</span>
                     </Button>
                   ))}
                   
                   {showAdditionalInputs && (
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-6 mt-6 max-w-[500px] mx-auto">
                       {question.hasTextArea && (
-                        <div className="space-y-2">
-                          <label className="text-white text-sm font-medium">
+                        <div className="space-y-3">
+                          <label className="text-white text-sm md:text-base font-medium block">
                             Please provide details:
                           </label>
                           <textarea
                             value={additionalInfo}
                             onChange={(e) => setAdditionalInfo(e.target.value)}
                             placeholder={question.textAreaPlaceholder || "Please provide details..."}
-                            className="w-full h-32 px-4 py-3 rounded-xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 resize-none focus:outline-none focus:border-[#913177] backdrop-blur-none"
+                            className="w-full h-32 md:h-36 px-5 py-4 rounded-2xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 resize-none focus:outline-none focus:border-[#913177] backdrop-blur-none text-base transition-all duration-200"
                             style={{ backdropFilter: 'none' }}
                           />
                           {!additionalInfo.trim() && (
-                            <p className="text-red-400 text-sm">Please provide the required details</p>
+                            <p className="text-red-400 text-sm font-medium">Please provide the required details</p>
                           )}
                         </div>
                       )}
                       {question.hasFileUpload && (
-                        <div className="space-y-2">
-                          <label className="text-white text-sm font-medium">
+                        <div className="space-y-3">
+                          <label className="text-white text-sm md:text-base font-medium block">
                             Please upload your blood test report:
                           </label>
                           <FileUpload
@@ -98,21 +100,21 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       )}
                       <Button
                         onClick={handleNext}
-                        className="w-full h-12 rounded-3xl bg-[#913177] hover:bg-[#7a2a66] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        className="w-full h-14 md:h-16 rounded-2xl bg-[#913177] hover:bg-[#7a2a66] text-white font-semibold text-base md:text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                       >
                         Continue
                       </Button>
                       {validationError && (
-                        <p className="text-red-400 text-sm text-center">{validationError}</p>
+                        <p className="text-red-400 text-sm text-center font-medium">{validationError}</p>
                       )}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="space-y-2 w-full">
+                <div className="space-y-4 w-full max-w-[400px] mx-auto">
                   <div className="relative">
                     {(question.id === "contact" || question.id === "3") && (
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white font-semibold select-none z-10">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white font-semibold select-none z-10 text-sm md:text-base">
                         +91
                       </div>
                     )}
@@ -136,9 +138,9 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                         setValidationError("");
                       }}
                       onKeyPress={handleKeyPress}
-                      className={`w-full h-12 ${
-                        (question.id === "contact" || question.id === "3") ? "pl-12" : "px-6"
-                      } rounded-xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 focus:outline-none focus:border-[#913177] focus:bg-white/20 backdrop-blur-none`}
+                      className={`w-full h-14 md:h-16 ${
+                        (question.id === "contact" || question.id === "3") ? "pl-14 md:pl-16" : "px-5 md:px-6"
+                      } pr-5 md:pr-6 rounded-2xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 focus:outline-none focus:border-[#913177] focus:bg-white/20 backdrop-blur-none text-base md:text-lg transition-all duration-200`}
                       maxLength={(question.id === "contact" || question.id === "3") ? 10 : undefined}
                       inputMode={(question.id === "contact" || question.id === "3") ? "numeric" : undefined}
                       pattern={(question.id === "contact" || question.id === "3") ? "[0-9]*" : undefined}
@@ -156,11 +158,11 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                     />
                   </div>
                   {validationError && (
-                    <p className="text-red-500 text-sm">{validationError}</p>
+                    <p className="text-red-400 text-sm text-center font-medium">{validationError}</p>
                   )}
                   <Button
                     onClick={handleNext}
-                    className="w-full h-12 rounded-3xl bg-[#913177] hover:bg-[#7a2a66] text-white font-desktop-body-m-bold shadow-drop-shadow-button-primary transition-colors duration-200"
+                    className="w-full h-14 md:h-16 rounded-2xl bg-[#913177] hover:bg-[#7a2a66] text-white font-semibold text-base md:text-lg shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     Continue
                   </Button>
