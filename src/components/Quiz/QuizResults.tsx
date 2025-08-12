@@ -904,13 +904,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                 
                 {/* Left Column - Products List */}
                 <div className="flex-1">
-                  <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+                  <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-4">
                     Start Your Journey With Just 1 Month Kit
                   </h3>
                   
                   <div className="space-y-4">
                     {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
-                      <div key={product.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                      <div key={product.id} className="flex items-center gap-4 p-3 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg shadow-sm border border-[#913177]/10">
                         <img
                           src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
                           alt={product.name}
@@ -920,18 +920,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                           }}
                         />
                         <div className="flex-1">
-                          <div className="font-medium text-gray-900 text-sm">{product.name}</div>
-                          <div className="text-xs text-gray-600">
+                          <div className="font-medium text-[#1d0917] text-sm">{product.name}</div>
+                          <div className="text-xs text-[#6d6d6e]">
                             {product.description?.substring(0, 50)}...
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold text-gray-900">₹{product.srp || product.mrp || '999'}</div>
-                        </div>
-                        <div className="text-gray-400">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                          <div className="font-bold text-[#913177]">₹{product.srp || product.mrp || '999'}</div>
                         </div>
                       </div>
                     )) : (
@@ -941,23 +936,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                         { name: "Stress Relief Complex", description: "Adaptogenic herbs for stress", price: "₹899" },
                         { name: "Recovery & Immunity", description: "Support natural healing", price: "₹1099" }
                       ].map((product, index) => (
-                        <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="flex items-center gap-4 p-3 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg shadow-sm border border-[#913177]/10">
                           <img
                             src="https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
                             alt={product.name}
                             className="w-12 h-12 object-cover rounded-lg"
                           />
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 text-sm">{product.name}</div>
-                            <div className="text-xs text-gray-600">{product.description}</div>
+                            <div className="font-medium text-[#1d0917] text-sm">{product.name}</div>
+                            <div className="text-xs text-[#6d6d6e]">{product.description}</div>
                           </div>
                           <div className="text-right">
-                            <div className="font-bold text-gray-900">{product.price}</div>
-                          </div>
-                          <div className="text-gray-400">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            <div className="font-bold text-[#913177]">{product.price}</div>
                           </div>
                         </div>
                       ))
@@ -965,32 +955,32 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                   </div>
 
                   {/* Certification */}
-                  <div className="mt-6 text-center text-xs text-gray-500 bg-gray-100 rounded-lg p-3">
+                  <div className="mt-6 text-center text-xs text-[#6d6d6e] bg-gradient-to-r from-[#fff4fc] to-white rounded-lg p-3">
                     All of our products are GMP & ISO 9001 certified
                   </div>
                 </div>
 
                 {/* Right Column - Pricing Summary (Desktop) */}
                 <div className="w-full md:w-80">
-                  <div className="bg-white border border-gray-200 rounded-lg p-6 md:sticky md:top-4">
+                  <div className="bg-white border border-[#913177]/20 rounded-lg p-6 md:sticky md:top-4 shadow-sm">
                     <div className="text-center mb-6">
-                      <div className="text-lg font-bold text-gray-900 mb-1">Subtotal</div>
+                      <div className="text-lg font-bold text-[#1d0917] mb-1">Subtotal</div>
                       <div className="flex items-center justify-center gap-2 mb-2">
-                        <span className="text-2xl font-bold text-gray-900">₹{totalPrice}</span>
+                        <span className="text-2xl font-bold text-[#913177]">₹{totalPrice}</span>
                         {originalPrice > totalPrice && (
-                          <span className="text-lg text-gray-500 line-through">₹{originalPrice}</span>
+                          <span className="text-lg text-[#6d6d6e] line-through">₹{originalPrice}</span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-600">(Inclusive of all taxes)</div>
+                      <div className="text-sm text-[#6d6d6e]">(Inclusive of all taxes)</div>
                       {discountPercentage > 0 && (
-                        <div className="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium mt-2">
+                        <div className="inline-block bg-gradient-to-r from-[#913177] to-[#b54394] text-white px-2 py-1 rounded-full text-xs font-medium mt-2">
                           {discountPercentage}% OFF
                         </div>
                       )}
                     </div>
 
                     {/* Desktop Buy Now Button */}
-                    <Button className="w-full h-12 text-lg font-bold bg-gradient-to-r from-[#a4d65e] to-[#8bc34a] hover:from-[#9ccc54] hover:to-[#7db83a] text-black rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 hidden md:block">
+                    <Button className="w-full h-12 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 hidden md:block">
                       Buy Now
                     </Button>
 
@@ -1003,12 +993,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                         "Custom meal plan included"
                       ].map((feature, index) => (
                         <div key={index} className="flex items-center gap-3">
-                          <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-4 h-4 bg-[#913177] rounded-full flex items-center justify-center">
                             <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
-                          <span className="text-sm text-gray-700">{feature}</span>
+                          <span className="text-sm text-[#6d6d6e]">{feature}</span>
                         </div>
                       ))}
                     </div>
@@ -1019,29 +1009,29 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           </Card>
 
           {/* Contact Info */}
-          <div className="text-center text-sm text-gray-600 space-y-1">
+          <div className="text-center text-sm text-[#6d6d6e] space-y-1">
             <p>Our experts will review your responses and contact you within 24 hours.</p>
             <p>
               Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call{' '}
-              <span className="text-[#913177] font-semibold">+91-XXXX-XXXX</span>
+              <span className="text-[#913177] font-semibold">+91 7093619881</span>
             </p>
           </div>
         </div>
       </div>
 
       {/* Mobile Sticky Buy Now Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-sm text-[#6d6d6e]">Total</div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-gray-900">₹{totalPrice}</span>
+              <span className="text-xl font-bold text-[#913177]">₹{totalPrice}</span>
               {originalPrice > totalPrice && (
-                <span className="text-sm text-gray-500 line-through">₹{originalPrice}</span>
+                <span className="text-sm text-[#6d6d6e] line-through">₹{originalPrice}</span>
               )}
             </div>
           </div>
-          <Button className="px-8 h-12 text-lg font-bold bg-gradient-to-r from-[#a4d65e] to-[#8bc34a] hover:from-[#9ccc54] hover:to-[#7db83a] text-black rounded-lg shadow-md">
+          <Button className="px-8 h-12 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md">
             Buy Now
           </Button>
         </div>
