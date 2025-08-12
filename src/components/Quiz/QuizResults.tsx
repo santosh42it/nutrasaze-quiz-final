@@ -256,12 +256,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Test database connection first
       console.log('Testing database connection...');
-      const { data: testData, error: testError } = await supabase
+      const { data: testData, error: testError, count } = await supabase
         .from('answer_key')
-        .select('count(*)')
-        .single();
+        .select('*', { count: 'exact', head: true });
       
-      console.log('Connection test result:', testData, testError);
+      console.log('Connection test result:', { count, data: testData, error: testError });
 
       // Get all answer keys for debugging
       console.log('Fetching all answer keys...');
