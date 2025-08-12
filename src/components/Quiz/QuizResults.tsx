@@ -254,7 +254,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('=== ANSWER KEY MATCHING ===');
       console.log('User tag combination (sorted):', sortedTags);
 
+      // Test database connection first
+      console.log('Testing database connection...');
+      const { data: testData, error: testError } = await supabase
+        .from('answer_key')
+        .select('count(*)')
+        .single();
+      
+      console.log('Connection test result:', testData, testError);
+
       // Get all answer keys for debugging
+      console.log('Fetching all answer keys...');
       const { data: allAnswerKeys, error: allKeysError } = await supabase
         .from('answer_key')
         .select('*')
@@ -262,29 +272,60 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       if (allKeysError) {
         console.error('Error fetching all answer keys:', allKeysError);
+        console.error('Error details:', {
+          message: allKeysError.message,
+          details: allKeysError.details,
+          hint: allKeysError.hint,
+          code: allKeysError.code
+        });
         return;
       }
 
       console.log('All available answer key combinations:');
-      allAnswerKeys?.forEach(key => {
-        console.log(`  "${key.tag_combination}" -> ${key.recommended_products}`);
+      console.log('Total answer keys found:', allAnswerKeys?.length || 0);
+      allAnswerKeys?.forEach((key, index) => {
+        console.log(`  ${index + 1}. ID:${key.id} - "${key.tag_combination}" -> ${key.recommended_products}`);
+        if (key.tag_combination === sortedTags) {
+          console.log(`  ✅ EXACT MATCH FOUND in all keys list: ID ${key.id}`);
+        }
       });
+
+      // Verify the specific record we're looking for exists
+      console.log(`Checking specifically for ID 1 with "bone,omega3"...`);
+      const { data: specificCheck, error: specificError } = await supabase
+        .from('answer_key')
+        .select('*')
+        .eq('id', 1);
+      
+      console.log('ID 1 check result:', specificCheck, specificError);
 
       // Look for exact match first
       console.log(`Looking for exact match with: "${sortedTags}"`);
+      console.log('Querying answer_key table...');
+      
       let { data: answerKeyData, error: answerKeyError } = await supabase
         .from('answer_key')
         .select('*')
-        .eq('tag_combination', sortedTags)
-        .limit(1);
+        .eq('tag_combination', sortedTags);
+
+      console.log('Query result - data:', answerKeyData);
+      console.log('Query result - error:', answerKeyError);
+      console.log('Data length:', answerKeyData?.length || 0);
 
       // Handle the data array from the query
       const exactMatch = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
       
-      if (answerKeyError || !exactMatch) {
-        console.log('❌ No exact match found');
-        console.log('Error:', answerKeyError?.message);
+      if (answerKeyError) {
+        console.error('❌ Database error:', answerKeyError);
         console.log('Looking for subset matches...');
+      } else if (!exactMatch) {
+        console.log('❌ No exact match found');
+        console.log('Looking for subset matches...');
+      } else {
+        console.log('✅ Found exact match:', exactMatch);
+      }
+      
+      if (answerKeyError || !exactMatch) {
         
         // Find the best matching answer key (highest number of matching tags)
         let bestMatch = null;
