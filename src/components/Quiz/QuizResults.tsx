@@ -208,14 +208,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('All collected user tags:', Array.from(userTags));
 
       // Look for exact match first
+      console.log('Looking for exact match with tag combination:', sortedTags);
       let { data: answerKeyData, error: answerKeyError } = await supabase
         .from('answer_key')
-        .select('recommended_products')
+        .select('*')
         .eq('tag_combination', sortedTags)
         .single();
 
       if (answerKeyError || !answerKeyData) {
-        console.log('No exact match found, looking for subset matches...');
+        console.log('No exact match found for:', sortedTags);
+        console.log('Error:', answerKeyError?.message);
+        console.log('Looking for subset matches...');
         
         // If no exact match, try to find the best subset match
         const { data: allAnswerKeys, error: allKeysError } = await supabase
@@ -272,22 +275,51 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       if (answerKeyData && answerKeyData.recommended_products) {
         const productNames = answerKeyData.recommended_products.split(',').map(name => name.trim());
-        console.log('Recommended product names:', productNames);
+        console.log('Recommended product names from answer key:', productNames);
+        console.log('Looking for exact matches in products table...');
 
-        // Fetch the actual product details
-        const { data: products, error: productsError } = await supabase
+        // First, let's check what products exist in the database
+        const { data: allProducts, error: allProductsError } = await supabase
           .from('products')
-          .select('*')
-          .in('name', productNames)
+          .select('id, name, description, image_url, url, mrp, srp, is_active')
           .eq('is_active', true);
 
-        if (productsError) {
-          console.error('Error fetching recommended products:', productsError);
+        if (allProductsError) {
+          console.error('Error fetching all products:', allProductsError);
           return;
         }
 
-        console.log('Fetched recommended products:', products);
-        setRecommendedProducts(products || []);
+        console.log('All available products in database:', allProducts?.map(p => p.name));
+
+        // Try exact name matching first
+        const exactMatches = allProducts?.filter(product => 
+          productNames.some(name => name.toLowerCase() === product.name.toLowerCase())
+        ) || [];
+
+        console.log('Exact name matches found:', exactMatches.map(p => p.name));
+
+        if (exactMatches.length > 0) {
+          setRecommendedProducts(exactMatches);
+        } else {
+          // If no exact matches, try partial matching
+          console.log('No exact matches, trying partial matching...');
+          const partialMatches = allProducts?.filter(product => 
+            productNames.some(name => 
+              product.name.toLowerCase().includes(name.toLowerCase()) ||
+              name.toLowerCase().includes(product.name.toLowerCase())
+            )
+          ) || [];
+
+          console.log('Partial matches found:', partialMatches.map(p => p.name));
+
+          if (partialMatches.length > 0) {
+            setRecommendedProducts(partialMatches);
+          } else {
+            console.log('No matches found, using first 3 active products as fallback');
+            const fallbackProducts = allProducts?.slice(0, 3) || [];
+            setRecommendedProducts(fallbackProducts);
+          }
+        }
       } else {
         console.log('No matching answer key found, showing default products');
         // Fallback to some default products

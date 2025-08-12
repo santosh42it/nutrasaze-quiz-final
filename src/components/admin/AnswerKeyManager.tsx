@@ -7,50 +7,195 @@ import { Input } from '../ui/input';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import type { AnswerKey } from '../../types/database';
 
-export const AnswerKeyManager: React.FC = () => {
-  const { answerKeys, products, addAnswerKey, updateAnswerKey, deleteAnswerKey, fetchAnswerKeys } = useAdminStore();
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingAnswerKey, setEditingAnswerKey] = useState<AnswerKey | null>(null);
-  const [newAnswerKey, setNewAnswerKey] = useState<Partial<AnswerKey>>({});
-  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; answerKey: AnswerKey | null }>({
-    isOpen: false,
-    answerKey: null
+interface AnswerKeyModalProps {
+  isOpen: boolean;
+  answerKey: AnswerKey | null;
+  onSave: (answerKeyData: Partial<AnswerKey>) => Promise<void>;
+  onClose: () => void;
+}
+
+const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSave, onClose }) => {
+  const { products, tags } = useAdminStore();
+  const [formData, setFormData] = useState<Partial<AnswerKey>>({
+    tag_combination: answerKey?.tag_combination || '',
+    recommended_products: answerKey?.recommended_products || '',
   });
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    answerKey?.tag_combination?.split(',').map(tag => tag.trim()) || []
+  );
+  const [selectedProducts, setSelectedProducts] = useState<string[]>(
+    answerKey?.recommended_products?.split(',').map(product => product.trim()) || []
+  );
+
+  React.useEffect(() => {
+    if (answerKey) {
+      setFormData({
+        tag_combination: answerKey.tag_combination,
+        recommended_products: answerKey.recommended_products,
+      });
+      setSelectedTags(answerKey.tag_combination?.split(',').map(tag => tag.trim()) || []);
+      setSelectedProducts(answerKey.recommended_products?.split(',').map(product => product.trim()) || []);
+    } else {
+      setFormData({ tag_combination: '', recommended_products: '' });
+      setSelectedTags([]);
+      setSelectedProducts([]);
+    }
+  }, [answerKey]);
+
+  const handleTagToggle = (tagName: string) => {
+    const newSelectedTags = selectedTags.includes(tagName)
+      ? selectedTags.filter(t => t !== tagName)
+      : [...selectedTags, tagName];
+    
+    setSelectedTags(newSelectedTags);
+    setFormData({
+      ...formData,
+      tag_combination: newSelectedTags.sort().join(',')
+    });
+  };
+
+  const handleProductToggle = (productName: string) => {
+    const newSelectedProducts = selectedProducts.includes(productName)
+      ? selectedProducts.filter(p => p !== productName)
+      : [...selectedProducts, productName];
+    
+    setSelectedProducts(newSelectedProducts);
+    setFormData({
+      ...formData,
+      recommended_products: newSelectedProducts.join(',')
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAnswerKey.tag_combination || !newAnswerKey.recommended_products) return;
-
+    if (!formData.tag_combination || !formData.recommended_products) return;
+    
     try {
-      if (editingAnswerKey) {
-        await updateAnswerKey(editingAnswerKey.id, newAnswerKey);
-        setEditingAnswerKey(null);
-      } else {
-        await addAnswerKey(newAnswerKey);
-        setIsAdding(false);
-      }
-      
-      setNewAnswerKey({});
-      await fetchAnswerKeys();
+      await onSave(formData);
+      onClose();
     } catch (error) {
       console.error('Error saving answer key:', error);
       alert('Failed to save answer key. Please try again.');
     }
   };
 
-  const handleEdit = (answerKey: AnswerKey) => {
-    setEditingAnswerKey(answerKey);
-    setNewAnswerKey({
-      tag_combination: answerKey.tag_combination,
-      recommended_products: answerKey.recommended_products,
-    });
-    setIsAdding(false);
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-xl text-[#1d0917]">
+            {answerKey ? 'Edit Answer Key' : 'Add New Answer Key'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-[#1d0917] mb-3">
+              Select Tags *
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border rounded p-3">
+              {tags.map((tag) => (
+                <label key={tag.id} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedTags.includes(tag.name)}
+                    onChange={() => handleTagToggle(tag.name)}
+                    className="rounded border-[#e9d6e4] text-[#913177] focus:ring-[#913177]"
+                  />
+                  <span className="ml-2 text-sm text-[#1d0917]">{tag.name}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Selected: {selectedTags.sort().join(', ') || 'None'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1d0917] mb-3">
+              Select Recommended Products *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded p-3">
+              {products.filter(p => p.is_active).map((product) => (
+                <label key={product.id} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.includes(product.name)}
+                    onChange={() => handleProductToggle(product.name)}
+                    className="rounded border-[#e9d6e4] text-[#913177] focus:ring-[#913177]"
+                  />
+                  <span className="ml-2 text-sm text-[#1d0917]">{product.name}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Selected: {selectedProducts.join(', ') || 'None'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 pt-4">
+            <Button
+              type="submit"
+              className="bg-[#913177] text-white hover:bg-[#913177]/90"
+            >
+              {answerKey ? 'Update Answer Key' : 'Add Answer Key'}
+            </Button>
+            <Button
+              type="button"
+              onClick={onClose}
+              variant="outline"
+              className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export const AnswerKeyManager: React.FC = () => {
+  const { answerKeys, products, addAnswerKey, updateAnswerKey, deleteAnswerKey, fetchAnswerKeys } = useAdminStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAnswerKey, setEditingAnswerKey] = useState<AnswerKey | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; answerKey: AnswerKey | null }>({
+    isOpen: false,
+    answerKey: null
+  });
+
+  const handleSave = async (answerKeyData: Partial<AnswerKey>) => {
+    if (editingAnswerKey) {
+      await updateAnswerKey(editingAnswerKey.id, answerKeyData);
+    } else {
+      await addAnswerKey(answerKeyData);
+    }
+    await fetchAnswerKeys();
+    setModalOpen(false);
+    setEditingAnswerKey(null);
   };
 
-  const handleCancel = () => {
-    setIsAdding(false);
+  const handleEdit = (answerKey: AnswerKey) => {
+    setEditingAnswerKey(answerKey);
+    setModalOpen(true);
+  };
+
+  const handleAddNew = () => {
     setEditingAnswerKey(null);
-    setNewAnswerKey({});
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setEditingAnswerKey(null);
   };
 
   const handleDeleteClick = (answerKey: AnswerKey) => {
@@ -79,77 +224,21 @@ export const AnswerKeyManager: React.FC = () => {
         <h2 className="[font-family:'DM_Serif_Display',Helvetica] text-2xl text-[#1d0917]">
           Answer Key Management
         </h2>
-        {!isAdding && !editingAnswerKey && (
-          <Button
-            onClick={() => setIsAdding(true)}
-            className="bg-[#913177] text-white hover:bg-[#913177]/90"
-          >
-            + Add New Answer Key
-          </Button>
-        )}
+        <Button
+          onClick={handleAddNew}
+          className="bg-[#913177] text-white hover:bg-[#913177]/90"
+        >
+          + Add New Answer Key
+        </Button>
       </div>
 
-      {/* Add/Edit Answer Key Form */}
-      {(isAdding || editingAnswerKey) && (
-        <Card className="border-[#e9d6e4] bg-white">
-          <CardContent className="p-6">
-            <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-xl text-[#1d0917] mb-4">
-              {editingAnswerKey ? 'Edit Answer Key' : 'Add New Answer Key'}
-            </h3>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#1d0917] mb-2">
-                  Tag Combination *
-                </label>
-                <Input
-                  type="text"
-                  value={newAnswerKey.tag_combination || ''}
-                  onChange={(e) => setNewAnswerKey({ ...newAnswerKey, tag_combination: e.target.value })}
-                  placeholder="e.g., bone,omega3,sleep"
-                  className="border-[#e9d6e4]"
-                />
-                <p className="text-xs text-gray-600 mt-1">
-                  Enter tags separated by commas (alphabetically sorted)
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#1d0917] mb-2">
-                  Recommended Products *
-                </label>
-                <Input
-                  type="text"
-                  value={newAnswerKey.recommended_products || ''}
-                  onChange={(e) => setNewAnswerKey({ ...newAnswerKey, recommended_products: e.target.value })}
-                  placeholder="e.g., Noxis,Elixir,Pulse"
-                  className="border-[#e9d6e4]"
-                />
-                <p className="text-xs text-gray-600 mt-1">
-                  Enter product names separated by commas
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4 pt-4">
-                <Button
-                  type="submit"
-                  className="bg-[#913177] text-white hover:bg-[#913177]/90"
-                >
-                  {editingAnswerKey ? 'Update Answer Key' : 'Add Answer Key'}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleCancel}
-                  variant="outline"
-                  className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      {/* Answer Key Modal */}
+      <AnswerKeyModal
+        isOpen={modalOpen}
+        answerKey={editingAnswerKey}
+        onSave={handleSave}
+        onClose={handleModalClose}
+      />
 
       {/* Existing Answer Keys */}
       <div>
@@ -162,7 +251,7 @@ export const AnswerKeyManager: React.FC = () => {
             <CardContent className="p-8 text-center">
               <p className="text-[#3d3d3d] mb-4">No answer keys created yet</p>
               <Button
-                onClick={() => setIsAdding(true)}
+                onClick={handleAddNew}
                 className="bg-[#913177] text-white hover:bg-[#913177]/90"
               >
                 Create Your First Answer Key
