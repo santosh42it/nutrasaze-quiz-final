@@ -36,9 +36,9 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
       />
 
       <div className="flex-1 flex items-center justify-center px-4 md:px-8 py-8">
-        <div className="max-w-[700px] w-full">
-          <div className="flex flex-col items-center gap-8">
-            <h2 className="[font-family:'DM_Serif_Display',Helvetica] font-normal text-white text-2xl md:text-[32px] text-center tracking-[2.50px] leading-[1.2] md:leading-[48px]">
+        <div className="max-w-[700px] w-full px-4">
+          <div className="flex flex-col items-center gap-6 md:gap-8">
+            <h2 className="[font-family:'DM_Serif_Display',Helvetica] font-normal text-white text-2xl md:text-[32px] text-center tracking-[1.5px] md:tracking-[2.50px] leading-[1.3] md:leading-[1.4] px-4 break-words hyphens-auto">
               {question.question}
             </h2>
             {question.description && (
