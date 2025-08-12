@@ -96,6 +96,17 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                             handleFileChange={handleFileChange}
                             acceptedFileTypes={question.acceptedFileTypes}
                           />
+                          <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-400/20">
+                            <div className="flex items-start gap-2 text-blue-300 text-sm">
+                              <span className="text-base flex-shrink-0">🏥</span>
+                              <div>
+                                <p className="font-medium">Medical Document Security</p>
+                                <p className="text-blue-200/80 text-xs mt-1">
+                                  Your reports are encrypted and only reviewed by certified health professionals for personalized recommendations.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                       <Button
@@ -166,8 +177,55 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                   >
                     Continue
                   </Button>
+                  
+                  {/* Trust Indicator for Contact Information */}
+                  {(question.id === "contact" || question.id === "3" || question.id === "email" || question.id === "1") && (
+                    <div className="mt-4 p-4 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="text-green-400 text-lg flex-shrink-0 mt-0.5">🔒</div>
+                        <div className="text-white/90 text-sm leading-relaxed">
+                          <p className="font-medium mb-1">Your privacy is our priority</p>
+                          <p className="text-white/80">
+                            Your contact details will be used by NutraSage health coach to reach out to you via call/SMS/WhatsApp for personalized health recommendations only.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* General Trust Indicator for Health Information */}
+                  {(question.type === "select" && !["contact", "3", "email", "1", "name", "2", "age", "4"].includes(question.id)) && (
+                    <div className="mt-4 p-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-400/20">
+                      <div className="flex items-center gap-2 text-green-300 text-sm">
+                        <span className="text-base">🛡️</span>
+                        <span className="font-medium">All health information is kept confidential and secure</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Trust Footer */}
+      <div className="px-6 md:px-12 pb-6">
+        <div className="max-w-[600px] mx-auto">
+          <div className="flex items-center justify-center gap-4 text-white/60 text-xs md:text-sm">
+            <div className="flex items-center gap-1">
+              <span className="text-green-400">🔐</span>
+              <span>SSL Secured</span>
+            </div>
+            <div className="w-px h-4 bg-white/20"></div>
+            <div className="flex items-center gap-1">
+              <span className="text-blue-400">🏥</span>
+              <span>HIPAA Compliant</span>
+            </div>
+            <div className="w-px h-4 bg-white/20"></div>
+            <div className="flex items-center gap-1">
+              <span className="text-purple-400">🛡️</span>
+              <span>Data Protected</span>
             </div>
           </div>
         </div>
