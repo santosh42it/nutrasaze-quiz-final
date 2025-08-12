@@ -276,9 +276,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         .from('answer_key')
         .select('*')
         .eq('tag_combination', sortedTags)
-        .single();
+        .limit(1);
 
-      if (answerKeyError || !answerKeyData) {
+      // Handle the data array from the query
+      const exactMatch = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
+      
+      if (answerKeyError || !exactMatch) {
         console.log('❌ No exact match found');
         console.log('Error:', answerKeyError?.message);
         console.log('Looking for subset matches...');
@@ -315,20 +318,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         // Prefer exact subset match over partial match
         if (exactSubsetMatch) {
           console.log('✅ Using exact subset match:', exactSubsetMatch.tag_combination);
-          answerKeyData = exactSubsetMatch;
+          answerKeyData = [exactSubsetMatch];
         } else if (bestMatch) {
           console.log('✅ Using best partial match:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
-          answerKeyData = bestMatch;
+          answerKeyData = [bestMatch];
         }
       } else {
-        console.log('✅ Found exact match:', answerKeyData.tag_combination);
+        console.log('✅ Found exact match:', exactMatch.tag_combination);
+        answerKeyData = [exactMatch];
       }
 
-      if (answerKeyData && answerKeyData.recommended_products) {
-        const productNames = answerKeyData.recommended_products.split(',').map(name => name.trim());
+      const finalAnswerKey = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
+      if (finalAnswerKey && finalAnswerKey.recommended_products) {
+        const productNames = finalAnswerKey.recommended_products.split(',').map(name => name.trim());
         console.log('=== PRODUCT MATCHING ===');
         console.log('Recommended product names from answer key:', productNames);
-        console.log('Using answer key:', answerKeyData.tag_combination, '->', answerKeyData.recommended_products);
+        console.log('Using answer key:', finalAnswerKey.tag_combination, '->', finalAnswerKey.recommended_products);
 
         // Get all products for debugging
         const { data: allProducts, error: allProductsError } = await supabase
