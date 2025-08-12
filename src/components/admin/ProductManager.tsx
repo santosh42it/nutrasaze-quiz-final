@@ -314,12 +314,7 @@ export const ProductManager: React.FC = () => {
           Existing Products ({products.length})
         </h3>
 
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-            Debug: Products loaded: {products.length} | Loading: {loading ? 'Yes' : 'No'}
-          </div>
-        )}
+        
 
         {loading ? (
           <Card className="border-[#e9d6e4] bg-white">
