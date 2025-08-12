@@ -148,7 +148,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   // Function to get recommended products based on quiz answers
   const getRecommendedProducts = async () => {
     try {
+      console.log('=== PRODUCT RECOMMENDATION DEBUG ===');
       console.log('Getting recommended products based on quiz answers...');
+      console.log('All user answers:', answers);
       
       // First, get all the user's answers and their associated tags
       const { data: fetchedQuestions, error: questionsError } = await supabase
@@ -174,41 +176,102 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         return;
       }
 
+      console.log('Total questions fetched:', fetchedQuestions?.length);
+
       // Collect all unique tags from user's answers
       const userTags = new Set<string>();
+      const answerTagMapping: { [key: string]: string[] } = {};
       
       Object.entries(answers).forEach(([questionId, answerValue]) => {
+        // Skip detail keys and empty values
+        if (questionId.includes('_details') || !answerValue || answerValue.trim() === '') {
+          return;
+        }
+
+        console.log(`Processing answer - Question ID: ${questionId}, Answer: "${answerValue}"`);
+        
         const question = fetchedQuestions?.find(q => q.id === parseInt(questionId));
         if (question && question.question_options) {
-          // Find the selected option
+          console.log(`Found question: "${question.question_text}"`);
+          console.log(`Available options for this question:`, question.question_options.map(opt => opt.option_text));
+          
+          // Find the selected option with exact matching
           const selectedOption = question.question_options.find(opt => 
-            opt.option_text === answerValue
+            opt.option_text.trim().toLowerCase() === answerValue.trim().toLowerCase()
           );
           
-          if (selectedOption && selectedOption.option_tags) {
-            selectedOption.option_tags.forEach((optionTag: any) => {
-              if (optionTag.tags && optionTag.tags.name) {
-                userTags.add(optionTag.tags.name);
-              }
-            });
+          if (selectedOption) {
+            console.log(`Found selected option: "${selectedOption.option_text}"`);
+            console.log(`Option tags:`, selectedOption.option_tags);
+            
+            const tagsForThisAnswer: string[] = [];
+            
+            if (selectedOption.option_tags && selectedOption.option_tags.length > 0) {
+              selectedOption.option_tags.forEach((optionTag: any) => {
+                if (optionTag.tags && optionTag.tags.name) {
+                  userTags.add(optionTag.tags.name);
+                  tagsForThisAnswer.push(optionTag.tags.name);
+                  console.log(`Added tag: "${optionTag.tags.name}"`);
+                }
+              });
+            } else {
+              console.log('No tags found for this option');
+            }
+            
+            answerTagMapping[`Q${questionId}: ${answerValue}`] = tagsForThisAnswer;
+          } else {
+            console.log(`❌ Could not find matching option for answer: "${answerValue}"`);
+            console.log('Available options:', question.question_options.map(opt => `"${opt.option_text}"`));
           }
+        } else {
+          console.log(`❌ Could not find question with ID: ${questionId}`);
         }
       });
 
-      console.log('User tags collected:', Array.from(userTags));
+      console.log('=== TAG COLLECTION SUMMARY ===');
+      console.log('Answer to Tag Mapping:', answerTagMapping);
+      console.log('All unique user tags collected:', Array.from(userTags));
+      console.log('Total unique tags:', userTags.size);
 
       if (userTags.size === 0) {
-        console.log('No tags found for user answers');
+        console.log('❌ No tags found for user answers - will show default products');
+        // Show default products when no tags are found
+        const { data: defaultProducts, error: defaultError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true)
+          .limit(3);
+
+        if (!defaultError && defaultProducts) {
+          console.log('Using default products:', defaultProducts.map(p => p.name));
+          setRecommendedProducts(defaultProducts);
+        }
         return;
       }
 
       // Sort tags alphabetically to match the answer key format
       const sortedTags = Array.from(userTags).sort().join(',');
-      console.log('Sorted tag combination:', sortedTags);
-      console.log('All collected user tags:', Array.from(userTags));
+      console.log('=== ANSWER KEY MATCHING ===');
+      console.log('User tag combination (sorted):', sortedTags);
+
+      // Get all answer keys for debugging
+      const { data: allAnswerKeys, error: allKeysError } = await supabase
+        .from('answer_key')
+        .select('*')
+        .order('tag_combination');
+
+      if (allKeysError) {
+        console.error('Error fetching all answer keys:', allKeysError);
+        return;
+      }
+
+      console.log('All available answer key combinations:');
+      allAnswerKeys?.forEach(key => {
+        console.log(`  "${key.tag_combination}" -> ${key.recommended_products}`);
+      });
 
       // Look for exact match first
-      console.log('Looking for exact match with tag combination:', sortedTags);
+      console.log(`Looking for exact match with: "${sortedTags}"`);
       let { data: answerKeyData, error: answerKeyError } = await supabase
         .from('answer_key')
         .select('*')
@@ -216,21 +279,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         .single();
 
       if (answerKeyError || !answerKeyData) {
-        console.log('No exact match found for:', sortedTags);
+        console.log('❌ No exact match found');
         console.log('Error:', answerKeyError?.message);
         console.log('Looking for subset matches...');
         
-        // If no exact match, try to find the best subset match
-        const { data: allAnswerKeys, error: allKeysError } = await supabase
-          .from('answer_key')
-          .select('*')
-          .order('tag_combination');
-
-        if (allKeysError) {
-          console.error('Error fetching all answer keys:', allKeysError);
-          return;
-        }
-
         // Find the best matching answer key (highest number of matching tags)
         let bestMatch = null;
         let maxMatches = 0;
@@ -241,11 +293,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           const userTagsArray = Array.from(userTags);
           const matchCount = userTagsArray.filter(tag => keyTags.has(tag)).length;
           
+          console.log(`Checking key "${key.tag_combination}": ${matchCount}/${userTagsArray.length} tags match`);
+          
           // Check if user tags are a subset of this key's tags
           const isSubset = userTagsArray.every(tag => keyTags.has(tag));
           
-          // Prefer exact subset matches
           if (isSubset && matchCount === userTagsArray.length) {
+            console.log(`✅ Found exact subset match: "${key.tag_combination}"`);
             if (!exactSubsetMatch || keyTags.size < new Set(exactSubsetMatch.tag_combination.split(',')).size) {
               exactSubsetMatch = key;
             }
@@ -260,25 +314,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
         // Prefer exact subset match over partial match
         if (exactSubsetMatch) {
-          console.log('Found exact subset match:', exactSubsetMatch.tag_combination, 'for user tags:', Array.from(userTags));
+          console.log('✅ Using exact subset match:', exactSubsetMatch.tag_combination);
           answerKeyData = exactSubsetMatch;
         } else if (bestMatch) {
-          console.log('Best partial match found:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
+          console.log('✅ Using best partial match:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
           answerKeyData = bestMatch;
         }
-
-        if (bestMatch) {
-          console.log('Best match found:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
-          answerKeyData = bestMatch;
-        }
+      } else {
+        console.log('✅ Found exact match:', answerKeyData.tag_combination);
       }
 
       if (answerKeyData && answerKeyData.recommended_products) {
         const productNames = answerKeyData.recommended_products.split(',').map(name => name.trim());
+        console.log('=== PRODUCT MATCHING ===');
         console.log('Recommended product names from answer key:', productNames);
-        console.log('Looking for exact matches in products table...');
+        console.log('Using answer key:', answerKeyData.tag_combination, '->', answerKeyData.recommended_products);
 
-        // First, let's check what products exist in the database
+        // Get all products for debugging
         const { data: allProducts, error: allProductsError } = await supabase
           .from('products')
           .select('id, name, description, image_url, url, mrp, srp, is_active')
@@ -296,13 +348,20 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           productNames.some(name => name.toLowerCase() === product.name.toLowerCase())
         ) || [];
 
-        console.log('Exact name matches found:', exactMatches.map(p => p.name));
+        console.log('Product matching results:');
+        productNames.forEach(name => {
+          const match = allProducts?.find(p => p.name.toLowerCase() === name.toLowerCase());
+          console.log(`  "${name}" -> ${match ? `Found: "${match.name}"` : 'NOT FOUND'}`);
+        });
+
+        console.log('Final exact matches:', exactMatches.map(p => p.name));
 
         if (exactMatches.length > 0) {
+          console.log('✅ Using exact product matches');
           setRecommendedProducts(exactMatches);
         } else {
           // If no exact matches, try partial matching
-          console.log('No exact matches, trying partial matching...');
+          console.log('⚠️ No exact matches, trying partial matching...');
           const partialMatches = allProducts?.filter(product => 
             productNames.some(name => 
               product.name.toLowerCase().includes(name.toLowerCase()) ||
@@ -313,16 +372,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           console.log('Partial matches found:', partialMatches.map(p => p.name));
 
           if (partialMatches.length > 0) {
+            console.log('✅ Using partial product matches');
             setRecommendedProducts(partialMatches);
           } else {
-            console.log('No matches found, using first 3 active products as fallback');
+            console.log('❌ No matches found, using first 3 active products as fallback');
             const fallbackProducts = allProducts?.slice(0, 3) || [];
+            console.log('Fallback products:', fallbackProducts.map(p => p.name));
             setRecommendedProducts(fallbackProducts);
           }
         }
       } else {
-        console.log('No matching answer key found, showing default products');
-        // Fallback to some default products
+        console.log('❌ No matching answer key found, showing default products');
         const { data: defaultProducts, error: defaultError } = await supabase
           .from('products')
           .select('*')
@@ -330,9 +390,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           .limit(3);
 
         if (!defaultError && defaultProducts) {
+          console.log('Using default products:', defaultProducts.map(p => p.name));
           setRecommendedProducts(defaultProducts);
         }
       }
+
+      console.log('=== RECOMMENDATION COMPLETE ===');
     } catch (error) {
       console.error('Error getting recommended products:', error);
     }
