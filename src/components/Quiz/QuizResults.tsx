@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -20,7 +21,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
-
 
   // Extract user info from answers - improved logic to avoid mismatched data
   const extractedUserInfo = useMemo(() => {
@@ -254,102 +254,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('=== ANSWER KEY MATCHING ===');
       console.log('User tag combination (sorted):', sortedTags);
 
-      // Test database connection first
-      console.log('Testing database connection...');
-      console.log('Supabase client config:', {
-        url: import.meta.env.VITE_SUPABASE_URL,
-        hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-        keyPreview: import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 20) + '...'
-      });
-
-      // Check current session/auth status
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('Current session:', { 
-        hasSession: !!session, 
-        user: session?.user?.email,
-        error: sessionError 
-      });
-
-      // Test RLS policies by trying different approaches
-      console.log('Testing RLS and policies...');
-      
-      // Method 1: Try with service role bypass (if available)
-      console.log('Method 1: Testing basic connection...');
-      const { data: basicTest, error: basicError } = await supabase
-        .from('answer_key')
-        .select('id')
-        .limit(1);
-      
-      console.log('Basic connection test:', { data: basicTest, error: basicError });
-
-      // Method 2: Try with explicit RLS bypass using service role
-      if (basicError && basicError.code === 'PGRST116') {
-        console.log('RLS policy blocking access. Trying alternative connection...');
-        
-        // Try to get Supabase service key from env (if available)
-        const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
-        if (serviceKey) {
-          console.log('Attempting with service key...');
-          const { createClient } = await import('@supabase/supabase-js');
-          const serviceClient = createClient(
-            import.meta.env.VITE_SUPABASE_URL,
-            serviceKey
-          );
-          
-          const { data: serviceTest, error: serviceError } = await serviceClient
-            .from('answer_key')
-            .select('id')
-            .limit(1);
-          
-          console.log('Service key test:', { data: serviceTest, error: serviceError });
-        }
-      }
-
-      // Now try the count query
-      const { data: testData, error: testError, count } = await supabase
-        .from('answer_key')
-        .select('*', { count: 'exact', head: true });
-      
-      console.log('Connection test result:', { count, data: testData, error: testError });
-
       // Get all answer keys for debugging
       console.log('Fetching all answer keys...');
-      // Try different approaches to fetch answer keys
-      console.log('Attempting to fetch answer keys with different methods...');
-      
-      // Method 1: Simple select all
       const { data: allAnswerKeys, error: allKeysError } = await supabase
         .from('answer_key')
         .select('*');
-
-      console.log('Method 1 - Simple select result:', { data: allAnswerKeys, error: allKeysError });
-
-      if (allKeysError) {
-        console.error('Error fetching all answer keys:', allKeysError);
-        console.error('Error details:', {
-          message: allKeysError.message,
-          details: allKeysError.details,
-          hint: allKeysError.hint,
-          code: allKeysError.code
-        });
-
-        // Method 2: Try with explicit columns
-        console.log('Trying Method 2 - explicit columns...');
-        const { data: explicitData, error: explicitError } = await supabase
-          .from('answer_key')
-          .select('id, tag_combination, recommended_products');
-        
-        console.log('Method 2 result:', { data: explicitData, error: explicitError });
-
-        // Method 3: Try to check if table exists by querying a specific ID
-        console.log('Trying Method 3 - check if table exists...');
-        const { data: tableCheck, error: tableError } = await supabase
-          .rpc('version');
-        
-        console.log('Database version check:', { data: tableCheck, error: tableError });
-        
-        return;
-      }
 
       console.log('All available answer key combinations:');
       console.log('Total answer keys found:', allAnswerKeys?.length || 0);
@@ -359,15 +268,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           console.log(`  ✅ EXACT MATCH FOUND in all keys list: ID ${key.id}`);
         }
       });
-
-      // Verify the specific record we're looking for exists
-      console.log(`Checking specifically for ID 1 with "bone,omega3"...`);
-      const { data: specificCheck, error: specificError } = await supabase
-        .from('answer_key')
-        .select('*')
-        .eq('id', 1);
-      
-      console.log('ID 1 check result:', specificCheck, specificError);
 
       // Look for exact match first
       console.log(`Looking for exact match with: "${sortedTags}"`);
@@ -385,17 +285,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       // Handle the data array from the query
       const exactMatch = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
       
-      if (answerKeyError) {
-        console.error('❌ Database error:', answerKeyError);
-        console.log('Looking for subset matches...');
-      } else if (!exactMatch) {
+      if (answerKeyError || !exactMatch) {
         console.log('❌ No exact match found');
         console.log('Looking for subset matches...');
-      } else {
-        console.log('✅ Found exact match:', exactMatch);
-      }
-      
-      if (answerKeyError || !exactMatch) {
         
         // Find the best matching answer key (highest number of matching tags)
         let bestMatch = null;
@@ -909,272 +801,216 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     }
   }, []); // Remove dependencies to ensure it only runs once on mount
 
+  // Calculate total price
+  const totalPrice = recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0);
+  const originalPrice = recommendedProducts.reduce((total, product) => total + (product.mrp || product.srp || 1299), 0);
+  const discountPercentage = Math.round(((originalPrice - totalPrice) / originalPrice) * 100);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8f4f6] to-white">
-      {/* Header Section */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-[#1d0917]">NutraSage</h1>
-            <div className="text-sm text-gray-600">Quiz Complete</div>
+            <h1 className="text-xl font-bold text-[#1d0917]">NutraSage</h1>
+            <div className="text-sm text-gray-600">Assessment Report</div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8">
         <div className="max-w-4xl mx-auto">
 
-          {/* Success Message */}
-          <div className="text-center mb-12">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h1 className="text-4xl font-bold text-[#1d0917] mb-4">
-              Congratulations, {extractedUserInfo?.name || 'User'}!
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Your personalized health assessment is complete. Based on your responses,
-              we've created a custom wellness plan just for you.
-            </p>
-          </div>
+          {/* Assessment Report Card */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex flex-col md:flex-row items-start gap-6">
+                {/* Left Column - Report Details */}
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500 mb-2">Assessment Report</div>
+                  
+                  <div className="mb-4">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
+                      {extractedUserInfo?.name || 'User'},
+                    </h2>
+                    <div className="text-gray-600 mb-2">You Are Currently On</div>
+                    <div className="text-lg md:text-xl font-semibold text-gray-900 mb-3">
+                      Stage 1 Of Personalized Health Journey
+                    </div>
+                    
+                    <div className="text-gray-600 mb-2">Start Seeing Results In</div>
+                    <div className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
+                      3-4 Weeks
+                    </div>
 
-          {/* User Info Card */}
-          <Card className="mb-8 border-0 shadow-lg bg-white">
-            <CardContent className="p-8">
-              <div className="flex items-center gap-6 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#913177] to-[#b54394] rounded-full flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">
-                    {extractedUserInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-[#1d0917] mb-1">
-                    {extractedUserInfo?.name || 'User'}
-                  </h3>
-                  <p className="text-gray-600">{extractedUserInfo?.email}</p>
-                  <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                    <span>Age: {extractedUserInfo?.age}</span>
-                    <span>•</span>
-                    <span>Contact: {extractedUserInfo?.contact}</span>
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <div className="bg-green-100 rounded-full p-3 mb-3">
+                        <div className="bg-green-500 h-2 rounded-full" style={{width: '85%'}}></div>
+                      </div>
+                      <div className="text-center text-sm font-medium text-green-700">
+                        Health Improvement Possibility 85%
+                      </div>
+                    </div>
+
+                    {/* Health Analysis */}
+                    <div className="bg-green-50 rounded-lg p-4 mb-4">
+                      <div className="text-gray-800 text-sm leading-relaxed">
+                        Based on your quiz responses, we've identified key areas for improvement. 
+                        Your personalized supplement plan targets nutritional gaps and lifestyle factors 
+                        that can significantly enhance your overall wellness and energy levels.
+                      </div>
+                    </div>
+
+                    {/* Root Causes */}
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Wellness Root Causes</h3>
+                      <div className="flex gap-4">
+                        <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg flex-1">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full mb-2 flex items-center justify-center">
+                            🥗
+                          </div>
+                          <div className="text-xs text-gray-700 text-center">Nutrition</div>
+                        </div>
+                        <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg flex-1">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full mb-2 flex items-center justify-center">
+                            🏃‍♂️
+                          </div>
+                          <div className="text-xs text-gray-700 text-center">Lifestyle</div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-gradient-to-br from-[#f8f4f6] to-[#fff] rounded-xl">
-                  <div className="text-3xl font-bold text-[#913177] mb-2">15+</div>
-                  <div className="text-sm text-gray-600">Questions Answered</div>
-                </div>
-                <div className="text-center p-4 bg-gradient-to-br from-[#f8f4f6] to-[#fff] rounded-xl">
-                  <div className="text-3xl font-bold text-[#913177] mb-2">3</div>
-                  <div className="text-sm text-gray-600">Custom Supplements</div>
-                </div>
-                <div className="text-center p-4 bg-gradient-to-br from-[#f8f4f6] to-[#fff] rounded-xl">
-                  <div className="text-3xl font-bold text-[#913177] mb-2">100%</div>
-                  <div className="text-sm text-gray-600">Personalized</div>
+                {/* Right Column - Avatar */}
+                <div className="flex-shrink-0">
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[#913177] to-[#b54394] rounded-full flex items-center justify-center">
+                    <span className="text-white text-2xl md:text-3xl font-bold">
+                      {extractedUserInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recommended Products */}
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold text-[#1d0917] text-center mb-8">
-              Your Personalized Supplement Plan
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
-                <Card key={product.id} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                  <div className="relative">
-                    <img
-                      src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
-                      alt={product.name}
-                      className="w-full h-48 object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
-                      }}
-                    />
-                    <div className="absolute top-4 right-4 bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold">
-                      ₹{product.srp || product.mrp || '999'}
-                    </div>
-                  </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-bold text-[#1d0917] mb-3">{product.name}</h3>
-                    <p className="text-gray-600 text-sm mb-4 leading-relaxed">{product.description}</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
-                        <span className="text-sm text-gray-700">Personalized Formula</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
-                        <span className="text-sm text-gray-700">Premium Quality</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
-                        <span className="text-sm text-gray-700">Science-Backed</span>
-                      </div>
-                    </div>
-                    {product.url && (
-                      <div className="mt-4">
-                        <a 
-                          href={product.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[#913177] hover:underline text-sm"
-                        >
-                          Learn More →
-                        </a>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )) : (
-                // Fallback products if no recommendations found
-                [
-                  {
-                    title: "Daily Energy Boost",
-                    description: "Natural energy enhancement for sustained vitality throughout your day",
-                    features: ["Increased Energy", "Mental Clarity", "Focus Enhancement"],
-                    price: "₹999",
-                    image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  },
-                  {
-                    title: "Stress Relief Complex",
-                    description: "Adaptogenic herbs to help manage stress and promote emotional balance",
-                    features: ["Stress Management", "Mood Support", "Better Sleep"],
-                    price: "₹899",
-                    image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  },
-                  {
-                    title: "Recovery & Immunity",
-                    description: "Support your body's natural healing and immune system function",
-                    features: ["Immune Support", "Recovery Aid", "Antioxidants"],
-                    price: "₹1099",
-                    image: "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                  }
-                ].map((product, index) => (
-                  <Card key={index} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                    <div className="relative">
-                      <img
-                        src={product.image}
-                        alt={product.title}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="absolute top-4 right-4 bg-[#913177] text-white px-3 py-1 rounded-full text-sm font-bold">
-                        {product.price}
-                      </div>
-                    </div>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold text-[#1d0917] mb-3">{product.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">{product.description}</p>
-                      <div className="space-y-2">
-                        {product.features.map((feature, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-[#913177] rounded-full"></div>
-                            <span className="text-sm text-gray-700">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Pricing Section */}
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-[#f8f4f6]">
-            <CardContent className="p-8 md:p-12">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-[#1d0917] mb-4">
-                  Complete Wellness Package
-                </h2>
-                <p className="text-lg text-gray-600">
-                  Everything you need to start your health transformation journey
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <div className="space-y-6">
-                  <div className="flex items-baseline gap-4">
-                    <span className="text-5xl font-bold text-[#913177]">
-                      ₹{recommendedProducts.length > 0 
-                        ? recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0)
-                        : '2,999'
-                      }
-                    </span>
-                    <div>
-                      <span className="text-lg text-gray-500 line-through">
-                        ₹{recommendedProducts.length > 0 
-                          ? recommendedProducts.reduce((total, product) => total + (product.mrp || product.srp || 999), 0)
-                          : '4,500'
-                        }
-                      </span>
-                      <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-sm font-bold ml-2">
-                        Best Price
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-gray-600">per month</p>
-
+          {/* Products Section */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex flex-col md:flex-row gap-8">
+                
+                {/* Left Column - Products List */}
+                <div className="flex-1">
+                  <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">
+                    Start Your Journey With Just 1 Month Kit
+                  </h3>
+                  
                   <div className="space-y-4">
-                    {[
-                      `${recommendedProducts.length || 3} Custom Supplements (30-day supply)`,
-                      "Personalized Diet Plan",
-                      "Custom Exercise Routine", 
-                      "Expert Consultation",
-                      "Monthly Progress Tracking",
-                      "Free Shipping & Support"
-                    ].map((feature, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="w-5 h-5 bg-[#913177] rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
+                      <div key={product.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <img
+                          src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded-lg"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 text-sm">{product.name}</div>
+                          <div className="text-xs text-gray-600">
+                            {product.description?.substring(0, 50)}...
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-gray-900">₹{product.srp || product.mrp || '999'}</div>
+                        </div>
+                        <div className="text-gray-400">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
-                        <span className="text-gray-700">{feature}</span>
                       </div>
-                    ))}
+                    )) : (
+                      // Fallback products
+                      [
+                        { name: "Daily Energy Boost", description: "Natural energy enhancement", price: "₹999" },
+                        { name: "Stress Relief Complex", description: "Adaptogenic herbs for stress", price: "₹899" },
+                        { name: "Recovery & Immunity", description: "Support natural healing", price: "₹1099" }
+                      ].map((product, index) => (
+                        <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                          <img
+                            src="https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
+                            alt={product.name}
+                            className="w-12 h-12 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 text-sm">{product.name}</div>
+                            <div className="text-xs text-gray-600">{product.description}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-gray-900">{product.price}</div>
+                          </div>
+                          <div className="text-gray-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Certification */}
+                  <div className="mt-6 text-center text-xs text-gray-500 bg-gray-100 rounded-lg p-3">
+                    All of our products are GMP & ISO 9001 certified
                   </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="bg-white rounded-2xl p-8 shadow-lg">
-                    <h3 className="text-2xl font-bold text-[#1d0917] mb-4">
-                      Ready to Transform Your Health?
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Join thousands who have already started their wellness journey
-                    </p>
+                {/* Right Column - Pricing Summary (Desktop) */}
+                <div className="w-full md:w-80">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 md:sticky md:top-4">
+                    <div className="text-center mb-6">
+                      <div className="text-lg font-bold text-gray-900 mb-1">Subtotal</div>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-2xl font-bold text-gray-900">₹{totalPrice}</span>
+                        {originalPrice > totalPrice && (
+                          <span className="text-lg text-gray-500 line-through">₹{originalPrice}</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600">(Inclusive of all taxes)</div>
+                      {discountPercentage > 0 && (
+                        <div className="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium mt-2">
+                          {discountPercentage}% OFF
+                        </div>
+                      )}
+                    </div>
 
-                    <Button
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7a2a66] hover:to-[#9c3a81] text-white rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Processing...' : `Start Your Journey - ₹${recommendedProducts.length > 0 
-                        ? recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0)
-                        : '2,999'
-                      }/month`}
+                    {/* Desktop Buy Now Button */}
+                    <Button className="w-full h-12 text-lg font-bold bg-gradient-to-r from-[#a4d65e] to-[#8bc34a] hover:from-[#9ccc54] hover:to-[#7db83a] text-black rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 hidden md:block">
+                      Buy Now
                     </Button>
 
-                    <div className="flex items-center justify-center gap-6 mt-6 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>30-day guarantee</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <span>Secure payment</span>
-                      </div>
+                    {/* Features */}
+                    <div className="mt-6 space-y-3">
+                      {[
+                        "30-day money back guarantee",
+                        "Free expert consultation",
+                        "Secure & fast delivery",
+                        "Custom meal plan included"
+                      ].map((feature, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="text-sm text-gray-700">{feature}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1183,14 +1019,31 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           </Card>
 
           {/* Contact Info */}
-          <div className="text-center mt-8 space-y-2">
-            <p className="text-gray-600">
-              Our experts will review your responses and contact you within 24 hours to finalize your plan.
-            </p>
-            <p className="text-sm text-gray-500">
-              Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call <span className="text-[#913177] font-semibold">+91-XXXX-XXXX</span>
+          <div className="text-center text-sm text-gray-600 space-y-1">
+            <p>Our experts will review your responses and contact you within 24 hours.</p>
+            <p>
+              Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call{' '}
+              <span className="text-[#913177] font-semibold">+91-XXXX-XXXX</span>
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Sticky Buy Now Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 md:hidden z-50">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-sm text-gray-600">Total</div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold text-gray-900">₹{totalPrice}</span>
+              {originalPrice > totalPrice && (
+                <span className="text-sm text-gray-500 line-through">₹{originalPrice}</span>
+              )}
+            </div>
+          </div>
+          <Button className="px-8 h-12 text-lg font-bold bg-gradient-to-r from-[#a4d65e] to-[#8bc34a] hover:from-[#9ccc54] hover:to-[#7db83a] text-black rounded-lg shadow-md">
+            Buy Now
+          </Button>
         </div>
       </div>
     </div>
