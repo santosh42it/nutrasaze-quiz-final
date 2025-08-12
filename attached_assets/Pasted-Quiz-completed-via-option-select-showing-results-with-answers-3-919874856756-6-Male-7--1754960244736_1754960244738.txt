@@ -1,0 +1,27 @@
+Quiz completed via option select, showing results with answers: {3: '+919874856756', 6: 'Male', 7: 'rarely', 8: 'High and consistent', 9: 'no', 10: 'Healthy and clear', 11: 'i sleep well and wake refreshed', 12: 'never', 13: 'moderate active (exercise 3-4x/week)', 14: 'yes, daily', 15: 'no', 16: 'no', 38: 'santosh', 39: 'test@gmail.com', 41: '35'}3: "+919874856756"6: "Male"7: "rarely"8: "High and consistent"9: "no"10: "Healthy and clear"11: "i sleep well and wake refreshed"12: "never"13: "moderate active (exercise 3-4x/week)"14: "yes, daily"15: "no"16: "no"38: "santosh"39: "test@gmail.com"41: "35"[[Prototype]]: Object
+QuizResults.tsx:820 Initiating quiz save...
+QuizResults.tsx:459 === QUIZ SAVE DEBUG ===
+QuizResults.tsx:538 Inserting quiz response...
+QuizResults.tsx:572 Quiz response saved successfully: {id: 85, name: 'santosh', email: 'test@gmail.com', contact: '9874856756', age: 35, …}age: 35contact: "9874856756"created_at: "2025-08-12T00:55:34.097353+00:00"email: "test@gmail.com"id: 85name: "santosh"updated_at: "2025-08-12T00:55:34.097353+00:00"[[Prototype]]: Object
+@supabase_supabase-js.js?v=ae5b7713:3900 Fetch finished loading: POST "https://pgtumlebummywqasskhk.supabase.co/rest/v1/quiz_responses?select=*".
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3900
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3921
+fulfilled @ @supabase_supabase-js.js?v=ae5b7713:3873
+Promise.then
+step @ @supabase_supabase-js.js?v=ae5b7713:3886
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3888
+__awaiter6 @ @supabase_supabase-js.js?v=ae5b7713:3870
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3911
+then @ @supabase_supabase-js.js?v=ae5b7713:89
+@supabase_supabase-js.js?v=ae5b7713:3900 Fetch finished loading: POST "https://pgtumlebummywqasskhk.supabase.co/rest/v1/quiz_answers?columns=%22response_id%22%2C%22question_id%22%2C%22answer_text%22%2C%22additional_info%22%2C%22file_url%22".
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3900
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3921
+fulfilled @ @supabase_supabase-js.js?v=ae5b7713:3873
+Promise.then
+step @ @supabase_supabase-js.js?v=ae5b7713:3886
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3888
+__awaiter6 @ @supabase_supabase-js.js?v=ae5b7713:3870
+(anonymous) @ @supabase_supabase-js.js?v=ae5b7713:3911
+then @ @supabase_supabase-js.js?v=ae5b7713:89
+QuizResults.tsx:780 Quiz answers saved successfully
+QuizResults.tsx:152 Getting recommended products based on quiz answers...
