@@ -26,7 +26,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ currentQuestion, total
 
   return (
     <div className="w-full bg-[#1d0917] py-4 md:py-6 px-4 md:px-8 pt-20 md:pt-24">
-      <div className="max-w-4xl mx-auto"></div>
+      <div className="max-w-4xl mx-auto">
         {/* Section Steps */}
         <div className="flex justify-between items-center mb-4 md:mb-6">
           {sections.map((section, index) => {
