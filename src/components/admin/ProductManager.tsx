@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdminStore } from '../../stores/adminStore';
 import { supabase } from '../../lib/supabase';
@@ -37,7 +36,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
         mrp: product.mrp,
         srp: product.srp,
       });
-      
+
       // Fetch existing tags for this product
       const fetchProductTags = async () => {
         try {
@@ -45,7 +44,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
             .from('product_tags')
             .select('tag_id')
             .eq('product_id', product.id);
-          
+
           if (productTags) {
             setSelectedTags(productTags.map(pt => pt.tag_id));
           }
@@ -53,7 +52,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
           console.error('Error fetching product tags:', error);
         }
       };
-      
+
       fetchProductTags();
     } else {
       setFormData({
@@ -71,7 +70,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.description) return;
-    
+
     try {
       await onSave(formData, selectedTags);
       onClose();
@@ -280,7 +279,7 @@ export const ProductManager: React.FC = () => {
           product_id: editingProduct.id,
           tag_id: tagId
         }));
-        
+
         const { error: insertTagsError } = await supabase
           .from('product_tags')
           .insert(tagInserts);
@@ -314,7 +313,7 @@ export const ProductManager: React.FC = () => {
           product_id: productData.id,
           tag_id: tagId
         }));
-        
+
         const { error: insertTagsError } = await supabase
           .from('product_tags')
           .insert(tagInserts);
@@ -388,7 +387,7 @@ export const ProductManager: React.FC = () => {
         <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-xl text-[#1d0917] mb-4">
           Existing Products ({products.length})
         </h3>
-        
+
         {products.length === 0 ? (
           <Card className="border-[#e9d6e4] bg-white">
             <CardContent className="p-8 text-center">
@@ -418,11 +417,11 @@ export const ProductManager: React.FC = () => {
                       />
                     </div>
                   )}
-                  
+
                   <div className="space-y-2">
                     <h4 className="font-medium text-[#1d0917] text-lg">{product.name}</h4>
                     <p className="text-sm text-[#3d3d3d] line-clamp-2">{product.description}</p>
-                    
+
                     {(product.mrp || product.srp) && (
                       <div className="flex items-center gap-2 text-sm">
                         {product.mrp && (
@@ -433,7 +432,7 @@ export const ProductManager: React.FC = () => {
                         )}
                       </div>
                     )}
-                    
+
                     {product.url && (
                       <a 
                         href={product.url} 
@@ -444,7 +443,7 @@ export const ProductManager: React.FC = () => {
                         View Product →
                       </a>
                     )}
-                    
+
                     <div className="flex items-center justify-between pt-3 border-t border-[#e9d6e4]">
                       <div className="flex items-center space-x-2">
                         <span className={`text-xs px-2 py-1 rounded-full ${
@@ -455,7 +454,7 @@ export const ProductManager: React.FC = () => {
                           {product.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleEdit(product)}
@@ -491,7 +490,7 @@ export const ProductManager: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Delete Product"
-        description={`Are you sure you want to delete "${deleteDialog.product?.name}"? This action cannot be undone and may affect quiz recommendations that reference this product.`}
+        description={`Are you sure you want to delete the product "${deleteDialog.product?.name}"? This action cannot be undone and may affect quiz recommendations.`}
       />
     </div>
   );

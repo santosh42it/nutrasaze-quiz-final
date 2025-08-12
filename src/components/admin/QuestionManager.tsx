@@ -273,12 +273,16 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                           </Button>
                           <Button
                             type="button"
-                            onClick={() => handleRemoveOption(index)}
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to remove this option: "${optionWithTags.option}"? This action cannot be undone.`)) {
+                                handleRemoveOption(index);
+                              }
+                            }}
                             variant="ghost"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
                           >
-                            Remove
+                            Removeve
                           </Button>
                         </>
                       )}

@@ -330,7 +330,7 @@ export const AnswerKeyManager: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Delete Answer Key"
-        description={`Are you sure you want to delete this answer key for "${deleteDialog.answerKey?.tag_combination}"? This action cannot be undone and may affect product recommendations.`}
+        description={`Are you sure you want to delete this answer key for "${deleteDialog.answerKey?.tag_combination}"? This action cannot be undone and will permanently affect product recommendations for users with this tag combination. Quiz functionality may be impacted.`}
       />
     </div>
   );
