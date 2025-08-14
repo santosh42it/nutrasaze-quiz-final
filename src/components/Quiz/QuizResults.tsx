@@ -1036,13 +1036,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
                     {/* Desktop Buy Now Button */}
                     <Button 
-                      as="a"
-                      href={buyNowUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden md:block text-center flex items-center justify-center animate-pulse"
+                      onClick={() => {
+                        if (buyNowUrl && buyNowUrl !== '#') {
+                          // Open in same tab to avoid cart refresh issues
+                          window.location.href = buyNowUrl;
+                        }
+                      }}
+                      className="w-full h-14 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden md:block text-center flex items-center justify-center animate-pulse px-3"
                     >
-                      🚀 SECURE YOUR PERSONALIZED PLAN NOW
+                      🚀 SECURE YOUR PLAN NOW
                     </Button>
 
                     {/* Urgency Message */}
@@ -1101,13 +1103,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             </div>
           </div>
           <Button 
-            as="a"
-            href={buyNowUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 h-12 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center animate-pulse"
+            onClick={() => {
+              if (buyNowUrl && buyNowUrl !== '#') {
+                // Open in same tab to avoid cart refresh issues
+                window.location.href = buyNowUrl;
+              }
+            }}
+            className="px-4 h-12 text-xs font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center animate-pulse"
           >
-            🚀 SECURE YOUR PLAN NOW
+            🚀 SECURE PLAN
           </Button>
         </div>
       </div>
