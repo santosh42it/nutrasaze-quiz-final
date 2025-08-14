@@ -64,6 +64,7 @@ export interface Product {
   url?: string;
   mrp?: number;
   srp?: number;
+  shopify_variant_id?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -73,6 +74,8 @@ export interface AnswerKey {
   id: number;
   tag_combination: string;
   recommended_products: string;
+  coupon_code?: string;
+  discount_percentage?: number;
   created_at?: string;
   updated_at?: string;
 }
