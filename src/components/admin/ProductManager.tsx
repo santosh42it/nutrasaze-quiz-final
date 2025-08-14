@@ -15,13 +15,14 @@ interface ProductModalProps {
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, onClose }) => {
-  const [formData, setFormData] = useState<Partial<Product>>({
+  const [formData, setFormData] = React.useState<Partial<Product>>({
     name: product?.name || '',
     description: product?.description || '',
     image_url: product?.image_url || '',
     url: product?.url || '',
     mrp: product?.mrp || undefined,
     srp: product?.srp || undefined,
+    shopify_variant_id: product?.shopify_variant_id || ''
   });
 
   React.useEffect(() => {
@@ -33,6 +34,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
         url: product.url,
         mrp: product.mrp,
         srp: product.srp,
+        shopify_variant_id: product.shopify_variant_id || ''
       });
     } else {
       setFormData({
@@ -42,6 +44,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
         url: '',
         mrp: undefined,
         srp: undefined,
+        shopify_variant_id: ''
       });
     }
   }, [product]);
@@ -161,7 +164,18 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
             />
           </div>
 
-          
+          <div>
+            <label className="block text-sm font-medium text-[#1d0917] mb-2">
+              Shopify Variant ID
+            </label>
+            <Input
+              type="text"
+              value={formData.shopify_variant_id || ''}
+              onChange={(e) => setFormData({ ...formData, shopify_variant_id: e.target.value })}
+              placeholder="e.g., 45407045910693"
+              className="border-[#e9d6e4]"
+            />
+          </div>
 
           <div className="flex items-center gap-4 pt-4">
             <Button
@@ -222,6 +236,7 @@ export const ProductManager: React.FC = () => {
         url: productData.url || null,
         mrp: productData.mrp ? Number(productData.mrp) : null,
         srp: productData.srp ? Number(productData.srp) : null,
+        shopify_variant_id: productData.shopify_variant_id || null,
         updated_at: new Date().toISOString()
       };
 
@@ -314,8 +329,6 @@ export const ProductManager: React.FC = () => {
           Existing Products ({products.length})
         </h3>
 
-        
-
         {loading ? (
           <Card className="border-[#e9d6e4] bg-white">
             <CardContent className="p-8 text-center">
@@ -335,85 +348,72 @@ export const ProductManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {products.map((product) => (
-              <Card key={product.id} className="border-[#e9d6e4] bg-white hover:shadow-lg transition-shadow">
-                <CardContent className="p-4">
-                  {product.image_url && (
-                    <div className="mb-3">
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name}
-                        className="w-full h-32 object-cover rounded-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-[#1d0917] text-lg">{product.name}</h4>
-                    <p className="text-sm text-[#3d3d3d] line-clamp-2">{product.description}</p>
-
-                    {(product.mrp || product.srp) && (
-                      <div className="flex items-center gap-2 text-sm">
-                        {product.mrp && (
-                          <span className="text-gray-500 line-through">MRP: ₹{product.mrp}</span>
-                        )}
-                        {product.srp && (
-                          <span className="text-[#913177] font-medium">SRP: ₹{product.srp}</span>
-                        )}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Variant ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    MRP/SRP
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products.map((product) => (
+                  <tr key={product.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                        {product.description || 'No description'}
                       </div>
-                    )}
-
-                    {product.url && (
-                      <a 
-                        href={product.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-[#913177] hover:underline block truncate"
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600 font-mono">
+                        {product.shopify_variant_id || 'Not set'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {product.mrp && product.srp ? `₹${product.mrp}/₹${product.srp}` : 'Not set'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <button
+                        onClick={() => handleEdit(product)}
+                        className="text-xs text-[#913177] hover:underline"
                       >
-                        View Product →
-                      </a>
-                    )}
-
-                    <div className="flex items-center justify-between pt-3 border-t border-[#e9d6e4]">
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          product.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {product.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="text-xs text-[#913177] hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => updateProduct(product.id, { is_active: !product.is_active })}
-                          className="text-xs text-[#913177] hover:underline"
-                        >
-                          {product.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(product)}
-                          className="text-xs text-red-600 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => updateProduct(product.id, { is_active: !product.is_active })}
+                        className="text-xs text-[#913177] hover:underline"
+                      >
+                        {product.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(product)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

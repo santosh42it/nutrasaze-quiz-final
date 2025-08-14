@@ -146,12 +146,11 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     set({ loading: true });
     try {
       console.log('Fetching products from database...');
-      
-      // Simplified query without joins to avoid potential issues
+
       const { data, error } = await supabase
         .from('products')
-        .select('*')
-        .order('name');
+        .select('id, name, description, image_url, url, mrp, srp, shopify_variant_id, is_active, created_at, updated_at')
+        .order('created_at', { ascending: false });
 
       console.log('Products query result:', { data, error });
 
@@ -159,7 +158,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         console.error('Error fetching products:', error);
         throw error;
       }
-      
+
       console.log('Products fetched successfully:', data?.length || 0);
       set({ products: data || [] });
     } catch (error) {
@@ -167,142 +166,6 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
-    }
-  },
-
-  addQuestion: async (question) => {
-    try {
-      const { data, error } = await supabase
-        .from('questions')
-        .insert([question])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update local state
-      set({ 
-        questions: [...get().questions, data]
-      });
-
-      return { data, error: null };
-    } catch (error) {
-      set({ error: (error as Error).message });
-      return { data: null, error: error as Error };
-    }
-  },
-
-  updateQuestion: async (id, updates) => {
-    try {
-      const { data, error } = await supabase
-        .from('questions')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update local state
-      set({ 
-        questions: get().questions.map(q => q.id === id ? data : q)
-      });
-
-      return { data, error: null };
-    } catch (error) {
-      set({ error: (error as Error).message });
-      return { data: null, error: error as Error };
-    }
-  },
-
-  deleteQuestion: async (id) => {
-    try {
-      const { error } = await supabase
-        .from('questions')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      await get().fetchQuestions();
-    } catch (error) {
-      set({ error: (error as Error).message });
-    }
-  },
-
-  addOption: async (option) => {
-    try {
-      const { data, error } = await supabase
-        .from('question_options')
-        .insert([option])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update local state
-      set({ 
-        options: [...get().options, data]
-      });
-
-      return { data, error: null };
-    } catch (error) {
-      set({ error: (error as Error).message });
-      return { data: null, error: error as Error };
-    }
-  },
-
-  updateOption: async (id, updates) => {
-    try {
-      const { error } = await supabase
-        .from('question_options')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-      await get().fetchOptions();
-    } catch (error) {
-      set({ error: (error as Error).message });
-    }
-  },
-
-  deleteOption: async (id) => {
-    try {
-      const { error } = await supabase
-        .from('question_options')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      await get().fetchOptions();
-    } catch (error) {
-      set({ error: (error as Error).message });
-    }
-  },
-
-  addTag: async (name) => {
-    try {
-      const { error } = await supabase
-        .from('tags')
-        .insert([{ name }]);
-
-      if (error) throw error;
-      await get().fetchTags();
-    } catch (error) {
-      set({ error: (error as Error).message });
-    }
-  },
-
-  deleteTag: async (id) => {
-    try {
-      const { error } = await supabase
-        .from('tags')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      await get().fetchTags();
-    } catch (error) {
-      set({ error: (error as Error).message });
     }
   },
 

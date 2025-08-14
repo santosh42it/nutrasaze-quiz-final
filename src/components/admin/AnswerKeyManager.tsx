@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdminStore } from '../../stores/adminStore';
 import { Button } from '../ui/button';
@@ -19,6 +18,8 @@ const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSa
   const [formData, setFormData] = useState<Partial<AnswerKey>>({
     tag_combination: answerKey?.tag_combination || '',
     recommended_products: answerKey?.recommended_products || '',
+    coupon_code: answerKey?.coupon_code || '',
+    discount_percentage: answerKey?.discount_percentage || null,
   });
   const [selectedTags, setSelectedTags] = useState<string[]>(
     answerKey?.tag_combination?.split(',').map(tag => tag.trim()) || []
@@ -32,11 +33,13 @@ const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSa
       setFormData({
         tag_combination: answerKey.tag_combination,
         recommended_products: answerKey.recommended_products,
+        coupon_code: answerKey.coupon_code,
+        discount_percentage: answerKey.discount_percentage,
       });
       setSelectedTags(answerKey.tag_combination?.split(',').map(tag => tag.trim()) || []);
       setSelectedProducts(answerKey.recommended_products?.split(',').map(product => product.trim()) || []);
     } else {
-      setFormData({ tag_combination: '', recommended_products: '' });
+      setFormData({ tag_combination: '', recommended_products: '', coupon_code: '', discount_percentage: null });
       setSelectedTags([]);
       setSelectedProducts([]);
     }
@@ -46,7 +49,7 @@ const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSa
     const newSelectedTags = selectedTags.includes(tagName)
       ? selectedTags.filter(t => t !== tagName)
       : [...selectedTags, tagName];
-    
+
     setSelectedTags(newSelectedTags);
     setFormData({
       ...formData,
@@ -58,7 +61,7 @@ const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSa
     const newSelectedProducts = selectedProducts.includes(productName)
       ? selectedProducts.filter(p => p !== productName)
       : [...selectedProducts, productName];
-    
+
     setSelectedProducts(newSelectedProducts);
     setFormData({
       ...formData,
@@ -69,7 +72,7 @@ const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.tag_combination || !formData.recommended_products) return;
-    
+
     try {
       await onSave(formData);
       onClose();
@@ -141,6 +144,37 @@ const AnswerKeyModal: React.FC<AnswerKeyModalProps> = ({ isOpen, answerKey, onSa
             </p>
           </div>
 
+          {/* New fields for Coupon Code and Discount Percentage */}
+          <div>
+            <label className="block text-sm font-medium text-[#1d0917] mb-3">
+              Coupon Code
+            </label>
+            <Input
+              value={formData.coupon_code || ''}
+              onChange={(e) => setFormData({ ...formData, coupon_code: e.target.value })}
+              placeholder="e.g., SAVE10"
+              className="border-[#e9d6e4] text-[#1d0917] focus:ring-[#913177] focus:border-[#913177]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1d0917] mb-3">
+              Discount Percentage
+            </label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              value={formData.discount_percentage === null ? '' : formData.discount_percentage}
+              onChange={(e) => {
+                const value = e.target.value === '' ? null : parseInt(e.target.value);
+                setFormData({ ...formData, discount_percentage: value });
+              }}
+              placeholder="e.g., 10"
+              className="border-[#e9d6e4] text-[#1d0917] focus:ring-[#913177] focus:border-[#913177]"
+            />
+          </div>
+
           <div className="flex items-center gap-4 pt-4">
             <Button
               type="submit"
@@ -172,11 +206,25 @@ export const AnswerKeyManager: React.FC = () => {
     answerKey: null
   });
 
+  // State for the form in the modal, including new fields
+  const [newKey, setNewKey] = React.useState({
+    tag_combination: '',
+    recommended_products: '',
+    coupon_code: '',
+    discount_percentage: null as number | null
+  });
+
   const handleSave = async (answerKeyData: Partial<AnswerKey>) => {
+    // Prepare data for saving, ensuring correct types and handling nulls
+    const payload: Partial<AnswerKey> = {
+      ...answerKeyData,
+      discount_percentage: answerKeyData.discount_percentage === null || answerKeyData.discount_percentage === '' ? null : Number(answerKeyData.discount_percentage),
+    };
+
     if (editingAnswerKey) {
-      await updateAnswerKey(editingAnswerKey.id, answerKeyData);
+      await updateAnswerKey(editingAnswerKey.id, payload);
     } else {
-      await addAnswerKey(answerKeyData);
+      await addAnswerKey(payload);
     }
     await fetchAnswerKeys();
     setModalOpen(false);
@@ -191,6 +239,13 @@ export const AnswerKeyManager: React.FC = () => {
   const handleAddNew = () => {
     setEditingAnswerKey(null);
     setModalOpen(true);
+    // Reset form state when opening for a new entry
+    setNewKey({
+      tag_combination: '',
+      recommended_products: '',
+      coupon_code: '',
+      discount_percentage: null
+    });
   };
 
   const handleModalClose = () => {
@@ -206,15 +261,12 @@ export const AnswerKeyManager: React.FC = () => {
     if (deleteDialog.answerKey) {
       await deleteAnswerKey(deleteDialog.answerKey.id);
       setDeleteDialog({ isOpen: false, answerKey: null });
+      await fetchAnswerKeys(); // Refresh the list after deletion
     }
   };
 
   const handleDeleteCancel = () => {
     setDeleteDialog({ isOpen: false, answerKey: null });
-  };
-
-  const getProductNames = (productString: string) => {
-    return productString.split(',').map(name => name.trim()).join(', ');
   };
 
   return (
@@ -245,7 +297,7 @@ export const AnswerKeyManager: React.FC = () => {
         <h3 className="[font-family:'DM_Serif_Display',Helvetica] text-xl text-[#1d0917] mb-4">
           Existing Answer Keys ({answerKeys.length})
         </h3>
-        
+
         {answerKeys.length === 0 ? (
           <Card className="border-[#e9d6e4] bg-white">
             <CardContent className="p-8 text-center">
@@ -259,67 +311,68 @@ export const AnswerKeyManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {answerKeys.map((answerKey) => (
-              <Card key={answerKey.id} className="border-[#e9d6e4] bg-white hover:shadow-lg transition-shadow">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-medium text-[#1d0917] text-lg mb-2">
-                        Tag Combination
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {answerKey.tag_combination.split(',').map((tag, index) => (
-                          <span 
-                            key={index}
-                            className="px-2 py-1 bg-[#913177]/10 text-[#913177] rounded-full text-xs font-medium"
-                          >
-                            {tag.trim()}
-                          </span>
-                        ))}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-white">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tag Combination
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Recommended Products
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Coupon Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Discount %
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {answerKeys.map((key) => (
+                  <tr key={key.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 font-mono">
+                        {key.tag_combination}
                       </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium text-[#1d0917] text-lg mb-2">
-                        Recommended Products
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {answerKey.recommended_products.split(',').map((product, index) => (
-                          <span 
-                            key={index}
-                            className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium"
-                          >
-                            {product.trim()}
-                          </span>
-                        ))}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {key.recommended_products}
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between pt-3 border-t border-[#e9d6e4]">
-                      <div className="text-xs text-gray-500">
-                        ID: {answerKey.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600 font-mono">
+                        {key.coupon_code || '-'}
                       </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(answerKey)}
-                          className="text-xs text-[#913177] hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(answerKey)}
-                          className="text-xs text-red-600 hover:underline"
-                        >
-                          Delete
-                        </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {key.discount_percentage ? `${key.discount_percentage}%` : '-'}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <button
+                        onClick={() => handleEdit(key)}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(key)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -330,7 +383,7 @@ export const AnswerKeyManager: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Delete Answer Key"
-        description={`Are you sure you want to delete this answer key for "${deleteDialog.answerKey?.tag_combination}"? This action cannot be undone and will permanently affect product recommendations for users with this tag combination. Quiz functionality may be impacted.`}
+        description={`Are you sure you want to delete this answer key for "${deleteDialog.answerKey?.tag_combination}"? This action cannot be undone.`}
       />
     </div>
   );

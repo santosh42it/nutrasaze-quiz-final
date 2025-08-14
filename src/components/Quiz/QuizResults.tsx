@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -21,6 +20,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [answerKey, setAnswerKey] = useState<any>(null); // State to store the matched answer key
 
   // Extract user info from answers - improved logic to avoid mismatched data
   const extractedUserInfo = useMemo(() => {
@@ -38,11 +38,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     // Always try to extract from answers as backup/primary source
     console.log('Extracting from answers...');
-    
+
     // Direct key matching strategy - map by question IDs and keys
     // First, let's identify which questions contain what based on the database structure
     const questionMappings: Record<string, string> = {};
-    
+
     // Map question IDs to field types based on actual database questions
     if (questions.length > 0) {
       questions.forEach(q => {
@@ -58,7 +58,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
     // Process answers with priority order for name extraction
     const answerEntries = Object.entries(answers);
-    
+
     // First pass: Extract based on question mappings and known keys
     answerEntries.forEach(([key, value]) => {
       if (!value || typeof value !== 'string' || !value.trim()) return;
@@ -66,7 +66,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Use the question mapping to determine field type
       const fieldType = questionMappings[key];
-      
+
       if (fieldType === 'name' && (!extracted.name || extracted.name === '')) {
         console.log('Found name by question mapping, key:', key, '->', cleanValue);
         extracted.name = cleanValue;
@@ -101,7 +101,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     // Second pass: Content-based detection only if we still don't have the required fields
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
       console.log('Running content-based detection...');
-      
+
       // Sort answers by key to prioritize earlier questions for name
       const sortedAnswers = answerEntries.sort((a, b) => {
         const aNum = parseInt(a[0]) || 999;
@@ -151,7 +151,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('=== PRODUCT RECOMMENDATION DEBUG ===');
       console.log('Getting recommended products based on quiz answers...');
       console.log('All user answers:', answers);
-      
+
       // First, get all the user's answers and their associated tags
       const { data: fetchedQuestions, error: questionsError } = await supabase
         .from('questions')
@@ -181,7 +181,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       // Collect all unique tags from user's answers
       const userTags = new Set<string>();
       const answerTagMapping: { [key: string]: string[] } = {};
-      
+
       Object.entries(answers).forEach(([questionId, answerValue]) => {
         // Skip detail keys and empty values
         if (questionId.includes('_details') || !answerValue || answerValue.trim() === '') {
@@ -189,23 +189,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
 
         console.log(`Processing answer - Question ID: ${questionId}, Answer: "${answerValue}"`);
-        
+
         const question = fetchedQuestions?.find(q => q.id === parseInt(questionId));
         if (question && question.question_options) {
           console.log(`Found question: "${question.question_text}"`);
           console.log(`Available options for this question:`, question.question_options.map(opt => opt.option_text));
-          
+
           // Find the selected option with exact matching
           const selectedOption = question.question_options.find(opt => 
             opt.option_text.trim().toLowerCase() === answerValue.trim().toLowerCase()
           );
-          
+
           if (selectedOption) {
             console.log(`Found selected option: "${selectedOption.option_text}"`);
             console.log(`Option tags:`, selectedOption.option_tags);
-            
+
             const tagsForThisAnswer: string[] = [];
-            
+
             if (selectedOption.option_tags && selectedOption.option_tags.length > 0) {
               selectedOption.option_tags.forEach((optionTag: any) => {
                 if (optionTag.tags && optionTag.tags.name) {
@@ -217,11 +217,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             } else {
               console.log('No tags found for this option');
             }
-            
+
             answerTagMapping[`Q${questionId}: ${answerValue}`] = tagsForThisAnswer;
           } else {
-            console.log(`❌ Could not find matching option for answer: "${answerValue}"`);
-            console.log('Available options:', question.question_options.map(opt => `"${opt.option_text}"`));
+            console.log('❌ Could not find matching option for answer: "${answerValue}"');
+            console.log('Available options:', question.question_options.map(opt => opt.option_text));
           }
         } else {
           console.log(`❌ Could not find question with ID: ${questionId}`);
@@ -272,7 +272,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       // Look for exact match first
       console.log(`Looking for exact match with: "${sortedTags}"`);
       console.log('Querying answer_key table...');
-      
+
       let { data: answerKeyData, error: answerKeyError } = await supabase
         .from('answer_key')
         .select('*')
@@ -284,11 +284,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Handle the data array from the query
       const exactMatch = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
-      
+
       if (answerKeyError || !exactMatch) {
         console.log('❌ No exact match found');
         console.log('Looking for subset matches...');
-        
+
         // Find the best matching answer key (highest number of matching tags)
         let bestMatch = null;
         let maxMatches = 0;
@@ -298,19 +298,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           const keyTags = new Set(key.tag_combination.split(',').map(tag => tag.trim()));
           const userTagsArray = Array.from(userTags);
           const matchCount = userTagsArray.filter(tag => keyTags.has(tag)).length;
-          
+
           console.log(`Checking key "${key.tag_combination}": ${matchCount}/${userTagsArray.length} tags match`);
-          
+
           // Check if user tags are a subset of this key's tags
           const isSubset = userTagsArray.every(tag => keyTags.has(tag));
-          
+
           if (isSubset && matchCount === userTagsArray.length) {
             console.log(`✅ Found exact subset match: "${key.tag_combination}"`);
             if (!exactSubsetMatch || keyTags.size < new Set(exactSubsetMatch.tag_combination.split(',')).size) {
               exactSubsetMatch = key;
             }
           }
-          
+
           // Also track the best partial match
           if (matchCount > maxMatches && matchCount > 0) {
             maxMatches = matchCount;
@@ -332,6 +332,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       }
 
       const finalAnswerKey = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
+      setAnswerKey(finalAnswerKey); // Set the matched answer key to state
+
       if (finalAnswerKey && finalAnswerKey.recommended_products) {
         const productNames = finalAnswerKey.recommended_products.split(',').map(name => name.trim());
         console.log('=== PRODUCT MATCHING ===');
@@ -341,7 +343,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         // Get all products for debugging
         const { data: allProducts, error: allProductsError } = await supabase
           .from('products')
-          .select('id, name, description, image_url, url, mrp, srp, is_active')
+          .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id') // Added shopify_variant_id
           .eq('is_active', true);
 
         if (allProductsError) {
@@ -745,7 +747,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       // Get recommended products after successful save
       await getRecommendedProducts();
-      
+
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error in saveResponses:', {
@@ -780,7 +782,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     if (!isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
       hasInitiatedSave.current = true;
       console.log('Initiating quiz save...');
-      
+
       // Use async function with proper error handling
       const initiateSave = async () => {
         try {
@@ -829,7 +831,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                 {/* Left Column - Report Details */}
                 <div className="flex-1">
                   <div className="text-sm text-gray-500 mb-2">Assessment Report</div>
-                  
+
                   <div className="mb-4">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
                       {extractedUserInfo?.name || 'User'},
@@ -838,7 +840,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                     <div className="text-lg md:text-xl font-semibold text-gray-900 mb-3">
                       Stage 1 Of Personalized Health Journey
                     </div>
-                    
+
                     <div className="text-gray-600 mb-2">Start Seeing Results In</div>
                     <div className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
                       3-4 Weeks
@@ -901,13 +903,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
           <Card className="mb-6 border-0 shadow-sm bg-white">
             <CardContent className="p-6 md:p-8">
               <div className="flex flex-col md:flex-row gap-8">
-                
+
                 {/* Left Column - Products List */}
                 <div className="flex-1">
                   <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-4">
                     Start Your Journey With Just 1 Month Kit
                   </h3>
-                  
+
                   <div className="space-y-4">
                     {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
                       <div key={product.id} className="flex items-center gap-4 p-3 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg shadow-sm border border-[#913177]/10">

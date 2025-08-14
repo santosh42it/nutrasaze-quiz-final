@@ -59,7 +59,7 @@ export interface OptionTag {
 export interface Product {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   image_url?: string;
   url?: string;
   mrp?: number;
@@ -76,8 +76,8 @@ export interface AnswerKey {
   recommended_products: string;
   coupon_code?: string;
   discount_percentage?: number;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface QuizReport {
