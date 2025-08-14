@@ -311,68 +311,80 @@ export const AnswerKeyManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-white">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tag Combination
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Recommended Products
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Coupon Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Discount %
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {answerKeys.map((key) => (
-                  <tr key={key.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-mono">
-                        {key.tag_combination}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {answerKeys.map((key) => (
+              <Card key={key.id} className="border-[#e9d6e4] bg-white hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="mb-4">
+                    <h4 className="[font-family:'DM_Serif_Display',Helvetica] text-lg text-[#1d0917] font-medium mb-2">
+                      Answer Key #{key.id}
+                    </h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium text-[#3d3d3d] uppercase tracking-wider">
+                          Tag Combination
+                        </label>
+                        <div className="mt-1 p-2 bg-gray-50 rounded border text-sm font-mono text-[#1d0917]">
+                          {key.tag_combination}
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {key.recommended_products}
+                      
+                      <div>
+                        <label className="text-xs font-medium text-[#3d3d3d] uppercase tracking-wider">
+                          Recommended Products
+                        </label>
+                        <div className="mt-1 p-2 bg-gray-50 rounded border text-sm text-[#1d0917]">
+                          {key.recommended_products}
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600 font-mono">
-                        {key.coupon_code || '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {key.discount_percentage ? `${key.discount_percentage}%` : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleEdit(key)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(key)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      
+                      {(key.coupon_code || key.discount_percentage) && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {key.coupon_code && (
+                            <div>
+                              <label className="text-xs font-medium text-[#3d3d3d] uppercase tracking-wider">
+                                Coupon
+                              </label>
+                              <div className="mt-1 p-2 bg-green-50 rounded border text-sm font-mono text-green-800">
+                                {key.coupon_code}
+                              </div>
+                            </div>
+                          )}
+                          {key.discount_percentage && (
+                            <div>
+                              <label className="text-xs font-medium text-[#3d3d3d] uppercase tracking-wider">
+                                Discount
+                              </label>
+                              <div className="mt-1 p-2 bg-blue-50 rounded border text-sm font-medium text-blue-800">
+                                {key.discount_percentage}%
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleEdit(key)}
+                      size="sm"
+                      className="bg-[#913177] text-white hover:bg-[#913177]/90 text-xs flex-1"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteClick(key)}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-200 text-red-600 hover:bg-red-50 text-xs flex-1"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>

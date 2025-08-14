@@ -348,72 +348,86 @@ export const ProductManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Variant ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MRP/SRP
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product) => (
-                  <tr key={product.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {product.description || 'No description'}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <Card key={product.id} className="border-[#e9d6e4] bg-white hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h4 className="[font-family:'DM_Serif_Display',Helvetica] text-lg text-[#1d0917] font-medium mb-2">
+                        {product.name}
+                      </h4>
+                      <p className="text-sm text-[#3d3d3d] mb-3 line-clamp-2">
+                        {product.description || 'No description provided'}
+                      </p>
+                    </div>
+                    <div className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                      product.is_active 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {product.is_active ? 'Active' : 'Inactive'}
+                    </div>
+                  </div>
+                  
+                  {product.image_url && (
+                    <div className="mb-4">
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-full h-32 object-cover rounded-md"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2 mb-4">
+                    {product.shopify_variant_id && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#3d3d3d]">Variant ID:</span>
+                        <span className="text-[#1d0917] font-mono text-xs">{product.shopify_variant_id}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600 font-mono">
-                        {product.shopify_variant_id || 'Not set'}
+                    )}
+                    {(product.mrp || product.srp) && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#3d3d3d]">Pricing:</span>
+                        <span className="text-[#1d0917]">
+                          {product.mrp && product.srp ? `₹${product.mrp}/₹${product.srp}` : 'Partial pricing'}
+                        </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {product.mrp && product.srp ? `₹${product.mrp}/₹${product.srp}` : 'Not set'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="text-xs text-[#913177] hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => updateProduct(product.id, { is_active: !product.is_active })}
-                        className="text-xs text-[#913177] hover:underline"
-                      >
-                        {product.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(product)}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => handleEdit(product)}
+                      size="sm"
+                      className="bg-[#913177] text-white hover:bg-[#913177]/90 text-xs"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => updateProduct(product.id, { is_active: !product.is_active })}
+                      size="sm"
+                      variant="outline"
+                      className="border-[#e9d6e4] text-[#913177] hover:bg-[#fff4fc] text-xs"
+                    >
+                      {product.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteClick(product)}
+                      size="sm"
+                      variant="outline"
+                      className="border-red-200 text-red-600 hover:bg-red-50 text-xs"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>
