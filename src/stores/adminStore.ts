@@ -262,15 +262,21 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   // Option Tags methods
   fetchOptionTags: async () => {
     try {
+      console.log('Fetching option tags from database...');
       const { data, error } = await supabase
         .from('option_tags')
         .select('*')
         .order('id');
 
       if (error) throw error;
+      
+      console.log('Option tags fetched:', data?.length || 0, 'records');
+      console.log('Option tags data:', data);
+      
       set({ optionTags: data || [] });
     } catch (error) {
       console.error('Error fetching option tags:', error);
+      set({ error: (error as Error).message });
     }
   },
 

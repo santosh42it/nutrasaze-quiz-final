@@ -7,6 +7,17 @@ export const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Initialize form with remembered values
+  useEffect(() => {
+    const wasRemembered = localStorage.getItem('nutrasage_remember_admin') === 'true';
+    const rememberedEmail = localStorage.getItem('nutrasage_admin_email');
+    
+    if (wasRemembered && rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -18,8 +29,18 @@ export const AdminLogin: React.FC = () => {
   const checkUser = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // Check if user was remembered
+      const wasRemembered = localStorage.getItem('nutrasage_remember_admin') === 'true';
+      
       if (session) {
         navigate('/admin');
+      } else if (wasRemembered) {
+        // Try to refresh the session if user was remembered
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+        if (refreshedSession) {
+          navigate('/admin');
+        }
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -36,7 +57,11 @@ export const AdminLogin: React.FC = () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
+        options: {
+          // Set session persistence based on remember me
+          persistSession: rememberMe
+        }
       });
 
       if (error) throw error;
@@ -44,8 +69,10 @@ export const AdminLogin: React.FC = () => {
       // Store remember me preference
       if (rememberMe) {
         localStorage.setItem('nutrasage_remember_admin', 'true');
+        localStorage.setItem('nutrasage_admin_email', email);
       } else {
         localStorage.removeItem('nutrasage_remember_admin');
+        localStorage.removeItem('nutrasage_admin_email');
       }
 
       navigate('/admin');

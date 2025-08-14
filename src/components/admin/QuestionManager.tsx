@@ -60,25 +60,29 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
         status: question?.status || 'draft'
       });
       
-      if (options && options.length > 0) {
-        console.log('Loading existing options with tags for question:', question?.id);
-        console.log('Available options:', options);
-        console.log('Available option tags:', optionTags);
-        
-        const optionsWithTags = options.map(option => {
-          const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-          console.log(`Option "${option.option_text}" (ID: ${option.id}) has tags:`, optionTagsForOption);
-          return {
-            option: option.option_text,
-            tags: optionTagsForOption.map(ot => ot.tag_id)
-          };
-        });
-        
-        console.log('Final options with tags:', optionsWithTags);
-        setQuestionOptions(optionsWithTags);
-      } else {
-        setQuestionOptions([]);
-      }
+      // Small delay to ensure optionTags are loaded
+      setTimeout(() => {
+        if (options && options.length > 0 && optionTags) {
+          console.log('Loading existing options with tags for question:', question?.id);
+          console.log('Available options:', options);
+          console.log('Available option tags:', optionTags);
+          
+          const optionsWithTags = options.map(option => {
+            const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+            console.log(`Option "${option.option_text}" (ID: ${option.id}) has tags:`, optionTagsForOption);
+            return {
+              option: option.option_text,
+              tags: optionTagsForOption.map(ot => ot.tag_id)
+            };
+          });
+          
+          console.log('Final options with tags:', optionsWithTags);
+          setQuestionOptions(optionsWithTags);
+        } else {
+          setQuestionOptions([]);
+        }
+      }, 100);
+      
       setNewOption('');
       setEditingOptionIndex(null);
       setEditingOptionText('');
@@ -607,10 +611,11 @@ export const QuestionManager: React.FC = () => {
   }, [fetchOptionTags]);
 
   useEffect(() => {
-    if (showModal) {
+    if (showModal || editingQuestion) {
+      console.log('Refreshing option tags for modal...');
       fetchOptionTags();
     }
-  }, [showModal, fetchOptionTags]);
+  }, [showModal, editingQuestion, fetchOptionTags]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
