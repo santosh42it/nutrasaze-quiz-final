@@ -23,7 +23,7 @@ interface AdminStore {
   // Option methods
   fetchOptions: () => Promise<void>;
   addOption: (option: Omit<QuestionOption, 'id'>) => Promise<{ data: QuestionOption | null; error: Error | null }>;
-  updateOption: (id: number, updates: Partial<QuestionOption>) => Promise<void>;
+  updateOption: (id: number, updates: Partial<QuestionOption>) => Promise<{ data: QuestionOption | null; error: Error | null }>;
   deleteOption: (id: number) => Promise<void>;
 
   // Tag methods
@@ -122,6 +122,51 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  addOption: async (option: Partial<QuestionOption>) => {
+    try {
+      const { data, error } = await supabase
+        .from('question_options')
+        .insert([option])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        options: [...state.options, data]
+      }));
+
+      return { data };
+    } catch (error) {
+      console.error('Error adding option:', error);
+      throw error;
+    }
+  },
+
+  updateOption: async (id: number, updates: Partial<QuestionOption>) => {
+    try {
+      const { data, error } = await supabase
+        .from('question_options')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        options: state.options.map(option => 
+          option.id === id ? { ...option, ...data } : option
+        )
+      }));
+
+      return { data };
+    } catch (error) {
+      console.error('Error updating option:', error);
+      throw error;
     }
   },
 
