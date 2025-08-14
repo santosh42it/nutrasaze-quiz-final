@@ -60,28 +60,25 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
         status: question?.status || 'draft'
       });
       
-      // Small delay to ensure optionTags are loaded
-      setTimeout(() => {
-        if (options && options.length > 0 && optionTags) {
-          console.log('Loading existing options with tags for question:', question?.id);
-          console.log('Available options:', options);
-          console.log('Available option tags:', optionTags);
-          
-          const optionsWithTags = options.map(option => {
-            const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-            console.log(`Option "${option.option_text}" (ID: ${option.id}) has tags:`, optionTagsForOption);
-            return {
-              option: option.option_text,
-              tags: optionTagsForOption.map(ot => ot.tag_id)
-            };
-          });
-          
-          console.log('Final options with tags:', optionsWithTags);
-          setQuestionOptions(optionsWithTags);
-        } else {
-          setQuestionOptions([]);
-        }
-      }, 100);
+      if (options && options.length > 0) {
+        console.log('Loading existing options with tags for question:', question?.id);
+        console.log('Available options:', options);
+        console.log('Available option tags:', optionTags);
+        
+        const optionsWithTags = options.map(option => {
+          const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+          console.log(`Option "${option.option_text}" (ID: ${option.id}) has tags:`, optionTagsForOption);
+          return {
+            option: option.option_text,
+            tags: optionTagsForOption.map(ot => ot.tag_id)
+          };
+        });
+        
+        console.log('Final options with tags:', optionsWithTags);
+        setQuestionOptions(optionsWithTags);
+      } else {
+        setQuestionOptions([]);
+      }
       
       setNewOption('');
       setEditingOptionIndex(null);
@@ -597,7 +594,10 @@ export const QuestionManager: React.FC = () => {
     updateOption,
     deleteOption,
     updateOptionTags,
-    fetchOptionTags
+    fetchOptionTags,
+    fetchQuestions,
+    fetchOptions,
+    fetchTags
   } = useAdminStore();
   
   const [showModal, setShowModal] = useState(false);
@@ -605,15 +605,34 @@ export const QuestionManager: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'draft'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch option tags when component mounts and when modal opens
+  // Fetch all required data when component mounts
   useEffect(() => {
-    fetchOptionTags();
-  }, [fetchOptionTags]);
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          fetchQuestions(),
+          fetchOptions(), 
+          fetchTags(),
+          fetchOptionTags()
+        ]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, [fetchQuestions, fetchOptions, fetchTags, fetchOptionTags]);
 
   useEffect(() => {
     if (showModal || editingQuestion) {
       console.log('Refreshing option tags for modal...');
-      fetchOptionTags();
+      const loadData = async () => {
+        try {
+          await fetchOptionTags();
+        } catch (error) {
+          console.error('Error refreshing option tags:', error);
+        }
+      };
+      loadData();
     }
   }, [showModal, editingQuestion, fetchOptionTags]);
 

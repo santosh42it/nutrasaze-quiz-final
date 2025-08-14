@@ -269,10 +269,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         .order('id');
 
       if (error) throw error;
-      
+
       console.log('Option tags fetched:', data?.length || 0, 'records');
       console.log('Option tags data:', data);
-      
+
       set({ optionTags: data || [] });
     } catch (error) {
       console.error('Error fetching option tags:', error);
