@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 export const AdminLogin: React.FC = () => {
-  const [email, setEmail] = useState('admin@nutrasage.com');
-  const [password, setPassword] = useState('nutrasage@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -39,6 +40,14 @@ export const AdminLogin: React.FC = () => {
       });
 
       if (error) throw error;
+
+      // Store remember me preference
+      if (rememberMe) {
+        localStorage.setItem('nutrasage_remember_admin', 'true');
+      } else {
+        localStorage.removeItem('nutrasage_remember_admin');
+      }
+
       navigate('/admin');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -70,9 +79,7 @@ export const AdminLogin: React.FC = () => {
               Admin Portal
             </h2>
             <p className="mt-4 text-center text-sm text-[#6d6d6e] bg-[#fff4fc] rounded-lg p-3">
-              <strong className="text-[#913177]">Default credentials:</strong><br />
-              Email: admin@nutrasage.com<br />
-              Password: nutrasage@123
+              Secure access to NutraSage administration
             </p>
           </div>
           
@@ -90,10 +97,15 @@ export const AdminLogin: React.FC = () => {
                 </label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   className="w-full px-4 py-3 border border-[#e9d6e4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#913177] focus:border-transparent text-[#1d0917] placeholder-[#6d6d6e]"
                   placeholder="Enter your email"
                   disabled={loading}
@@ -106,14 +118,33 @@ export const AdminLogin: React.FC = () => {
                 </label>
                 <input
                   id="password"
+                  name="password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   className="w-full px-4 py-3 border border-[#e9d6e4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#913177] focus:border-transparent text-[#1d0917] placeholder-[#6d6d6e]"
                   placeholder="Enter your password"
                   disabled={loading}
                 />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-[#913177] focus:ring-[#913177] border-[#e9d6e4] rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#6d6d6e]">
+                  Remember me for this session
+                </label>
               </div>
             </div>
 
