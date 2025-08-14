@@ -803,10 +803,36 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
     }
   }, []); // Remove dependencies to ensure it only runs once on mount
 
-  // Calculate total price
-  const totalPrice = recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0);
-  const originalPrice = recommendedProducts.reduce((total, product) => total + (product.mrp || product.srp || 1299), 0);
-  const discountPercentage = Math.round(((originalPrice - totalPrice) / originalPrice) * 100);
+  // Calculate pricing based on answer key discount
+  const originalPrice = recommendedProducts.reduce((total, product) => total + (product.mrp || 1299), 0);
+  const answerKeyDiscount = answerKey?.discount_percentage || 0;
+  const totalPrice = answerKeyDiscount > 0 ? 
+    Math.round(originalPrice * (1 - answerKeyDiscount / 100)) : 
+    recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0);
+  const discountPercentage = answerKeyDiscount || Math.round(((originalPrice - totalPrice) / originalPrice) * 100);
+
+  // Generate Buy Now URL with Shopify variant IDs
+  const generateBuyNowUrl = () => {
+    if (recommendedProducts.length === 0) return '#';
+    
+    const variantParts = recommendedProducts
+      .filter(product => product.shopify_variant_id)
+      .map(product => `${product.shopify_variant_id}:1`)
+      .join(',');
+    
+    if (!variantParts) return '#';
+    
+    let url = `https://nutrasage.in/cart/${variantParts}`;
+    
+    // Add discount code if available
+    if (answerKey?.coupon_code) {
+      url += `?discount=${answerKey.coupon_code}`;
+    }
+    
+    return url;
+  };
+
+  const buyNowUrl = generateBuyNowUrl();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -982,7 +1008,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                     </div>
 
                     {/* Desktop Buy Now Button */}
-                    <Button className="w-full h-12 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 hidden md:block">
+                    <Button 
+                      as="a"
+                      href={buyNowUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full h-12 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 hidden md:block text-center flex items-center justify-center"
+                    >
                       Buy Now
                     </Button>
 
@@ -1033,7 +1065,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
               )}
             </div>
           </div>
-          <Button className="px-8 h-12 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md">
+          <Button 
+            as="a"
+            href={buyNowUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-8 h-12 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center"
+          >
             Buy Now
           </Button>
         </div>
