@@ -405,21 +405,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       console.log('Matched products:', matchedProducts.length);
       console.log('Unmatched product names:', unmatchedProductNames);
 
-      // If we have fewer than 3 products, add more from available products
-      if (matchedProducts.length < 3) {
-        const additionalProducts = allProducts?.filter(product => 
-          !matchedProducts.some(matched => matched.id === product.id)
-        ).slice(0, 3 - matchedProducts.length) || [];
-        
-        matchedProducts.push(...additionalProducts);
-        console.log('Added additional products:', additionalProducts.map(p => p.name));
-      }
-
-      // Final products (ensure exactly 3)
-      const finalProducts = matchedProducts.slice(0, 3);
+      // Use only the matched products from answer key
+      const finalProducts = matchedProducts;
       
-      if (finalProducts.length < 3) {
-        console.log('⚠️ Still fewer than 3 products, using fallback');
+      if (finalProducts.length === 0) {
+        console.log('⚠️ No products matched from answer key, using fallback');
         await setFallbackProducts();
         return;
       }
