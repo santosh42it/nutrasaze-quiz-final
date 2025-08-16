@@ -5,6 +5,8 @@ import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
 import { getQuizQuestions } from "../../services/quizService";
 import type { Question } from "../../components/Quiz/types";
+// Assuming supabase client is imported and configured elsewhere, e.g.:
+// import { supabase } from '../../utils/supabaseClient'; 
 
 interface QuizAnswers {
   [key: string]: string;
@@ -27,19 +29,44 @@ export const QuizScreen = (): JSX.Element => {
     const loadQuestions = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Loading quiz questions...');
-        const loadedQuestions = await getQuizQuestions();
+        setError('');
+
+        console.log('Starting to load questions...');
+
+        // This part assumes you have a Supabase client configured and imported
+        // Replace with your actual data fetching logic if not using Supabase
+        // For demonstration, let's assume getQuizQuestions() fetches data correctly
+        const loadedQuestions = await getQuizQuestions(); 
+        
+        if (!loadedQuestions || loadedQuestions.length === 0) {
+          setError('No questions found. Please contact support.');
+          return;
+        }
+
+        console.log('Loaded questions successfully:', loadedQuestions);
         setQuestions(loadedQuestions);
-        console.log(`✅ Loaded ${loadedQuestions.length} questions`);
-      } catch (err) {
-        console.error('❌ Error loading questions:', err);
+      } catch (error) {
+        console.error('Error loading questions:', error);
         setError('Failed to load quiz questions. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    loadQuestions();
+    // Properly handle the async function to avoid unhandled promise rejections
+    const initializeQuiz = async () => {
+      try {
+        await loadQuestions();
+      } catch (error) {
+        console.error('Failed to initialize quiz:', error);
+        setError('Failed to initialize quiz. Please refresh the page.');
+      }
+    };
+
+    initializeQuiz().catch((error) => {
+      console.error('Unhandled error in quiz initialization:', error);
+      setError('Quiz failed to load. Please refresh the page.');
+    });
   }, []);
 
   const validateInput = (value: string, questionId: string): string => {
@@ -248,6 +275,7 @@ export const QuizScreen = (): JSX.Element => {
             />
           </div>
         ) : (
+          // Add urgency timer here for customers on the results page
           <div className="min-h-[calc(100vh-72px)] pb-16">
             <QuizResults 
               answers={answers}

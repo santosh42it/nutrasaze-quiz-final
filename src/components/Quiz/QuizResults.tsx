@@ -150,6 +150,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   // Function to get recommended products based on quiz answers
   const getRecommendedProducts = async () => {
     try {
+      console.log('Starting product recommendation process...');
       console.log('=== PRODUCT RECOMMENDATION DEBUG ===');
       console.log('Getting recommended products based on quiz answers...');
       console.log('All user answers:', answers);
@@ -410,6 +411,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       console.log('=== RECOMMENDATION COMPLETE ===');
     } catch (error) {
       console.error('Error getting recommended products:', error);
+      // Set fallback products on error
+      const fallbackProducts = [
+        { id: 1, name: "Daily Energy Boost", description: "Natural energy enhancement", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null },
+        { id: 2, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null },
+        { id: 3, name: "Recovery & Immunity", description: "Support natural healing", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null }
+      ];
+      setRecommendedProducts(fallbackProducts);
     }
   };
 
@@ -795,6 +803,27 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   // Use a ref to track if we've already initiated a save to prevent multiple calls
   const hasInitiatedSave = React.useRef(false);
 
+  // Urgency timer state
+  const [timeRemaining, setTimeRemaining] = useState(24 * 60 * 60); // 24 hours in seconds
+
+  // Timer effect for urgency countdown
+  useEffect(() => {
+    if (timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timeRemaining]);
+
+  // Format time remaining
+  const formatTimeRemaining = () => {
+    const hours = Math.floor(timeRemaining / 3600);
+    const minutes = Math.floor((timeRemaining % 3600) / 60);
+    const seconds = timeRemaining % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     // Only save once when component mounts and not already submitted or submitting
     if (!isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
@@ -812,8 +841,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         }
       };
 
-      // Catch any unhandled promise rejections
-      initiateSave().catch((error) => {
+      // Properly handle the promise
+      initiateSave().then(() => {
+        console.log('Quiz save completed successfully');
+      }).catch((error) => {
         console.error('Unhandled error in initiateSave:', error);
         setIsSubmitting(false);
         hasInitiatedSave.current = false;
@@ -864,9 +895,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         </div>
       </div>
 
+      {/* Urgency Alert Banner */}
+      <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white py-4 animate-pulse">
+        <div className="container mx-auto px-4 text-center">
+          <div className="text-lg font-bold mb-2">🚨 URGENT: Your Personalized Plan is Expiring!</div>
+          <div className="text-2xl font-mono font-black mb-2">
+            {formatTimeRemaining()}
+          </div>
+          <div className="text-sm">
+            ⚠️ This exclusive combination will not be available after the timer expires
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 pb-24 md:pb-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto"></div>
 
           {/* Assessment Report Card */}
           <Card className="mb-6 border-0 shadow-sm bg-white">
@@ -1018,10 +1062,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                 {/* Right Column - Pricing Summary (Desktop) */}
                 <div className="w-full md:w-80">
                   <div className="bg-white border border-[#913177]/20 rounded-lg p-6 md:sticky md:top-4 shadow-lg">
-                    {/* Urgency Banner */}
-                    <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center py-2 px-3 rounded-lg mb-4 animate-pulse">
-                      <div className="text-xs font-bold">⚡ LIMITED TIME OFFER</div>
-                      <div className="text-xs">This personalized plan expires in 24 hours</div>
+                    {/* Urgency Banner with Live Timer */}
+                    <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center py-3 px-3 rounded-lg mb-4 animate-pulse border-2 border-red-300">
+                      <div className="text-sm font-bold mb-1">⚡ YOUR EXCLUSIVE OFFER EXPIRES IN</div>
+                      <div className="text-2xl font-mono font-black tracking-wider mb-1">
+                        {formatTimeRemaining()}
+                      </div>
+                      <div className="text-xs opacity-90">
+                        ⏰ Don't miss this personalized health plan!
+                      </div>
                     </div>
 
                     <div className="text-center mb-6">
@@ -1106,8 +1155,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
                     {/* Urgency Message */}
                     <div className="text-center mt-3 hidden md:block">
-                      <div className="text-xs text-red-600 font-semibold">⏰ Only {Math.floor(Math.random() * 3) + 2} people have this exact combination available</div>
-                      <div className="text-xs text-[#6d6d6e] mt-1">Secure your spot before someone else does!</div>
+                      <div className="text-xs text-red-600 font-semibold animate-bounce">
+                        🔥 OFFER EXPIRES IN {formatTimeRemaining()}
+                      </div>
+                      <div className="text-xs text-red-600 mt-1">
+                        ⚠️ Only {Math.floor(Math.random() * 3) + 2} personalized plans like yours available!
+                      </div>
                     </div>
 
                     {/* Features */}
@@ -1149,6 +1202,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       {/* Mobile Sticky Buy Now Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
+        {/* Mobile Timer */}
+        <div className="bg-red-500 text-white text-center py-2 rounded-lg mb-3 animate-pulse">
+          <div className="text-xs font-bold">⏰ OFFER EXPIRES: {formatTimeRemaining()}</div>
+        </div>
+        
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-sm text-[#6d6d6e]">Total</div>
