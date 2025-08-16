@@ -6,8 +6,12 @@ import { ContentScreen } from "./screens/ContentScreen";
 import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { AdminLogin } from "./components/admin/AdminLogin";
+import { ProtectedRoute } from "./components/admin/ProtectedRoute";
+import { createAdminUser } from "./lib/supabase";
+import { ResultsPage } from "./components/Quiz/ResultsPage";
+import { pageview } from "./lib/analytics";
 
-// Handle unhandled promise rejections
+// Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
   
@@ -24,16 +28,6 @@ window.addEventListener('unhandledrejection', (event) => {
 // Handle other errors
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
-});
-import { ProtectedRoute } from "./components/admin/ProtectedRoute";
-import { createAdminUser } from "./lib/supabase";
-import { ResultsPage } from "./components/Quiz/ResultsPage";
-import { pageview } from "./lib/analytics";
-
-// Global error handler for unhandled promise rejections
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  event.preventDefault(); // Prevent the default browser behavior
 });
 
 // Create admin user on application start
