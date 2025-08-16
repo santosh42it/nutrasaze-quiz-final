@@ -1,6 +1,6 @@
-import React, { StrictMode } from "react";
+import React, { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import "./index.css";
 import { ContentScreen } from "./screens/ContentScreen";
 import { QuizScreen } from "./screens/QuizScreen";
@@ -28,6 +28,7 @@ window.addEventListener('error', (event) => {
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 import { ResultsPage } from "./components/Quiz/ResultsPage";
+import { pageview } from "./lib/analytics";
 
 // Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
@@ -39,6 +40,17 @@ window.addEventListener('unhandledrejection', (event) => {
 createAdminUser().catch((error) => {
   console.error('Failed to create admin user:', error);
 });
+
+// Component to track page views
+const PageTracker: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    pageview(location.pathname + location.search);
+  }, [location]);
+
+  return null;
+};
 
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = React.useState<'content' | 'quiz'>('quiz');
@@ -62,6 +74,7 @@ const AppContent: React.FC = () => {
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
+      <PageTracker />
       <Routes>
         <Route path="/" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
         <Route path="/content" element={<ContentScreen onNavigateToQuiz={() => window.location.href = '/'} />} />
