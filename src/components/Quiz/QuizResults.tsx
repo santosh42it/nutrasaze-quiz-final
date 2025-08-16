@@ -1198,7 +1198,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
             </p>
           </div>
         </div>
-      </div>
 
       {/* Mobile Sticky Buy Now Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
