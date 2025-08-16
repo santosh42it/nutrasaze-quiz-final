@@ -252,12 +252,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           .order('id')
           .limit(3);
 
-        if (!defaultError && defaultProducts && defaultProducts.length > 0) {
+        if (!defaultError && defaultProducts && defaultProducts.length >= 3) {
           console.log('Using default products:', defaultProducts.map(p => p.name));
           setRecommendedProducts(defaultProducts);
         } else {
-          console.log('No products found in database, using hardcoded fallback');
-          // If no products in database, use hardcoded fallback
+          console.log('Not enough products in database, using hardcoded fallback');
+          // If not enough products in database, use hardcoded fallback
           const hardcodedProducts = [
             { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
             { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
@@ -385,9 +385,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
         console.log('Final exact matches:', exactMatches.map(p => p.name));
 
-        if (exactMatches.length > 0) {
-          console.log('✅ Using exact product matches');
-          setRecommendedProducts(exactMatches);
+        // Ensure we always have at least 3 products
+        let finalProducts = [];
+
+        if (exactMatches.length >= 3) {
+          console.log('✅ Using exact product matches (3 or more found)');
+          finalProducts = exactMatches.slice(0, 3);
+        } else if (exactMatches.length > 0) {
+          console.log('⚠️ Only found', exactMatches.length, 'exact matches, adding more products...');
+          finalProducts = [...exactMatches];
+          
+          // Add more products from all available products to reach 3
+          const additionalProducts = allProducts?.filter(product => 
+            !exactMatches.some(matched => matched.id === product.id)
+          ).slice(0, 3 - exactMatches.length) || [];
+          
+          finalProducts = [...finalProducts, ...additionalProducts];
         } else {
           // If no exact matches, try partial matching
           console.log('⚠️ No exact matches, trying partial matching...');
@@ -400,16 +413,39 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           console.log('Partial matches found:', partialMatches.map(p => p.name));
 
-          if (partialMatches.length > 0) {
-            console.log('✅ Using partial product matches');
-            setRecommendedProducts(partialMatches);
+          if (partialMatches.length >= 3) {
+            finalProducts = partialMatches.slice(0, 3);
+          } else if (partialMatches.length > 0) {
+            finalProducts = [...partialMatches];
+            // Add more products to reach 3
+            const additionalProducts = allProducts?.filter(product => 
+              !partialMatches.some(matched => matched.id === product.id)
+            ).slice(0, 3 - partialMatches.length) || [];
+            
+            finalProducts = [...finalProducts, ...additionalProducts];
           } else {
             console.log('❌ No matches found, using first 3 active products as fallback');
-            const fallbackProducts = allProducts?.slice(0, 3) || [];
-            console.log('Fallback products:', fallbackProducts.map(p => p.name));
-            setRecommendedProducts(fallbackProducts);
+            finalProducts = allProducts?.slice(0, 3) || [];
           }
         }
+
+        // Final safety check - ensure we have exactly 3 products
+        if (finalProducts.length < 3) {
+          console.log('⚠️ Still less than 3 products, adding hardcoded fallbacks...');
+          const hardcodedProducts = [
+            { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+            { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+            { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
+          ];
+          
+          // Fill remaining slots with hardcoded products
+          while (finalProducts.length < 3 && hardcodedProducts.length > 0) {
+            finalProducts.push(hardcodedProducts.shift()!);
+          }
+        }
+
+        console.log('Final products selected:', finalProducts.map(p => p.name));
+        setRecommendedProducts(finalProducts.slice(0, 3));  // Ensure exactly 3 products
       } else {
         console.log('❌ No matching answer key found, showing default products');
         const { data: defaultProducts, error: defaultError } = await supabase
@@ -419,18 +455,30 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           .order('id')
           .limit(3);
 
-        if (!defaultError && defaultProducts && defaultProducts.length > 0) {
+        if (!defaultError && defaultProducts && defaultProducts.length >= 3) {
           console.log('Using default products from database:', defaultProducts.map(p => p.name));
           setRecommendedProducts(defaultProducts);
         } else {
-          console.log('Database has no products, using hardcoded fallback');
-          // Final hardcoded fallback
+          console.log('Not enough products in database, using hardcoded fallback');
+          // Final hardcoded fallback - always 3 products
           const hardcodedProducts = [
             { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
             { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
             { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
           ];
-          setRecommendedProducts(hardcodedProducts);
+          
+          // If we have some products from database but less than 3, combine with hardcoded
+          if (defaultProducts && defaultProducts.length > 0 && defaultProducts.length < 3) {
+            const combinedProducts = [...defaultProducts];
+            let hardcodedIndex = 0;
+            while (combinedProducts.length < 3 && hardcodedIndex < hardcodedProducts.length) {
+              combinedProducts.push(hardcodedProducts[hardcodedIndex]);
+              hardcodedIndex++;
+            }
+            setRecommendedProducts(combinedProducts);
+          } else {
+            setRecommendedProducts(hardcodedProducts);
+          }
         }
       }
 
@@ -955,9 +1003,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Logo */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-center items-center">
             <div
               className="cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => window.open('https://nutrasage.in', '_blank')}
@@ -968,13 +1016,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 className="h-12 md:h-16 w-auto"
               />
             </div>
-            <div className="text-sm text-gray-600 font-medium">Assessment Report</div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8 mt-4">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8 pt-24">
         <div className="max-w-4xl mx-auto">
 
           {/* Assessment Report Card */}
@@ -1160,44 +1207,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       Buy Now
                     </Button>
 
-                    {/* Result Sharing Section */}
-                    {resultUrl && (
-                      <div className="mt-6 p-4 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg border border-[#913177]/20">
-                        <div className="text-sm font-semibold text-[#913177] mb-2">📋 Save Your Results</div>
-                        <div className="text-xs text-[#6d6d6e] mb-3">
-                          Bookmark this page or share your personalized plan with family
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => {
-                              navigator.clipboard.writeText(resultUrl);
-                              alert('Results URL copied to clipboard!');
-                            }}
-                            className="flex-1 h-10 text-xs bg-white border border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white"
-                          >
-                            📋 Copy Link
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              if (navigator.share) {
-                                navigator.share({
-                                  title: 'My NutraSage Health Assessment Results',
-                                  text: 'Check out my personalized supplement plan from NutraSage!',
-                                  url: resultUrl
-                                });
-                              } else {
-                                // Fallback for browsers that don't support Web Share API
-                                navigator.clipboard.writeText(resultUrl);
-                                alert('Results URL copied to clipboard!');
-                              }
-                            }}
-                            className="flex-1 h-10 text-xs bg-white border border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white"
-                          >
-                            📤 Share
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                    
 
                     {/* Urgency Message */}
                     <div className="text-center mt-3 hidden md:block">
