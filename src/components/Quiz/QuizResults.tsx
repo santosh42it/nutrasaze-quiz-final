@@ -872,25 +872,82 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Use a ref to track if we've already initiated a save to prevent multiple calls
   const hasInitiatedSave = React.useRef(false);
 
-  // Urgency timer state
-  const [timeRemaining, setTimeRemaining] = useState(24 * 60 * 60); // 24 hours in seconds
+  // Urgency timer state with persistence
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    // Check if there's a stored timer for this session
+    const storedTimer = localStorage.getItem('nutrasage_offer_timer');
+    const storedTimestamp = localStorage.getItem('nutrasage_offer_timestamp');
+    
+    if (storedTimer && storedTimestamp) {
+      const elapsed = Math.floor((Date.now() - parseInt(storedTimestamp)) / 1000);
+      const remaining = parseInt(storedTimer) - elapsed;
+      
+      // If timer hasn't expired, use remaining time
+      if (remaining > 0) {
+        return remaining;
+      }
+    }
+    
+    // Start new 6-hour timer for more realistic urgency
+    const newTimer = 6 * 60 * 60; // 6 hours in seconds
+    localStorage.setItem('nutrasage_offer_timer', newTimer.toString());
+    localStorage.setItem('nutrasage_offer_timestamp', Date.now().toString());
+    return newTimer;
+  });
 
-  // Timer effect for urgency countdown
+  // Timer effect for urgency countdown with persistence
   useEffect(() => {
     if (timeRemaining > 0) {
       const timer = setInterval(() => {
-        setTimeRemaining(prev => prev - 1);
+        setTimeRemaining(prev => {
+          const newTime = prev - 1;
+          // Update localStorage every minute to reduce writes
+          if (newTime % 60 === 0) {
+            localStorage.setItem('nutrasage_offer_timer', newTime.toString());
+            localStorage.setItem('nutrasage_offer_timestamp', Date.now().toString());
+          }
+          return newTime;
+        });
       }, 1000);
       return () => clearInterval(timer);
+    } else {
+      // Timer expired - could show different message or reset
+      localStorage.removeItem('nutrasage_offer_timer');
+      localStorage.removeItem('nutrasage_offer_timestamp');
     }
   }, [timeRemaining]);
 
-  // Format time remaining
+  // Format time remaining with more realistic display
   const formatTimeRemaining = () => {
+    if (timeRemaining <= 0) {
+      return "EXPIRED";
+    }
+    
     const hours = Math.floor(timeRemaining / 3600);
     const minutes = Math.floor((timeRemaining % 3600) / 60);
     const seconds = timeRemaining % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Show different format based on time remaining
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
+  // Get urgency message based on time remaining
+  const getUrgencyMessage = () => {
+    if (timeRemaining <= 0) {
+      return "OFFER EXPIRED - Contact support for availability";
+    } else if (timeRemaining < 3600) { // Less than 1 hour
+      return "⚡ HURRY! Only minutes left!";
+    } else if (timeRemaining < 7200) { // Less than 2 hours
+      return "🔥 Limited time offer ending soon!";
+    } else {
+      return "⏰ Special pricing ends soon!";
+    }
   };
 
   useEffect(() => {
@@ -1172,13 +1229,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 <div className="w-full md:w-80">
                   <div className="bg-white border border-[#913177]/20 rounded-lg p-6 md:sticky md:top-4 shadow-lg">
                     {/* Urgency Banner with Live Timer */}
-                    <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center py-3 px-3 rounded-lg mb-4 animate-pulse border-2 border-red-300">
-                      <div className="text-sm font-bold mb-1">⚡ YOUR EXCLUSIVE OFFER EXPIRES IN</div>
-                      <div className="text-2xl font-mono font-black tracking-wider mb-1">
+                    <div className={`text-white text-center py-3 px-3 rounded-lg mb-4 border-2 ${
+                      timeRemaining <= 0 
+                        ? 'bg-gradient-to-r from-gray-500 to-gray-600 border-gray-300' 
+                        : timeRemaining < 3600 
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 border-red-400 animate-pulse' 
+                        : 'bg-gradient-to-r from-red-500 to-red-600 border-red-300'
+                    }`}>
+                      <div className="text-sm font-bold mb-1">{getUrgencyMessage()}</div>
+                      <div className="text-xl font-mono font-black tracking-wider mb-1">
                         {formatTimeRemaining()}
                       </div>
                       <div className="text-xs opacity-90">
-                        ⏰ Don't miss this personalized health plan!
+                        {timeRemaining <= 0 
+                          ? "📞 Call +91 7093619881 for current pricing" 
+                          : "💊 Your personalized formula is reserved!"
+                        }
                       </div>
                     </div>
 
@@ -1227,8 +1293,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                     {/* Urgency Message */}
                     <div className="text-center mt-3 hidden md:block">
-                      <div className="text-xs text-red-600 font-semibold animate-bounce">
-                        🔥 OFFER EXPIRES IN {formatTimeRemaining()}
+                      <div className={`text-xs font-semibold ${
+                        timeRemaining <= 0 
+                          ? 'text-gray-600' 
+                          : timeRemaining < 3600 
+                          ? 'text-red-600 animate-bounce' 
+                          : 'text-red-600'
+                      }`}>
+                        {timeRemaining <= 0 
+                          ? "⏰ OFFER EXPIRED" 
+                          : `🔥 OFFER EXPIRES IN ${formatTimeRemaining()}`
+                        }
                       </div>
                     </div>
 
@@ -1287,8 +1362,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         {/* Mobile Sticky Buy Now Button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
           {/* Mobile Timer */}
-          <div className="bg-red-500 text-white text-center py-2 rounded-lg mb-3 animate-pulse">
-            <div className="text-xs font-bold">⏰ OFFER EXPIRES: {formatTimeRemaining()}</div>
+          <div className={`text-white text-center py-2 rounded-lg mb-3 ${
+            timeRemaining <= 0 
+              ? 'bg-gray-500' 
+              : timeRemaining < 3600 
+              ? 'bg-red-600 animate-pulse' 
+              : 'bg-red-500'
+          }`}>
+            <div className="text-xs font-bold">
+              {timeRemaining <= 0 
+                ? "⏰ OFFER EXPIRED" 
+                : `⏰ EXPIRES: ${formatTimeRemaining()}`
+              }
+            </div>
           </div>
 
           <div className="flex items-center justify-between mb-3">
