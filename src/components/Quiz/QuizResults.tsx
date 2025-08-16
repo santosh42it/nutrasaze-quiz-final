@@ -247,13 +247,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         // Show default products when no tags are found
         const { data: defaultProducts, error: defaultError } = await supabase
           .from('products')
-          .select('*')
+          .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id')
           .eq('is_active', true)
+          .order('id')
           .limit(3);
 
-        if (!defaultError && defaultProducts) {
+        if (!defaultError && defaultProducts && defaultProducts.length > 0) {
           console.log('Using default products:', defaultProducts.map(p => p.name));
           setRecommendedProducts(defaultProducts);
+        } else {
+          console.log('No products found in database, using hardcoded fallback');
+          // If no products in database, use hardcoded fallback
+          const hardcodedProducts = [
+            { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+            { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+            { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
+          ];
+          setRecommendedProducts(hardcodedProducts);
         }
         return;
       }
@@ -404,24 +414,34 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.log('❌ No matching answer key found, showing default products');
         const { data: defaultProducts, error: defaultError } = await supabase
           .from('products')
-          .select('*')
+          .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id')
           .eq('is_active', true)
+          .order('id')
           .limit(3);
 
-        if (!defaultError && defaultProducts) {
-          console.log('Using default products:', defaultProducts.map(p => p.name));
+        if (!defaultError && defaultProducts && defaultProducts.length > 0) {
+          console.log('Using default products from database:', defaultProducts.map(p => p.name));
           setRecommendedProducts(defaultProducts);
+        } else {
+          console.log('Database has no products, using hardcoded fallback');
+          // Final hardcoded fallback
+          const hardcodedProducts = [
+            { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+            { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+            { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
+          ];
+          setRecommendedProducts(hardcodedProducts);
         }
       }
 
       console.log('=== RECOMMENDATION COMPLETE ===');
     } catch (error) {
       console.error('Error getting recommended products:', error);
-      // Set fallback products on error
+      // Set fallback products on error with proper structure
       const fallbackProducts = [
-        { id: 1, name: "Daily Energy Boost", description: "Natural energy enhancement", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null },
-        { id: 2, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null },
-        { id: 3, name: "Recovery & Immunity", description: "Support natural healing", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null }
+        { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+        { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
+        { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
       ];
       setRecommendedProducts(fallbackProducts);
     }
@@ -900,18 +920,27 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Header with Logo */}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-[#1d0917]">NutraSage</h1>
-            <div className="text-sm text-gray-600">Assessment Report</div>
+          <div className="flex justify-between items-center">
+            <div
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => window.open('https://nutrasage.in', '_blank')}
+            >
+              <img
+                src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339"
+                alt="NutraSage"
+                className="h-12 md:h-16 w-auto"
+              />
+            </div>
+            <div className="text-sm text-gray-600 font-medium">Assessment Report</div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8 mt-4">
         <div className="max-w-4xl mx-auto">
 
           {/* Assessment Report Card */}
@@ -1032,27 +1061,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         </div>
                       </div>
                     )) : (
-                      // Fallback products
-                      [
-                        { name: "Daily Energy Boost", description: "Natural energy enhancement", price: "₹999" },
-                        { name: "Stress Relief Complex", description: "Adaptogenic herbs for stress", price: "₹899" },
-                        { name: "Recovery & Immunity", description: "Support natural healing", price: "₹1099" }
-                      ].map((product, index) => (
-                        <div key={index} className="flex items-center gap-4 p-3 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg shadow-sm border border-[#913177]/10">
-                          <img
-                            src="https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"
-                            alt={product.name}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-[#1d0917] text-sm">{product.name}</div>
-                            <div className="text-xs text-[#6d6d6e]">{product.description}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-[#913177]">{product.price}</div>
-                          </div>
-                        </div>
-                      ))
+                      // This should not appear if our fallback logic above works correctly
+                      <div className="text-center p-6 text-gray-500">
+                        <p>Loading your personalized recommendations...</p>
+                      </div>
                     )}
                   </div>
 
@@ -1181,6 +1193,24 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Take Assessment Again */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-lg font-semibold text-[#1d0917] mb-3">
+                Want to Update Your Assessment?
+              </h3>
+              <p className="text-sm text-[#6d6d6e] mb-4">
+                Your health needs change over time. Take the assessment again to get updated recommendations.
+              </p>
+              <Button 
+                onClick={() => window.location.href = '/'}
+                className="bg-white border-2 border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300"
+              >
+                🔄 Take Assessment Again
+              </Button>
             </CardContent>
           </Card>
 
