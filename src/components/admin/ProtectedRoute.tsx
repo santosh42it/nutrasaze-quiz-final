@@ -20,14 +20,27 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         if (session?.user) {
           setIsAuthenticated(true);
         } else {
-          // Check if user was remembered and try to refresh session
+          // Check if user was remembered and if remember preference is still valid
           const wasRemembered = localStorage.getItem('nutrasage_remember_admin') === 'true';
-          if (wasRemembered) {
-            const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-            if (refreshedSession?.user) {
+          const rememberExpiry = localStorage.getItem('nutrasage_remember_expiry');
+          const isRememberValid = rememberExpiry && Date.now() < parseInt(rememberExpiry);
+          
+          if (wasRemembered && isRememberValid) {
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshedSession?.user && !refreshError) {
               setIsAuthenticated(true);
               return;
+            } else {
+              // Clear expired or invalid remember me data
+              localStorage.removeItem('nutrasage_remember_admin');
+              localStorage.removeItem('nutrasage_admin_email');
+              localStorage.removeItem('nutrasage_remember_expiry');
             }
+          } else if (wasRemembered && !isRememberValid) {
+            // Remember me expired, clear the data
+            localStorage.removeItem('nutrasage_remember_admin');
+            localStorage.removeItem('nutrasage_admin_email');
+            localStorage.removeItem('nutrasage_remember_expiry');
           }
           setIsAuthenticated(false);
         }
@@ -42,7 +55,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     checkAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setIsAuthenticated(!!session);
+      if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+      } else if (event === 'SIGNED_IN' && session) {
+        setIsAuthenticated(true);
+      }
       setLoading(false);
     });
 

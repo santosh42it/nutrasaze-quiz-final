@@ -8,11 +8,13 @@ import { AnswerKeyManager } from './AnswerKeyManager';
 import { SuperAdminToggle } from './SuperAdminToggle';
 import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export const AdminPanel: React.FC = () => {
   const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys } = useAdminStore();
   const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses' | 'answerkey'>('responses');
   const [superAdminEnabled, setSuperAdminEnabled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchQuestions();
@@ -23,6 +25,21 @@ export const AdminPanel: React.FC = () => {
     fetchOptionTags();
     fetchAnswerKeys();
   }, [fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys]);
+
+  const handleSignOut = async () => {
+    try {
+      // Clear all remember me data on sign out
+      localStorage.removeItem('nutrasage_remember_admin');
+      localStorage.removeItem('nutrasage_admin_email');
+      localStorage.removeItem('nutrasage_remember_expiry');
+      sessionStorage.removeItem('nutrasage_session_only');
+
+      await supabase.auth.signOut();
+      navigate('/admin/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#fff4fc]">
@@ -52,7 +69,7 @@ export const AdminPanel: React.FC = () => {
                   }}
                 />
                 <Button
-                  onClick={() => supabase.auth.signOut()}
+                  onClick={handleSignOut}
                   className="bg-[#913177] text-white hover:bg-[#913177]/90 text-sm"
                 >
                   Sign Out
@@ -101,7 +118,7 @@ export const AdminPanel: React.FC = () => {
             {activeTab === 'tags' && superAdminEnabled && <TagManager />}
             {activeTab === 'products' && superAdminEnabled && <ProductManager />}
             {activeTab === 'answerkey' && superAdminEnabled && <AnswerKeyManager />}
-            
+
             {/* Show access denied message for edit tabs when super admin is disabled */}
             {(activeTab !== 'responses' && !superAdminEnabled) && (
               <div className="text-center py-12">

@@ -30,17 +30,53 @@ export const AdminLogin: React.FC = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Check if user was remembered
+      // Check if user was remembered and if remember preference hasn't expired
       const wasRemembered = localStorage.getItem('nutrasage_remember_admin') === 'true';
+      const rememberExpiry = localStorage.getItem('nutrasage_remember_expiry');
+      const isRememberValid = rememberExpiry && Date.now() < parseInt(rememberExpiry);
+      const isSessionOnly = sessionStorage.getItem('nutrasage_session_only') === 'true';
       
       if (session) {
-        navigate('/admin');
-      } else if (wasRemembered) {
-        // Try to refresh the session if user was remembered
-        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-        if (refreshedSession) {
+        // If session exists and user chose remember me, keep them logged in
+        if (wasRemembered && isRememberValid) {
+          navigate('/admin');
+          return;
+        }
+        // If session exists but it's session-only and browser was reopened, check if it's still valid
+        if (isSessionOnly) {
+          navigate('/admin');
+          return;
+        }
+        // If session exists and remember me is valid
+        if (wasRemembered && isRememberValid) {
+          navigate('/admin');
+          return;
+        }
+        // If session exists but remember me expired, clear data
+        if (wasRemembered && !isRememberValid) {
+          localStorage.removeItem('nutrasage_remember_admin');
+          localStorage.removeItem('nutrasage_admin_email');
+          localStorage.removeItem('nutrasage_remember_expiry');
+          await supabase.auth.signOut();
+        } else {
           navigate('/admin');
         }
+      } else if (wasRemembered && isRememberValid) {
+        // Try to refresh the session if user was remembered and it's still valid
+        const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+        if (refreshedSession && !error) {
+          navigate('/admin');
+        } else {
+          // If refresh failed, clear remember me data
+          localStorage.removeItem('nutrasage_remember_admin');
+          localStorage.removeItem('nutrasage_admin_email');
+          localStorage.removeItem('nutrasage_remember_expiry');
+        }
+      } else if (wasRemembered && !isRememberValid) {
+        // Remember me expired, clear the data
+        localStorage.removeItem('nutrasage_remember_admin');
+        localStorage.removeItem('nutrasage_admin_email');
+        localStorage.removeItem('nutrasage_remember_expiry');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -57,22 +93,23 @@ export const AdminLogin: React.FC = () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
-        options: {
-          // Set session persistence based on remember me
-          persistSession: rememberMe
-        }
+        password
       });
 
       if (error) throw error;
 
-      // Store remember me preference
+      // Store remember me preference and session persistence
       if (rememberMe) {
         localStorage.setItem('nutrasage_remember_admin', 'true');
         localStorage.setItem('nutrasage_admin_email', email);
+        // Set a long expiry for remember me (30 days)
+        localStorage.setItem('nutrasage_remember_expiry', (Date.now() + 30 * 24 * 60 * 60 * 1000).toString());
       } else {
         localStorage.removeItem('nutrasage_remember_admin');
         localStorage.removeItem('nutrasage_admin_email');
+        localStorage.removeItem('nutrasage_remember_expiry');
+        // If not remembering, set session to expire when browser closes
+        sessionStorage.setItem('nutrasage_session_only', 'true');
       }
 
       navigate('/admin');
@@ -170,7 +207,7 @@ export const AdminLogin: React.FC = () => {
                   className="h-4 w-4 text-[#913177] focus:ring-[#913177] border-[#e9d6e4] rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-[#6d6d6e]">
-                  Remember me for this session
+                  Keep me logged in (30 days)
                 </label>
               </div>
             </div>
