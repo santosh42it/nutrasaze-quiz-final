@@ -10,6 +10,14 @@ import { AdminLogin } from "./components/admin/AdminLogin";
 // Handle unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
+  
+  // Check if it's a Supabase related error
+  if (event.reason && typeof event.reason === 'object') {
+    if (event.reason.message && event.reason.message.includes('supabase')) {
+      console.error('Supabase connection issue detected');
+    }
+  }
+  
   event.preventDefault(); // Prevent the error from appearing in console
 });
 
