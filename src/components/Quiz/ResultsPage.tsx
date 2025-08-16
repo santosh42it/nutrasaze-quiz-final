@@ -25,7 +25,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
     const loadResultsData = async () => {
       console.log('=== RESULTS PAGE DEBUG START ===');
       console.log('Result ID from URL:', resultId);
-      
+
       if (!resultId) {
         console.error('No result ID provided');
         setError('Invalid result ID');
@@ -176,69 +176,53 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
     );
   }
 
-  if (error || !quizData) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex justify-center items-center">
-              <div
-                className="cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => window.open('https://nutrasage.in', '_blank')}
-              >
-                <img
-                  src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339"
-                  alt="NutraSage"
-                  className="h-12 md:h-16 w-auto"
-                />
-              </div>
-            </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full mx-auto p-6 bg-white rounded-lg shadow-lg text-center">
+          {/* NutraSage Logo */}
+          <div className="mb-6">
+            <img 
+              src="https://nutrasage.in/wp-content/uploads/2024/06/cropped-NutraSage-Logo-1024x366.png" 
+              alt="NutraSage" 
+              className="h-12 mx-auto"
+            />
           </div>
-        </header>
 
-        {/* Error Content */}
-        <div className="flex items-center justify-center min-h-[calc(100vh-120px)]">
-          <div className="text-center p-8 max-w-md mx-auto">
-            <div className="text-6xl mb-4">😞</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Results Not Found</h2>
-            <p className="text-gray-600 mb-4 text-sm">
-              {error || 'The results you\'re looking for could not be found.'}
-            </p>
-            
-            {/* Debug info for development */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-red-50 border border-red-200 rounded p-3 mb-4 text-left text-xs">
-                <div className="font-semibold text-red-800 mb-1">Debug Info:</div>
-                <div className="text-red-700">Result ID: {resultId || 'None'}</div>
-                <div className="text-red-700">Error: {error || 'No specific error'}</div>
-                <div className="text-red-700">URL: {window.location.href}</div>
-              </div>
-            )}
-            
-            <div className="space-y-3">
-              <button
-                onClick={() => navigate('/')}
-                className="bg-[#913177] text-white px-6 py-3 rounded-lg hover:bg-[#7d2b65] transition-colors w-full"
-              >
-                Take New Assessment
-              </button>
-              
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors w-full text-sm"
-              >
-                Try Again
-              </button>
-              
-              <div className="text-xs text-gray-500 mt-4">
-                Need help? Contact us at{' '}
-                <a href="tel:+917093619881" className="text-[#913177] font-semibold">
-                  +91 7093619881
-                </a>
-              </div>
-            </div>
+          <div className="text-6xl mb-4">😞</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Results Not Found</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+
+          {/* Debug Info */}
+          <div className="mb-6 p-4 bg-red-50 rounded-lg text-left">
+            <h3 className="font-semibold text-red-800 mb-2">Debug Info:</h3>
+            <p className="text-sm text-red-700">Result ID: {resultId}</p>
+            <p className="text-sm text-red-700">Error: {error}</p>
+            <p className="text-sm text-red-700">URL: {window.location.href}</p>
           </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/')}
+              className="bg-[#913177] text-white px-6 py-3 rounded-lg hover:bg-[#7d2b65] transition-colors w-full"
+            >
+              Take New Assessment
+            </button>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors w-full text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500 mt-6">
+            Need help? Contact us at{' '}
+            <a href="tel:+917093619881" className="text-[#913177] font-semibold">
+              +91 7093619881
+            </a>
+          </p>
         </div>
       </div>
     );
