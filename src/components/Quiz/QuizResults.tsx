@@ -1160,34 +1160,35 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           </div>
         </div>
 
-      {/* Mobile Sticky Buy Now Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
-        {/* Mobile Timer */}
-        <div className="bg-red-500 text-white text-center py-2 rounded-lg mb-3 animate-pulse">
-          <div className="text-xs font-bold">⏰ OFFER EXPIRES: {formatTimeRemaining()}</div>
-        </div>
-
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="text-sm text-[#6d6d6e]">Total</div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-[#913177]">₹{totalPrice}</span>
-              {originalPrice > totalPrice && (
-                <span className="text-sm text-[#6d6d6e] line-through">₹{originalPrice}</span>
-              )}
-            </div>
+        {/* Mobile Sticky Buy Now Button */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
+          {/* Mobile Timer */}
+          <div className="bg-red-500 text-white text-center py-2 rounded-lg mb-3 animate-pulse">
+            <div className="text-xs font-bold">⏰ OFFER EXPIRES: {formatTimeRemaining()}</div>
           </div>
-          <Button 
-            onClick={() => {
-              if (buyNowUrl && buyNowUrl !== '#') {
-                // Open in same tab to avoid cart refresh issues
-                window.location.href = buyNowUrl;
-              }
-            }}
-            className="px-4 h-12 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center"
-          >
-            Buy Now
-          </Button>
+
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-sm text-[#6d6d6e]">Total</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold text-[#913177]">₹{totalPrice}</span>
+                {originalPrice > totalPrice && (
+                  <span className="text-sm text-[#6d6d6e] line-through">₹{originalPrice}</span>
+                )}
+              </div>
+            </div>
+            <Button 
+              onClick={() => {
+                if (buyNowUrl && buyNowUrl !== '#') {
+                  // Open in same tab to avoid cart refresh issues
+                  window.location.href = buyNowUrl;
+                }
+              }}
+              className="px-4 h-12 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center"
+            >
+              Buy Now
+            </Button>
+          </div>
         </div>
       </div>
     </div>
