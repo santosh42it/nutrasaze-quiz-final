@@ -997,37 +997,96 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // First load questions if not already loaded
       const loadDataForExistingResults = async () => {
         try {
+          console.log('=== EXISTING RESULTS DATA LOAD START ===');
+          
           // Load questions first if not already loaded
           if (questions.length === 0) {
             console.log('Loading questions for existing results...');
-            const { data: fetchedQuestions, error: questionsError } = await supabase
-              .from('questions')
-              .select('id, question_text')
-              .eq('status', 'active')
-              .order('order_index');
+            
+            try {
+              const { data: fetchedQuestions, error: questionsError } = await supabase
+                .from('questions')
+                .select('id, question_text')
+                .eq('status', 'active')
+                .order('order_index');
 
-            if (!questionsError && fetchedQuestions) {
-              setQuestions(fetchedQuestions);
-              console.log('Questions loaded for existing results:', fetchedQuestions.length);
-            } else if (questionsError) {
-              console.error('Error loading questions:', questionsError);
+              if (questionsError) {
+                console.error('Error loading questions:', questionsError);
+                // Continue without questions - we'll use fallback products
+              } else if (fetchedQuestions && fetchedQuestions.length > 0) {
+                setQuestions(fetchedQuestions);
+                console.log('Questions loaded for existing results:', fetchedQuestions.length);
+              } else {
+                console.warn('No questions found in database');
+              }
+            } catch (questionError) {
+              console.error('Exception loading questions:', questionError);
+              // Continue without questions
             }
           }
           
           // Then load products
-          await getRecommendedProducts();
+          console.log('Loading recommended products...');
+          try {
+            await getRecommendedProducts();
+            console.log('Recommended products loaded successfully');
+          } catch (productError) {
+            console.error('Error getting recommended products:', productError);
+            // Fallback to default products
+            console.log('Setting fallback products due to recommendation error');
+            await setFallbackProducts();
+          }
+          
+          console.log('=== EXISTING RESULTS DATA LOAD COMPLETE ===');
         } catch (error) {
+          console.error('=== EXISTING RESULTS DATA LOAD ERROR ===');
           console.error('Error loading data for existing results:', error);
+          console.error('Error details:', {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : 'No stack',
+            timestamp: new Date().toISOString()
+          });
+          
           // Set fallback products on error
-          await setFallbackProducts();
+          try {
+            console.log('Setting fallback products after error...');
+            await setFallbackProducts();
+            console.log('Fallback products set successfully');
+          } catch (fallbackError) {
+            console.error('Critical error: Could not set fallback products:', fallbackError);
+            // At this point, we should show some error message to the user
+            // but we don't want to crash the entire component
+          }
         }
       };
       
       // Properly handle the promise to prevent unhandled rejections
       loadDataForExistingResults().catch(error => {
+        console.error('=== CRITICAL ERROR IN loadDataForExistingResults ===');
         console.error('Unhandled error in loadDataForExistingResults:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error constructor:', error?.constructor?.name);
+        
+        // Last resort fallback
         setFallbackProducts().catch(fallbackError => {
+          console.error('=== CRITICAL FALLBACK ERROR ===');
           console.error('Error setting fallback products:', fallbackError);
+          
+          // Set some minimal products manually to prevent blank screen
+          setRecommendedProducts([
+            { 
+              id: 999, 
+              name: "Essential Wellness Kit", 
+              description: "Your personalized supplement selection", 
+              mrp: 1299, 
+              srp: 999, 
+              image_url: null, 
+              is_active: true, 
+              shopify_variant_id: null, 
+              url: 'https://nutrasage.in' 
+            }
+          ]);
         });
       });
     }
