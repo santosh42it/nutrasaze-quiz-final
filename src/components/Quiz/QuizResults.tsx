@@ -156,13 +156,32 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Function to get recommended products based on quiz answers
   const getRecommendedProducts = async () => {
     try {
-      console.log('Starting product recommendation process...');
-      console.log('=== PRODUCT RECOMMENDATION DEBUG ===');
-      console.log('Getting recommended products based on quiz answers...');
+      console.log('=== PRODUCT RECOMMENDATION DEBUG START ===');
       console.log('All user answers:', answers);
+      console.log('Available questions in state:', questions.length);
 
-      // First, get all the user's answers and their associated tags
-      const { data: fetchedQuestions, error: questionsError } = await supabase
+      // First, ensure we have questions loaded
+      let questionsToUse = questions;
+      if (questionsToUse.length === 0) {
+        console.log('Loading questions for product recommendations...');
+        const { data: fetchedQuestions, error: questionsError } = await supabase
+          .from('questions')
+          .select('id, question_text')
+          .eq('status', 'active')
+          .order('order_index');
+
+        if (questionsError) {
+          console.error('Error fetching questions:', questionsError);
+          throw questionsError;
+        }
+
+        questionsToUse = fetchedQuestions || [];
+        setQuestions(questionsToUse);
+        console.log('Loaded questions:', questionsToUse.length);
+      }
+
+      // Get questions with their options and tags
+      const { data: questionsWithTags, error: questionsError } = await supabase
         .from('questions')
         .select(`
           id, 
@@ -181,318 +200,304 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         .eq('status', 'active');
 
       if (questionsError) {
-        console.error('Error fetching questions for recommendations:', questionsError);
-        return;
+        console.error('Error fetching questions with tags:', questionsError);
+        throw questionsError;
       }
 
-      console.log('Total questions fetched:', fetchedQuestions?.length);
+      console.log('Questions with tags loaded:', questionsWithTags?.length);
 
       // Collect all unique tags from user's answers
       const userTags = new Set<string>();
       const answerTagMapping: { [key: string]: string[] } = {};
 
-      Object.entries(answers).forEach(([questionId, answerValue]) => {
-        // Skip detail keys and empty values
-        if (questionId.includes('_details') || !answerValue || answerValue.trim() === '') {
-          return;
+      // Process each answer to extract tags
+      for (const [questionId, answerValue] of Object.entries(answers)) {
+        // Skip detail keys, empty values, and user info fields
+        if (questionId.includes('_details') || 
+            !answerValue || 
+            String(answerValue).trim() === '' ||
+            ['name', 'email', 'contact', 'age'].includes(questionId)) {
+          continue;
         }
 
         console.log(`Processing answer - Question ID: ${questionId}, Answer: "${answerValue}"`);
 
-        const question = fetchedQuestions?.find(q => q.id === parseInt(questionId));
-        if (question && question.question_options) {
-          console.log(`Found question: "${question.question_text}"`);
-          console.log(`Available options for this question:`, question.question_options.map(opt => opt.option_text));
-
-          // Find the selected option with exact matching
-          const selectedOption = question.question_options.find(opt => 
-            opt.option_text.trim().toLowerCase() === answerValue.trim().toLowerCase()
-          );
-
-          if (selectedOption) {
-            console.log(`Found selected option: "${selectedOption.option_text}"`);
-            console.log(`Option tags:`, selectedOption.option_tags);
-
-            const tagsForThisAnswer: string[] = [];
-
-            if (selectedOption.option_tags && selectedOption.option_tags.length > 0) {
-              selectedOption.option_tags.forEach((optionTag: any) => {
-                if (optionTag.tags && optionTag.tags.name) {
-                  userTags.add(optionTag.tags.name);
-                  tagsForThisAnswer.push(optionTag.tags.name);
-                  console.log(`Added tag: "${optionTag.tags.name}"`);
-                }
-              });
-            } else {
-              console.log('No tags found for this option');
-            }
-
-            answerTagMapping[`Q${questionId}: ${answerValue}`] = tagsForThisAnswer;
-          } else {
-            console.log('❌ Could not find matching option for answer: "${answerValue}"');
-            console.log('Available options:', question.question_options.map(opt => opt.option_text));
-          }
-        } else {
-          console.log(`❌ Could not find question with ID: ${questionId}`);
+        // Find the question
+        const questionIdNum = parseInt(questionId);
+        const question = questionsWithTags?.find(q => q.id === questionIdNum);
+        
+        if (!question) {
+          console.log(`❌ Question not found for ID: ${questionId}`);
+          continue;
         }
-      });
+
+        console.log(`Found question: "${question.question_text}"`);
+        console.log(`Available options:`, question.question_options?.map(opt => opt.option_text) || []);
+
+        // Find the selected option
+        const selectedOption = question.question_options?.find(opt => 
+          opt.option_text.trim().toLowerCase() === String(answerValue).trim().toLowerCase()
+        );
+
+        if (!selectedOption) {
+          console.log(`❌ Option not found for answer: "${answerValue}"`);
+          console.log('Available options:', question.question_options?.map(opt => opt.option_text));
+          continue;
+        }
+
+        console.log(`✅ Found selected option: "${selectedOption.option_text}"`);
+
+        // Extract tags from the selected option
+        const tagsForThisAnswer: string[] = [];
+        if (selectedOption.option_tags && selectedOption.option_tags.length > 0) {
+          selectedOption.option_tags.forEach((optionTag: any) => {
+            if (optionTag.tags && optionTag.tags.name) {
+              const tagName = optionTag.tags.name.trim();
+              userTags.add(tagName);
+              tagsForThisAnswer.push(tagName);
+              console.log(`  ✅ Added tag: "${tagName}"`);
+            }
+          });
+        }
+
+        answerTagMapping[`Q${questionId}: ${answerValue}`] = tagsForThisAnswer;
+      }
 
       console.log('=== TAG COLLECTION SUMMARY ===');
       console.log('Answer to Tag Mapping:', answerTagMapping);
       console.log('All unique user tags collected:', Array.from(userTags));
       console.log('Total unique tags:', userTags.size);
 
+      // If no tags found, use fallback products
       if (userTags.size === 0) {
-        console.log('❌ No tags found for user answers - will show default products');
-        // Show default products when no tags are found
-        const { data: defaultProducts, error: defaultError } = await supabase
-          .from('products')
-          .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id')
-          .eq('is_active', true)
-          .order('id')
-          .limit(3);
-
-        if (!defaultError && defaultProducts && defaultProducts.length >= 3) {
-          console.log('Using default products:', defaultProducts.map(p => p.name));
-          setRecommendedProducts(defaultProducts);
-        } else {
-          console.log('Not enough products in database, using hardcoded fallback');
-          // If not enough products in database, use hardcoded fallback
-          const hardcodedProducts = [
-            { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-            { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-            { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
-          ];
-          setRecommendedProducts(hardcodedProducts);
-        }
+        console.log('❌ No tags found - using fallback products');
+        await setFallbackProducts();
         return;
       }
 
-      // Sort tags alphabetically to match the answer key format
+      // Create sorted tag combination for answer key matching
       const sortedTags = Array.from(userTags).sort().join(',');
       console.log('=== ANSWER KEY MATCHING ===');
-      console.log('User tag combination (sorted):', sortedTags);
+      console.log('User tag combination (sorted):', `"${sortedTags}"`);
 
-      // Get all answer keys for debugging
-      console.log('Fetching all answer keys...');
+      // Get all answer keys first for debugging
       const { data: allAnswerKeys, error: allKeysError } = await supabase
         .from('answer_key')
-        .select('*');
+        .select('*')
+        .order('id');
 
-      console.log('All available answer key combinations:');
-      console.log('Total answer keys found:', allAnswerKeys?.length || 0);
+      if (allKeysError) {
+        console.error('Error fetching answer keys:', allKeysError);
+        throw allKeysError;
+      }
+
+      console.log('=== ALL ANSWER KEYS ===');
+      console.log('Total answer keys:', allAnswerKeys?.length || 0);
       allAnswerKeys?.forEach((key, index) => {
-        console.log(`  ${index + 1}. ID:${key.id} - "${key.tag_combination}" -> ${key.recommended_products}`);
-        if (key.tag_combination === sortedTags) {
-          console.log(`  ✅ EXACT MATCH FOUND in all keys list: ID ${key.id}`);
-        }
+        const isExactMatch = key.tag_combination === sortedTags;
+        console.log(`${index + 1}. ${isExactMatch ? '🎯' : '  '} ID:${key.id} - "${key.tag_combination}" -> ${key.recommended_products}`);
       });
 
-      // Look for exact match first
-      console.log(`Looking for exact match with: "${sortedTags}"`);
-      console.log('Querying answer_key table...');
+      // Look for exact match
+      const exactMatch = allAnswerKeys?.find(key => key.tag_combination === sortedTags);
+      
+      let selectedAnswerKey = null;
 
-      let { data: answerKeyData, error: answerKeyError } = await supabase
-        .from('answer_key')
-        .select('*')
-        .eq('tag_combination', sortedTags);
-
-      console.log('Query result - data:', answerKeyData);
-      console.log('Query result - error:', answerKeyError);
-      console.log('Data length:', answerKeyData?.length || 0);
-
-      // Handle the data array from the query
-      const exactMatch = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
-
-      if (answerKeyError || !exactMatch) {
-        console.log('❌ No exact match found');
-        console.log('Looking for subset matches...');
-
-        // Find the best matching answer key (highest number of matching tags)
-        let bestMatch = null;
-        let maxMatches = 0;
-        let exactSubsetMatch = null;
+      if (exactMatch) {
+        console.log('🎯 EXACT MATCH FOUND:', exactMatch.tag_combination);
+        selectedAnswerKey = exactMatch;
+      } else {
+        console.log('⚠️ No exact match found, looking for subset matches...');
+        
+        // Find subset matches (user tags are subset of answer key tags)
+        const userTagsArray = Array.from(userTags);
+        let bestSubsetMatch = null;
+        let bestPartialMatch = null;
+        let maxPartialMatches = 0;
 
         allAnswerKeys?.forEach(key => {
           const keyTags = new Set(key.tag_combination.split(',').map(tag => tag.trim()));
-          const userTagsArray = Array.from(userTags);
           const matchCount = userTagsArray.filter(tag => keyTags.has(tag)).length;
-
-          console.log(`Checking key "${key.tag_combination}": ${matchCount}/${userTagsArray.length} tags match`);
-
+          
           // Check if user tags are a subset of this key's tags
           const isSubset = userTagsArray.every(tag => keyTags.has(tag));
-
+          
+          console.log(`Checking "${key.tag_combination}": ${matchCount}/${userTagsArray.length} matches, subset: ${isSubset}`);
+          
           if (isSubset && matchCount === userTagsArray.length) {
-            console.log(`✅ Found exact subset match: "${key.tag_combination}"`);
-            if (!exactSubsetMatch || keyTags.size < new Set(exactSubsetMatch.tag_combination.split(',')).size) {
-              exactSubsetMatch = key;
+            // This is a valid subset match
+            if (!bestSubsetMatch || keyTags.size < new Set(bestSubsetMatch.tag_combination.split(',')).size) {
+              bestSubsetMatch = key;
+              console.log(`  ✅ Better subset match: ${key.tag_combination}`);
             }
           }
-
-          // Also track the best partial match
-          if (matchCount > maxMatches && matchCount > 0) {
-            maxMatches = matchCount;
-            bestMatch = key;
+          
+          // Track best partial match as fallback
+          if (matchCount > maxPartialMatches) {
+            maxPartialMatches = matchCount;
+            bestPartialMatch = key;
           }
         });
 
-        // Prefer exact subset match over partial match
-        if (exactSubsetMatch) {
-          console.log('✅ Using exact subset match:', exactSubsetMatch.tag_combination);
-          answerKeyData = [exactSubsetMatch];
-        } else if (bestMatch) {
-          console.log('✅ Using best partial match:', bestMatch.tag_combination, 'with', maxMatches, 'matching tags');
-          answerKeyData = [bestMatch];
-        }
-      } else {
-        console.log('✅ Found exact match:', exactMatch.tag_combination);
-        answerKeyData = [exactMatch];
-      }
-
-      const finalAnswerKey = answerKeyData && answerKeyData.length > 0 ? answerKeyData[0] : null;
-      setAnswerKey(finalAnswerKey); // Set the matched answer key to state
-
-      if (finalAnswerKey && finalAnswerKey.recommended_products) {
-        const productNames = finalAnswerKey.recommended_products.split(',').map(name => name.trim());
-        console.log('=== PRODUCT MATCHING ===');
-        console.log('Recommended product names from answer key:', productNames);
-        console.log('Using answer key:', finalAnswerKey.tag_combination, '->', finalAnswerKey.recommended_products);
-
-        // Get all products for debugging
-        const { data: allProducts, error: allProductsError } = await supabase
-          .from('products')
-          .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id') // Added shopify_variant_id
-          .eq('is_active', true);
-
-        if (allProductsError) {
-          console.error('Error fetching all products:', allProductsError);
-          return;
-        }
-
-        console.log('All available products in database:', allProducts?.map(p => p.name));
-
-        // Try exact name matching first
-        const exactMatches = allProducts?.filter(product => 
-          productNames.some(name => name.toLowerCase() === product.name.toLowerCase())
-        ) || [];
-
-        console.log('Product matching results:');
-        productNames.forEach(name => {
-          const match = allProducts?.find(p => p.name.toLowerCase() === name.toLowerCase());
-          console.log(`  "${name}" -> ${match ? `Found: "${match.name}"` : 'NOT FOUND'}`);
-        });
-
-        console.log('Final exact matches:', exactMatches.map(p => p.name));
-
-        // Ensure we always have at least 3 products
-        let finalProducts = [];
-
-        if (exactMatches.length >= 3) {
-          console.log('✅ Using exact product matches (3 or more found)');
-          finalProducts = exactMatches.slice(0, 3);
-        } else if (exactMatches.length > 0) {
-          console.log('⚠️ Only found', exactMatches.length, 'exact matches, adding more products...');
-          finalProducts = [...exactMatches];
-          
-          // Add more products from all available products to reach 3
-          const additionalProducts = allProducts?.filter(product => 
-            !exactMatches.some(matched => matched.id === product.id)
-          ).slice(0, 3 - exactMatches.length) || [];
-          
-          finalProducts = [...finalProducts, ...additionalProducts];
-        } else {
-          // If no exact matches, try partial matching
-          console.log('⚠️ No exact matches, trying partial matching...');
-          const partialMatches = allProducts?.filter(product => 
-            productNames.some(name => 
-              product.name.toLowerCase().includes(name.toLowerCase()) ||
-              name.toLowerCase().includes(product.name.toLowerCase())
-            )
-          ) || [];
-
-          console.log('Partial matches found:', partialMatches.map(p => p.name));
-
-          if (partialMatches.length >= 3) {
-            finalProducts = partialMatches.slice(0, 3);
-          } else if (partialMatches.length > 0) {
-            finalProducts = [...partialMatches];
-            // Add more products to reach 3
-            const additionalProducts = allProducts?.filter(product => 
-              !partialMatches.some(matched => matched.id === product.id)
-            ).slice(0, 3 - partialMatches.length) || [];
-            
-            finalProducts = [...finalProducts, ...additionalProducts];
-          } else {
-            console.log('❌ No matches found, using first 3 active products as fallback');
-            finalProducts = allProducts?.slice(0, 3) || [];
-          }
-        }
-
-        // Final safety check - ensure we have exactly 3 products
-        if (finalProducts.length < 3) {
-          console.log('⚠️ Still less than 3 products, adding hardcoded fallbacks...');
-          const hardcodedProducts = [
-            { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-            { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-            { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
-          ];
-          
-          // Fill remaining slots with hardcoded products
-          while (finalProducts.length < 3 && hardcodedProducts.length > 0) {
-            finalProducts.push(hardcodedProducts.shift()!);
-          }
-        }
-
-        console.log('Final products selected:', finalProducts.map(p => p.name));
-        setRecommendedProducts(finalProducts.slice(0, 3));  // Ensure exactly 3 products
-      } else {
-        console.log('❌ No matching answer key found, showing default products');
-        const { data: defaultProducts, error: defaultError } = await supabase
-          .from('products')
-          .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id')
-          .eq('is_active', true)
-          .order('id')
-          .limit(3);
-
-        if (!defaultError && defaultProducts && defaultProducts.length >= 3) {
-          console.log('Using default products from database:', defaultProducts.map(p => p.name));
-          setRecommendedProducts(defaultProducts);
-        } else {
-          console.log('Not enough products in database, using hardcoded fallback');
-          // Final hardcoded fallback - always 3 products
-          const hardcodedProducts = [
-            { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-            { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-            { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
-          ];
-          
-          // If we have some products from database but less than 3, combine with hardcoded
-          if (defaultProducts && defaultProducts.length > 0 && defaultProducts.length < 3) {
-            const combinedProducts = [...defaultProducts];
-            let hardcodedIndex = 0;
-            while (combinedProducts.length < 3 && hardcodedIndex < hardcodedProducts.length) {
-              combinedProducts.push(hardcodedProducts[hardcodedIndex]);
-              hardcodedIndex++;
-            }
-            setRecommendedProducts(combinedProducts);
-          } else {
-            setRecommendedProducts(hardcodedProducts);
-          }
+        if (bestSubsetMatch) {
+          console.log('✅ Using best subset match:', bestSubsetMatch.tag_combination);
+          selectedAnswerKey = bestSubsetMatch;
+        } else if (bestPartialMatch && maxPartialMatches > 0) {
+          console.log('⚠️ Using best partial match:', bestPartialMatch.tag_combination, `(${maxPartialMatches} matching tags)`);
+          selectedAnswerKey = bestPartialMatch;
         }
       }
 
-      console.log('=== RECOMMENDATION COMPLETE ===');
+      if (!selectedAnswerKey) {
+        console.log('❌ No suitable answer key found - using fallback products');
+        await setFallbackProducts();
+        return;
+      }
+
+      // Set the matched answer key
+      setAnswerKey(selectedAnswerKey);
+      console.log('=== SELECTED ANSWER KEY ===');
+      console.log('Answer Key ID:', selectedAnswerKey.id);
+      console.log('Tag Combination:', selectedAnswerKey.tag_combination);
+      console.log('Recommended Products:', selectedAnswerKey.recommended_products);
+
+      // Get products based on the answer key
+      const productNames = selectedAnswerKey.recommended_products
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+
+      console.log('=== PRODUCT MATCHING ===');
+      console.log('Product names from answer key:', productNames);
+
+      // Fetch all active products
+      const { data: allProducts, error: productsError } = await supabase
+        .from('products')
+        .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id')
+        .eq('is_active', true)
+        .order('name');
+
+      if (productsError) {
+        console.error('Error fetching products:', productsError);
+        throw productsError;
+      }
+
+      console.log('All available products:', allProducts?.map(p => p.name) || []);
+
+      // Match products by name
+      const matchedProducts: any[] = [];
+      const unmatchedProductNames: string[] = [];
+
+      productNames.forEach(productName => {
+        const product = allProducts?.find(p => 
+          p.name.toLowerCase().trim() === productName.toLowerCase().trim()
+        );
+        
+        if (product) {
+          matchedProducts.push(product);
+          console.log(`✅ Matched: "${productName}" -> "${product.name}"`);
+        } else {
+          unmatchedProductNames.push(productName);
+          console.log(`❌ Not matched: "${productName}"`);
+        }
+      });
+
+      console.log('Matched products:', matchedProducts.length);
+      console.log('Unmatched product names:', unmatchedProductNames);
+
+      // If we have fewer than 3 products, add more from available products
+      if (matchedProducts.length < 3) {
+        const additionalProducts = allProducts?.filter(product => 
+          !matchedProducts.some(matched => matched.id === product.id)
+        ).slice(0, 3 - matchedProducts.length) || [];
+        
+        matchedProducts.push(...additionalProducts);
+        console.log('Added additional products:', additionalProducts.map(p => p.name));
+      }
+
+      // Final products (ensure exactly 3)
+      const finalProducts = matchedProducts.slice(0, 3);
+      
+      if (finalProducts.length < 3) {
+        console.log('⚠️ Still fewer than 3 products, using fallback');
+        await setFallbackProducts();
+        return;
+      }
+
+      console.log('=== FINAL PRODUCTS ===');
+      finalProducts.forEach((product, index) => {
+        console.log(`${index + 1}. ${product.name} (₹${product.srp || product.mrp})`);
+      });
+
+      setRecommendedProducts(finalProducts);
+      console.log('=== PRODUCT RECOMMENDATION COMPLETE ===');
+
     } catch (error) {
-      console.error('Error getting recommended products:', error);
-      // Set fallback products on error with proper structure
-      const fallbackProducts = [
-        { id: 999, name: "Daily Energy Boost", description: "Natural energy enhancement for daily vitality", mrp: 1299, srp: 999, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-        { id: 998, name: "Stress Relief Complex", description: "Adaptogenic herbs for stress management", mrp: 1199, srp: 899, image_url: null, is_active: true, shopify_variant_id: null, url: '#' },
-        { id: 997, name: "Recovery & Immunity", description: "Support natural healing and immune function", mrp: 1399, srp: 1099, image_url: null, is_active: true, shopify_variant_id: null, url: '#' }
-      ];
-      setRecommendedProducts(fallbackProducts);
+      console.error('Error in getRecommendedProducts:', error);
+      await setFallbackProducts();
     }
+  };
+
+  // Helper function to set fallback products
+  const setFallbackProducts = async () => {
+    console.log('Setting fallback products...');
+    
+    try {
+      // Try to get products from database first
+      const { data: dbProducts, error } = await supabase
+        .from('products')
+        .select('id, name, description, image_url, url, mrp, srp, is_active, shopify_variant_id')
+        .eq('is_active', true)
+        .order('id')
+        .limit(3);
+
+      if (!error && dbProducts && dbProducts.length >= 3) {
+        console.log('Using database fallback products:', dbProducts.map(p => p.name));
+        setRecommendedProducts(dbProducts);
+        return;
+      }
+    } catch (error) {
+      console.error('Error fetching database fallback products:', error);
+    }
+
+    // Use hardcoded fallback
+    console.log('Using hardcoded fallback products');
+    const hardcodedProducts = [
+      { 
+        id: 999, 
+        name: "Daily Energy Boost", 
+        description: "Natural energy enhancement for daily vitality", 
+        mrp: 1299, 
+        srp: 999, 
+        image_url: null, 
+        is_active: true, 
+        shopify_variant_id: null, 
+        url: '#' 
+      },
+      { 
+        id: 998, 
+        name: "Stress Relief Complex", 
+        description: "Adaptogenic herbs for stress management", 
+        mrp: 1199, 
+        srp: 899, 
+        image_url: null, 
+        is_active: true, 
+        shopify_variant_id: null, 
+        url: '#' 
+      },
+      { 
+        id: 997, 
+        name: "Recovery & Immunity", 
+        description: "Support natural healing and immune function", 
+        mrp: 1399, 
+        srp: 1099, 
+        image_url: null, 
+        is_active: true, 
+        shopify_variant_id: null, 
+        url: '#' 
+      }
+    ];
+    setRecommendedProducts(hardcodedProducts);
   };
 
   const saveResponses = async () => {
@@ -908,20 +913,31 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       const initiateSave = async () => {
         try {
           await saveResponses();
+          console.log('Quiz save completed successfully');
         } catch (error) {
           console.error('Error in saveResponses:', error);
           setIsSubmitting(false);
           hasInitiatedSave.current = false; // Allow retry on error
+          
+          // Set fallback products if save fails but we still want to show results
+          try {
+            await setFallbackProducts();
+          } catch (fallbackError) {
+            console.error('Error setting fallback products:', fallbackError);
+          }
         }
       };
 
-      // Properly handle the promise
-      initiateSave().then(() => {
-        console.log('Quiz save completed successfully');
-      }).catch((error) => {
+      // Properly handle the promise to prevent unhandled rejections
+      initiateSave().catch((error) => {
         console.error('Unhandled error in initiateSave:', error);
         setIsSubmitting(false);
         hasInitiatedSave.current = false;
+        
+        // Try to set fallback products
+        setFallbackProducts().catch(fallbackError => {
+          console.error('Error setting fallback products after save failure:', fallbackError);
+        });
       });
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting]); // Added dependencies
@@ -946,6 +962,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             if (!questionsError && fetchedQuestions) {
               setQuestions(fetchedQuestions);
               console.log('Questions loaded for existing results:', fetchedQuestions.length);
+            } else if (questionsError) {
+              console.error('Error loading questions:', questionsError);
             }
           }
           
@@ -953,10 +971,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           await getRecommendedProducts();
         } catch (error) {
           console.error('Error loading data for existing results:', error);
+          // Set fallback products on error
+          await setFallbackProducts();
         }
       };
       
-      loadDataForExistingResults();
+      // Properly handle the promise to prevent unhandled rejections
+      loadDataForExistingResults().catch(error => {
+        console.error('Unhandled error in loadDataForExistingResults:', error);
+        setFallbackProducts().catch(fallbackError => {
+          console.error('Error setting fallback products:', fallbackError);
+        });
+      });
     }
   }, [isViewingExistingResults, recommendedProducts.length, questions.length]);
 
