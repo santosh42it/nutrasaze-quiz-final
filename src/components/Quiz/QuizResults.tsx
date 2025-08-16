@@ -965,9 +965,50 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 <div className="flex-1">
                   
 
-                  <h4 className="text-lg md:text-xl font-bold text-[#1d0917] mb-4">
-                    Your Personalized 1-Month Transformation Kit
-                  </h4>
+                  {/* Enhanced Transformation Kit Title */}
+                  <div className="bg-gradient-to-r from-[#913177] via-[#b54394] to-[#913177] rounded-xl p-6 mb-6 relative overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+                    
+                    {/* Content */}
+                    <div className="relative z-10 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <span className="text-2xl">🎯</span>
+                        <div className="h-px bg-white/30 flex-1 max-w-[50px]"></div>
+                        <span className="text-xs font-semibold text-white/80 tracking-wider uppercase">
+                          STAGE 1
+                        </span>
+                        <div className="h-px bg-white/30 flex-1 max-w-[50px]"></div>
+                        <span className="text-2xl">🎯</span>
+                      </div>
+                      
+                      <h4 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2 leading-tight">
+                        Your Personalized 1-Month
+                      </h4>
+                      <div className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-3 tracking-wide">
+                        TRANSFORMATION KIT
+                      </div>
+                      
+                      <div className="flex items-center justify-center gap-4 text-white/90 text-sm">
+                        <div className="flex items-center gap-1">
+                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                          <span>Custom Formula</span>
+                        </div>
+                        <div className="w-px h-4 bg-white/30"></div>
+                        <div className="flex items-center gap-1">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+                          <span>Science-Backed</span>
+                        </div>
+                        <div className="w-px h-4 bg-white/30"></div>
+                        <div className="flex items-center gap-1">
+                          <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                          <span>Lab-Tested</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="space-y-4">
                     {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
