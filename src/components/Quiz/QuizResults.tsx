@@ -225,7 +225,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         // Find the question
         const questionIdNum = parseInt(questionId);
         const question = questionsWithTags?.find(q => q.id === questionIdNum);
-        
+
         if (!question) {
           console.log(`❌ Question not found for ID: ${questionId}`);
           continue;
@@ -300,7 +300,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       // Look for exact match
       const exactMatch = allAnswerKeys?.find(key => key.tag_combination === sortedTags);
-      
+
       let selectedAnswerKey = null;
 
       if (exactMatch) {
@@ -308,7 +308,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         selectedAnswerKey = exactMatch;
       } else {
         console.log('⚠️ No exact match found, looking for subset matches...');
-        
+
         // Find subset matches (user tags are subset of answer key tags)
         const userTagsArray = Array.from(userTags);
         let bestSubsetMatch = null;
@@ -318,12 +318,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         allAnswerKeys?.forEach(key => {
           const keyTags = new Set(key.tag_combination.split(',').map(tag => tag.trim()));
           const matchCount = userTagsArray.filter(tag => keyTags.has(tag)).length;
-          
+
           // Check if user tags are a subset of this key's tags
           const isSubset = userTagsArray.every(tag => keyTags.has(tag));
-          
+
           console.log(`Checking "${key.tag_combination}": ${matchCount}/${userTagsArray.length} matches, subset: ${isSubset}`);
-          
+
           if (isSubset && matchCount === userTagsArray.length) {
             // This is a valid subset match
             if (!bestSubsetMatch || keyTags.size < new Set(bestSubsetMatch.tag_combination.split(',')).size) {
@@ -331,7 +331,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               console.log(`  ✅ Better subset match: ${key.tag_combination}`);
             }
           }
-          
+
           // Track best partial match as fallback
           if (matchCount > maxPartialMatches) {
             maxPartialMatches = matchCount;
@@ -392,7 +392,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         const product = allProducts?.find(p => 
           p.name.toLowerCase().trim() === productName.toLowerCase().trim()
         );
-        
+
         if (product) {
           matchedProducts.push(product);
           console.log(`✅ Matched: "${productName}" -> "${product.name}"`);
@@ -407,7 +407,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       // Use only the matched products from answer key
       const finalProducts = matchedProducts;
-      
+
       if (finalProducts.length === 0) {
         console.log('⚠️ No products matched from answer key, using fallback');
         await setFallbackProducts();
@@ -431,7 +431,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Helper function to set fallback products
   const setFallbackProducts = async () => {
     console.log('Setting fallback products...');
-    
+
     try {
       // Try to get products from database first
       const { data: dbProducts, error } = await supabase
@@ -877,17 +877,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     // Check if there's a stored timer for this session
     const storedTimer = localStorage.getItem('nutrasage_offer_timer');
     const storedTimestamp = localStorage.getItem('nutrasage_offer_timestamp');
-    
+
     if (storedTimer && storedTimestamp) {
       const elapsed = Math.floor((Date.now() - parseInt(storedTimestamp)) / 1000);
       const remaining = parseInt(storedTimer) - elapsed;
-      
+
       // If timer hasn't expired, use remaining time
       if (remaining > 0) {
         return remaining;
       }
     }
-    
+
     // Start new 6-hour timer for more realistic urgency
     const newTimer = 6 * 60 * 60; // 6 hours in seconds
     localStorage.setItem('nutrasage_offer_timer', newTimer.toString());
@@ -922,11 +922,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     if (timeRemaining <= 0) {
       return "EXPIRED";
     }
-    
+
     const hours = Math.floor(timeRemaining / 3600);
     const minutes = Math.floor((timeRemaining % 3600) / 60);
     const seconds = timeRemaining % 60;
-    
+
     // Show different format based on time remaining
     if (hours > 0) {
       return `${hours}h ${minutes}m ${seconds}s`;
@@ -965,7 +965,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           console.error('Error in saveResponses:', error);
           setIsSubmitting(false);
           hasInitiatedSave.current = false; // Allow retry on error
-          
+
           // Set fallback products if save fails but we still want to show results
           try {
             await setFallbackProducts();
@@ -980,7 +980,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.error('Unhandled error in initiateSave:', error);
         setIsSubmitting(false);
         hasInitiatedSave.current = false;
-        
+
         // Try to set fallback products
         setFallbackProducts().catch(fallbackError => {
           console.error('Error setting fallback products after save failure:', fallbackError);
@@ -993,16 +993,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   useEffect(() => {
     if (isViewingExistingResults && recommendedProducts.length === 0) {
       console.log('Loading products for existing results view...');
-      
+
       // First load questions if not already loaded
       const loadDataForExistingResults = async () => {
         try {
           console.log('=== EXISTING RESULTS DATA LOAD START ===');
-          
+
           // Load questions first if not already loaded
           if (questions.length === 0) {
             console.log('Loading questions for existing results...');
-            
+
             try {
               const { data: fetchedQuestions, error: questionsError } = await supabase
                 .from('questions')
@@ -1024,7 +1024,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               // Continue without questions
             }
           }
-          
+
           // Then load products
           console.log('Loading recommended products...');
           try {
@@ -1036,7 +1036,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             console.log('Setting fallback products due to recommendation error');
             await setFallbackProducts();
           }
-          
+
           console.log('=== EXISTING RESULTS DATA LOAD COMPLETE ===');
         } catch (error) {
           console.error('=== EXISTING RESULTS DATA LOAD ERROR ===');
@@ -1047,7 +1047,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             stack: error instanceof Error ? error.stack : 'No stack',
             timestamp: new Date().toISOString()
           });
-          
+
           // Set fallback products on error
           try {
             console.log('Setting fallback products after error...');
@@ -1060,19 +1060,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           }
         }
       };
-      
+
       // Properly handle the promise to prevent unhandled rejections
       loadDataForExistingResults().catch(error => {
         console.error('=== CRITICAL ERROR IN loadDataForExistingResults ===');
         console.error('Unhandled error in loadDataForExistingResults:', error);
         console.error('Error type:', typeof error);
         console.error('Error constructor:', error?.constructor?.name);
-        
+
         // Last resort fallback
         setFallbackProducts().catch(fallbackError => {
           console.error('=== CRITICAL FALLBACK ERROR ===');
           console.error('Error setting fallback products:', fallbackError);
-          
+
           // Set some minimal products manually to prevent blank screen
           setRecommendedProducts([
             { 
@@ -1096,15 +1096,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const originalPrice = recommendedProducts.length > 0 ? 
     recommendedProducts.reduce((total, product) => total + (product.mrp || 1299), 0) : 
     3297; // Fallback total MRP
-  
+
   const answerKeyDiscount = answerKey?.discount_percentage || 0;
-  
+
   const totalPrice = recommendedProducts.length > 0 ? 
     (answerKeyDiscount > 0 ? 
       Math.round(originalPrice * (1 - answerKeyDiscount / 100)) : 
       recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0)) :
     2497; // Fallback total price
-    
+
   const discountPercentage = originalPrice > 0 ? 
     (answerKeyDiscount || Math.round(((originalPrice - totalPrice) / originalPrice) * 100)) : 
     25; // Fallback discount percentage
@@ -1138,13 +1138,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-center items-center">
-            <div
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => window.open('https://nutrasage.in', '_blank')}
-            >
-              <img
-                src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339"
-                alt="NutraSage"
+            <div className="text-center mb-8">
+              <img 
+                src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339" 
+                alt="NutraSage" 
                 className="h-12 md:h-16 w-auto"
               />
             </div>
@@ -1161,11 +1158,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             <CardContent className="p-6 md:p-8">
               <div className="text-center">
                 <div className="text-sm text-gray-500 mb-2">Assessment Report</div>
-                
+
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                   Hello {extractedUserInfo?.name || 'User'}!
                 </h2>
-                
+
                 <div className="bg-gradient-to-r from-[#913177] to-[#b54394] text-white rounded-lg p-6 mb-6">
                   <div className="text-lg md:text-xl font-semibold mb-2">
                     🎯 Your Personalized Health Journey
@@ -1173,7 +1170,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="text-sm opacity-90 mb-4">
                     Stage 1 of your transformation • Results expected in 3-4 weeks
                   </div>
-                  
+
                   {/* Enhanced Progress Bar */}
                   <div className="bg-white/20 rounded-full p-1 mb-3">
                     <div className="bg-white h-3 rounded-full flex items-center justify-end pr-2" style={{width: '85%'}}>
@@ -1205,7 +1202,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                 {/* Left Column - Products List */}
                 <div className="flex-1">
-                  
+
 
                   {/* Enhanced Transformation Kit Title */}
                   <div className="bg-gradient-to-r from-[#913177] via-[#b54394] to-[#913177] rounded-xl p-6 mb-6 relative overflow-hidden">
@@ -1213,7 +1210,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-                    
+
                     {/* Content */}
                     <div className="relative z-10 text-center">
                       <div className="flex items-center justify-center gap-2 mb-3">
@@ -1225,14 +1222,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         <div className="h-px bg-white/30 flex-1 max-w-[50px]"></div>
                         <span className="text-2xl">🎯</span>
                       </div>
-                      
+
                       <h4 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2 leading-tight">
                         Your Personalized 1-Month
                       </h4>
                       <div className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-3 tracking-wide">
                         TRANSFORMATION KIT
                       </div>
-                      
+
                       <div className="flex items-center justify-center gap-4 text-white/90 text-sm">
                         <div className="flex items-center gap-1">
                           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -1281,7 +1278,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     )}
                   </div>
 
-                  
+
                 </div>
 
                 {/* Right Column - Pricing Summary (Desktop) */}
@@ -1348,7 +1345,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       Buy Now
                     </Button>
 
-                    
+
 
                     {/* Urgency Message */}
                     <div className="text-center mt-3 hidden md:block">
@@ -1420,22 +1417,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
         {/* Mobile Sticky Buy Now Button */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
-          {/* Mobile Timer */}
-          <div className={`text-white text-center py-2 rounded-lg mb-3 ${
-            timeRemaining <= 0 
-              ? 'bg-gray-500' 
-              : timeRemaining < 3600 
-              ? 'bg-red-600 animate-pulse' 
-              : 'bg-red-500'
-          }`}>
-            <div className="text-xs font-bold">
-              {timeRemaining <= 0 
-                ? "⏰ OFFER EXPIRED" 
-                : `⏰ EXPIRES: ${formatTimeRemaining()}`
-              }
-            </div>
-          </div>
-
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-sm text-[#6d6d6e]">Total</div>
