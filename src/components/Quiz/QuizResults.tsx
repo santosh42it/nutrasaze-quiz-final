@@ -21,6 +21,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [answerKey, setAnswerKey] = useState<any>(null); // State to store the matched answer key
+  const [resultId, setResultId] = useState<string | null>(null);
+  const [resultUrl, setResultUrl] = useState<string>('');
 
   // Extract user info from answers - improved logic to avoid mismatched data
   const extractedUserInfo = useMemo(() => {
@@ -535,6 +537,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
 
       console.log('Quiz response saved successfully:', responseData);
 
+      // Generate unique result ID and URL
+      const uniqueResultId = `${responseData.id}-${Date.now()}`;
+      setResultId(uniqueResultId);
+      
+      // Create shareable result URL
+      const baseUrl = window.location.origin;
+      const shareableUrl = `${baseUrl}/results/${uniqueResultId}`;
+      setResultUrl(shareableUrl);
+      
+      // Store result URL in localStorage for future reference
+      localStorage.setItem('nutrasage_last_result_url', shareableUrl);
+      localStorage.setItem('nutrasage_last_result_id', uniqueResultId);
+      
+      // Update browser URL without page reload
+      window.history.replaceState(null, '', shareableUrl);
+
       // Filter and prepare answers for insertion
       const validAnswers = Object.entries(answers)
         .filter(([key, value]) => {
@@ -1046,6 +1064,45 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                     >
                       🚀 SECURE YOUR PLAN NOW
                     </Button>
+
+                    {/* Result Sharing Section */}
+                    {resultUrl && (
+                      <div className="mt-6 p-4 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg border border-[#913177]/20">
+                        <div className="text-sm font-semibold text-[#913177] mb-2">📋 Save Your Results</div>
+                        <div className="text-xs text-[#6d6d6e] mb-3">
+                          Bookmark this page or share your personalized plan with family
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              navigator.clipboard.writeText(resultUrl);
+                              alert('Results URL copied to clipboard!');
+                            }}
+                            className="flex-1 h-10 text-xs bg-white border border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white"
+                          >
+                            📋 Copy Link
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              if (navigator.share) {
+                                navigator.share({
+                                  title: 'My NutraSage Health Assessment Results',
+                                  text: 'Check out my personalized supplement plan from NutraSage!',
+                                  url: resultUrl
+                                });
+                              } else {
+                                // Fallback for browsers that don't support Web Share API
+                                navigator.clipboard.writeText(resultUrl);
+                                alert('Results URL copied to clipboard!');
+                              }
+                            }}
+                            className="flex-1 h-10 text-xs bg-white border border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white"
+                          >
+                            📤 Share
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Urgency Message */}
                     <div className="text-center mt-3 hidden md:block">

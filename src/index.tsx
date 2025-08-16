@@ -18,6 +18,7 @@ window.addEventListener('error', (event) => {
 });
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
+import { ResultsPage } from "./components/Quiz/ResultsPage";
 
 // Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
@@ -30,11 +31,32 @@ createAdminUser().catch((error) => {
   console.error('Failed to create admin user:', error);
 });
 
+const AppContent: React.FC = () => {
+  const [currentScreen, setCurrentScreen] = React.useState<'content' | 'quiz'>('content');
+
+  const navigateToQuiz = () => {
+    setCurrentScreen('quiz');
+  };
+
+  const navigateToContent = () => {
+    setCurrentScreen('content');
+  };
+
+  return (
+    <>
+      {currentScreen === 'content' && <ContentScreen onNavigateToQuiz={navigateToQuiz} />}
+      {currentScreen === 'quiz' && <QuizScreen onNavigateToContent={navigateToContent} />}
+    </>
+  );
+};
+
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<QuizScreen />} />
+        <Route path="/" element={<AppContent />} />
+        <Route path="/quiz" element={<QuizScreen onNavigateToContent={() => window.location.href = '/'} />} />
+        <Route path="/results/:resultId" element={<ResultsPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin/*"
