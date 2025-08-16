@@ -1,6 +1,7 @@
 import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import "./index.css";
 import { ContentScreen } from "./screens/ContentScreen";
 import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
@@ -32,7 +33,7 @@ createAdminUser().catch((error) => {
 });
 
 const AppContent: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = React.useState<'content' | 'quiz'>('content');
+  const [currentScreen, setCurrentScreen] = React.useState<'content' | 'quiz'>('quiz');
 
   const navigateToQuiz = () => {
     setCurrentScreen('quiz');
@@ -54,8 +55,9 @@ createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppContent />} />
-        <Route path="/quiz" element={<QuizScreen onNavigateToContent={() => window.location.href = '/'} />} />
+        <Route path="/" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
+        <Route path="/content" element={<ContentScreen onNavigateToQuiz={() => window.location.href = '/'} />} />
+        <Route path="/quiz" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
         <Route path="/results/:resultId" element={<ResultsPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
