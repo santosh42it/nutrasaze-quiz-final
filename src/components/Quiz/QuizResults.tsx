@@ -858,13 +858,22 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting]); // Added dependencies
 
-  // Calculate pricing based on answer key discount
-  const originalPrice = recommendedProducts.reduce((total, product) => total + (product.mrp || 1299), 0);
+  // Calculate pricing based on answer key discount with fallback values
+  const originalPrice = recommendedProducts.length > 0 ? 
+    recommendedProducts.reduce((total, product) => total + (product.mrp || 1299), 0) : 
+    3297; // Fallback total MRP
+  
   const answerKeyDiscount = answerKey?.discount_percentage || 0;
-  const totalPrice = answerKeyDiscount > 0 ? 
-    Math.round(originalPrice * (1 - answerKeyDiscount / 100)) : 
-    recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0);
-  const discountPercentage = answerKeyDiscount || Math.round(((originalPrice - totalPrice) / originalPrice) * 100);
+  
+  const totalPrice = recommendedProducts.length > 0 ? 
+    (answerKeyDiscount > 0 ? 
+      Math.round(originalPrice * (1 - answerKeyDiscount / 100)) : 
+      recommendedProducts.reduce((total, product) => total + (product.srp || product.mrp || 999), 0)) :
+    2497; // Fallback total price
+    
+  const discountPercentage = originalPrice > 0 ? 
+    (answerKeyDiscount || Math.round(((originalPrice - totalPrice) / originalPrice) * 100)) : 
+    25; // Fallback discount percentage
 
   // Generate Buy Now URL with Shopify variant IDs
   const generateBuyNowUrl = () => {
@@ -901,92 +910,46 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         </div>
       </div>
 
-      {/* Urgency Alert Banner */}
-      <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white py-4 animate-pulse">
-        <div className="container mx-auto px-4 text-center">
-          <div className="text-lg font-bold mb-2">🚨 URGENT: Your Personalized Plan is Expiring!</div>
-          <div className="text-2xl font-mono font-black mb-2">
-            {formatTimeRemaining()}
-          </div>
-          <div className="text-sm">
-            ⚠️ This exclusive combination will not be available after the timer expires
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 pb-24 md:pb-8">
-        <div className="max-w-4xl mx-auto"></div>
+        <div className="max-w-4xl mx-auto">
 
           {/* Assessment Report Card */}
           <Card className="mb-6 border-0 shadow-sm bg-white">
             <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col md:flex-row items-start gap-6">
-                {/* Left Column - Report Details */}
-                <div className="flex-1">
-                  <div className="text-sm text-gray-500 mb-2">Assessment Report</div>
-
-                  <div className="mb-4">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                      {extractedUserInfo?.name || 'User'},
-                    </h2>
-                    <div className="text-gray-600 mb-2">You Are Currently On</div>
-                    <div className="text-lg md:text-xl font-semibold text-gray-900 mb-3">
-                      Stage 1 Of Personalized Health Journey
+              <div className="text-center">
+                <div className="text-sm text-gray-500 mb-2">Assessment Report</div>
+                
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                  Hello {extractedUserInfo?.name || 'User'}!
+                </h2>
+                
+                <div className="bg-gradient-to-r from-[#913177] to-[#b54394] text-white rounded-lg p-6 mb-6">
+                  <div className="text-lg md:text-xl font-semibold mb-2">
+                    🎯 Your Personalized Health Journey
+                  </div>
+                  <div className="text-sm opacity-90 mb-4">
+                    Stage 1 of your transformation • Results expected in 3-4 weeks
+                  </div>
+                  
+                  {/* Enhanced Progress Bar */}
+                  <div className="bg-white/20 rounded-full p-1 mb-3">
+                    <div className="bg-white h-3 rounded-full flex items-center justify-end pr-2" style={{width: '85%'}}>
+                      <span className="text-[#913177] text-xs font-bold">85%</span>
                     </div>
-
-                    <div className="text-gray-600 mb-2">Start Seeing Results In</div>
-                    <div className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
-                      3-4 Weeks
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="bg-green-100 rounded-full p-3 mb-3">
-                        <div className="bg-green-500 h-2 rounded-full" style={{width: '85%'}}></div>
-                      </div>
-                      <div className="text-center text-sm font-medium text-green-700">
-                        Health Improvement Possibility 85%
-                      </div>
-                    </div>
-
-                    {/* Health Analysis */}
-                    <div className="bg-green-50 rounded-lg p-4 mb-4">
-                      <div className="text-gray-800 text-sm leading-relaxed">
-                        Based on your quiz responses, we've identified key areas for improvement. 
-                        Your personalized supplement plan targets nutritional gaps and lifestyle factors 
-                        that can significantly enhance your overall wellness and energy levels.
-                      </div>
-                    </div>
-
-                    {/* Root Causes */}
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Wellness Root Causes</h3>
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg flex-1">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full mb-2 flex items-center justify-center">
-                            🥗
-                          </div>
-                          <div className="text-xs text-gray-700 text-center">Nutrition</div>
-                        </div>
-                        <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg flex-1">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full mb-2 flex items-center justify-center">
-                            🏃‍♂️
-                          </div>
-                          <div className="text-xs text-gray-700 text-center">Lifestyle</div>
-                        </div>
-                      </div>
-                    </div>
-
+                  </div>
+                  <div className="text-sm font-medium">
+                    Health Improvement Possibility
                   </div>
                 </div>
 
-                {/* Right Column - Avatar */}
-                <div className="flex-shrink-0">
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[#913177] to-[#b54394] rounded-full flex items-center justify-center">
-                    <span className="text-white text-2xl md:text-3xl font-bold">
-                      {extractedUserInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
+                {/* Health Analysis */}
+                <div className="bg-green-50 rounded-lg p-6 mb-4 text-left">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Health Analysis</h3>
+                  <div className="text-gray-800 text-sm leading-relaxed">
+                    Based on your quiz responses, we've identified key areas for improvement. 
+                    Your personalized supplement plan targets nutritional gaps and lifestyle factors 
+                    that can significantly enhance your overall wellness and energy levels.
                   </div>
                 </div>
               </div>
@@ -1059,10 +1022,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     )}
                   </div>
 
-                  {/* Certification */}
-                  <div className="mt-6 text-center text-xs text-[#6d6d6e] bg-gradient-to-r from-[#fff4fc] to-white rounded-lg p-3">
-                    All of our products are GMP & ISO 9001 certified
-                  </div>
+                  
                 </div>
 
                 {/* Right Column - Pricing Summary (Desktop) */}
@@ -1115,9 +1075,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           window.location.href = buyNowUrl;
                         }
                       }}
-                      className="w-full h-14 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden md:block text-center flex items-center justify-center animate-pulse px-3"
+                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden md:block text-center flex items-center justify-center"
                     >
-                      🚀 SECURE YOUR PLAN NOW
+                      Buy Now
                     </Button>
 
                     {/* Result Sharing Section */}
@@ -1164,18 +1124,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       <div className="text-xs text-red-600 font-semibold animate-bounce">
                         🔥 OFFER EXPIRES IN {formatTimeRemaining()}
                       </div>
-                      <div className="text-xs text-red-600 mt-1">
-                        ⚠️ Only {Math.floor(Math.random() * 3) + 2} personalized plans like yours available!
-                      </div>
                     </div>
 
                     {/* Features */}
                     <div className="mt-6 space-y-3">
                       {[
-                        "💯 30-day money back guarantee",
                         "👨‍⚕️ FREE expert consultation (Worth ₹2000)",
                         "🚚 Secure & fast delivery (2-3 days)",
-                        "📋 Custom meal plan included (Worth ₹1500)",
                         "📞 24/7 WhatsApp support",
                         "🔬 Lab-tested, certified supplements"
                       ].map((feature, index) => (
@@ -1229,9 +1184,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 window.location.href = buyNowUrl;
               }
             }}
-            className="px-4 h-12 text-xs font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center animate-pulse"
+            className="px-4 h-12 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center"
           >
-            🚀 SECURE PLAN
+            Buy Now
           </Button>
         </div>
       </div>
