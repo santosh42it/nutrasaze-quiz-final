@@ -963,14 +963,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                 {/* Left Column - Products List */}
                 <div className="flex-1">
-                  <div className="bg-gradient-to-r from-[#913177] to-[#b54394] text-white rounded-lg p-4 mb-4 text-center">
-                    <h3 className="text-lg md:text-xl font-bold mb-2">
-                      🎯 EXCLUSIVE PERSONALIZED PLAN FOR {extractedUserInfo?.name?.toUpperCase() || 'YOU'}
-                    </h3>
-                    <p className="text-sm opacity-90">
-                      This customized supplement combination is available ONLY based on your unique health assessment
-                    </p>
-                  </div>
+                  
 
                   <h4 className="text-lg md:text-xl font-bold text-[#1d0917] mb-4">
                     Your Personalized 1-Month Transformation Kit
