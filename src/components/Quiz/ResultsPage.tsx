@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { QuizResults } from './QuizResults';
@@ -33,7 +32,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
       try {
         // Extract response ID from result ID (format: responseId-timestamp)
         const responseId = parseInt(resultId.split('-')[0]);
-        
+
         if (isNaN(responseId)) {
           setError('Invalid result ID format');
           setLoading(false);
@@ -76,7 +75,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
 
         // Transform answers back to the format expected by QuizResults
         const answersObj: Record<string, string> = {};
-        
+
         answers?.forEach(answer => {
           answersObj[answer.question_id.toString()] = answer.answer_text;
           if (answer.additional_info) {
@@ -152,7 +151,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
           </div>
         </div>
       </div>
-      
+
       <QuizResults 
         answers={quizData.answers}
         userInfo={quizData.userInfo}

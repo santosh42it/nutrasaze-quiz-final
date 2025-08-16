@@ -878,6 +878,40 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting]); // Added dependencies
 
+  // Separate useEffect to load products when viewing existing results
+  useEffect(() => {
+    if (isViewingExistingResults && recommendedProducts.length === 0) {
+      console.log('Loading products for existing results view...');
+      
+      // First load questions if not already loaded
+      const loadDataForExistingResults = async () => {
+        try {
+          // Load questions first if not already loaded
+          if (questions.length === 0) {
+            console.log('Loading questions for existing results...');
+            const { data: fetchedQuestions, error: questionsError } = await supabase
+              .from('questions')
+              .select('id, question_text')
+              .eq('status', 'active')
+              .order('order_index');
+
+            if (!questionsError && fetchedQuestions) {
+              setQuestions(fetchedQuestions);
+              console.log('Questions loaded for existing results:', fetchedQuestions.length);
+            }
+          }
+          
+          // Then load products
+          await getRecommendedProducts();
+        } catch (error) {
+          console.error('Error loading data for existing results:', error);
+        }
+      };
+      
+      loadDataForExistingResults();
+    }
+  }, [isViewingExistingResults, recommendedProducts.length, questions.length]);
+
   // Calculate pricing based on answer key discount with fallback values
   const originalPrice = recommendedProducts.length > 0 ? 
     recommendedProducts.reduce((total, product) => total + (product.mrp || 1299), 0) : 
