@@ -157,6 +157,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
         answers={quizData.answers}
         userInfo={quizData.userInfo}
         selectedFile={quizData.selectedFile}
+        isViewingExistingResults={true}
       />
     </div>
   );

@@ -13,9 +13,15 @@ interface QuizResultsProps {
     age: string;
   };
   selectedFile?: File | null;
+  isViewingExistingResults?: boolean; // Added prop to control saving
 }
 
-export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, selectedFile }) => {
+export const QuizResults: React.FC<QuizResultsProps> = ({ 
+  answers, 
+  userInfo, 
+  selectedFile,
+  isViewingExistingResults = false // Default to false
+}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
@@ -548,16 +554,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
       // Generate unique result ID and URL
       const uniqueResultId = `${responseData.id}-${Date.now()}`;
       setResultId(uniqueResultId);
-      
+
       // Create shareable result URL
       const baseUrl = window.location.origin;
       const shareableUrl = `${baseUrl}/results/${uniqueResultId}`;
       setResultUrl(shareableUrl);
-      
+
       // Store result URL in localStorage for future reference
       localStorage.setItem('nutrasage_last_result_url', shareableUrl);
       localStorage.setItem('nutrasage_last_result_id', uniqueResultId);
-      
+
       // Update browser URL without page reload
       window.history.replaceState(null, '', shareableUrl);
 
@@ -825,8 +831,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   };
 
   useEffect(() => {
-    // Only save once when component mounts and not already submitted or submitting
-    if (!isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
+    // Only save if it's not an existing result view and we haven't initiated save
+    if (!isViewingExistingResults && !isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
       hasInitiatedSave.current = true;
       console.log('Initiating quiz save...');
 
@@ -850,7 +856,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         hasInitiatedSave.current = false;
       });
     }
-  }, []); // Remove dependencies to ensure it only runs once on mount
+  }, [isViewingExistingResults, isSubmitted, isSubmitting]); // Added dependencies
 
   // Calculate pricing based on answer key discount
   const originalPrice = recommendedProducts.reduce((total, product) => total + (product.mrp || 1299), 0);
@@ -863,21 +869,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
   // Generate Buy Now URL with Shopify variant IDs
   const generateBuyNowUrl = () => {
     if (recommendedProducts.length === 0) return '#';
-    
+
     const variantParts = recommendedProducts
       .filter(product => product.shopify_variant_id)
       .map(product => `${product.shopify_variant_id}:1`)
       .join(',');
-    
+
     if (!variantParts) return '#';
-    
+
     let url = `https://nutrasage.in/cart/${variantParts}`;
-    
+
     // Add discount code if available
     if (answerKey?.coupon_code) {
       url += `?discount=${answerKey.coupon_code}`;
     }
-    
+
     return url;
   };
 
@@ -1002,7 +1008,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                       This customized supplement combination is available ONLY based on your unique health assessment
                     </p>
                   </div>
-                  
+
                   <h4 className="text-lg md:text-xl font-bold text-[#1d0917] mb-4">
                     Your Personalized 1-Month Transformation Kit
                   </h4>
@@ -1088,7 +1094,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
                           🔥 SAVE ₹{originalPrice - totalPrice} ({discountPercentage}% OFF)
                         </div>
                       )}
-                      
+
                       {/* Value Proposition */}
                       <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-3 mt-4">
                         <div className="text-sm font-semibold text-green-800">💰 INCREDIBLE VALUE</div>
@@ -1205,7 +1211,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({ answers, userInfo, sel
         <div className="bg-red-500 text-white text-center py-2 rounded-lg mb-3 animate-pulse">
           <div className="text-xs font-bold">⏰ OFFER EXPIRES: {formatTimeRemaining()}</div>
         </div>
-        
+
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-sm text-[#6d6d6e]">Total</div>
