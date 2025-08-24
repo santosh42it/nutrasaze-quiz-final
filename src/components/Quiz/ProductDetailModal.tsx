@@ -32,7 +32,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ isOpen, 
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full aspect-square object-contain rounded-lg bg-gray-50"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
                 }}
@@ -71,21 +71,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ isOpen, 
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              onClick={() => {
-                if (product.url && product.url !== '#') {
-                  window.open(product.url, '_blank');
-                }
-              }}
-              className="flex-1 bg-[#913177] text-white hover:bg-[#913177]/90"
-            >
-              Buy Now
-            </Button>
+          <div className="flex justify-center">
             <Button
               onClick={onClose}
               variant="outline"
-              className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
+              className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc] px-8"
             >
               Close
             </Button>
