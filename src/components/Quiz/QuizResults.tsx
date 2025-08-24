@@ -1207,30 +1207,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   {/* New Product Cards Design */}
                   <div className="mb-8">
                     {recommendedProducts.length > 0 ? (
-                      <div className={`
-                        ${recommendedProducts.length > 3 
-                          ? 'overflow-x-auto pb-4' 
-                          : 'flex justify-center'
-                        }
-                      `}>
-                        <div className={`
-                          flex gap-4 
-                          ${recommendedProducts.length > 3 
-                            ? 'min-w-max' 
-                            : 'flex-wrap justify-center'
-                          }
-                          md:gap-6
-                        `}>
+                      <div className="overflow-x-auto pb-4">
+                        <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
                           {recommendedProducts.map((product, index) => (
                             <div 
                               key={product.id} 
-                              className={`
-                                flex-shrink-0 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden
-                                ${recommendedProducts.length > 3 
-                                  ? 'w-72 md:w-80' 
-                                  : 'w-72 md:w-80 max-w-sm'
-                                }
-                              `}
+                              className="flex-shrink-0 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden w-64 sm:w-72 md:w-80"
                               style={{
                                 background: index === 0 
                                   ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
@@ -1253,12 +1235,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                               {/* Product Info */}
                               <div className="p-6 bg-white">
-                                <h3 className="text-lg font-bold text-[#1d0917] mb-2">
-                                  Product {String.fromCharCode(65 + index)}
-                                </h3>
-                                <h4 className="text-md font-semibold text-[#1d0917] mb-3">
+                                <h3 className="text-lg font-bold text-[#1d0917] mb-3">
                                   {product.name}
-                                </h4>
+                                </h3>
                                 <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                                   {product.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
                                 </p>
@@ -1294,20 +1273,41 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     )}
                   </div>
 
-                  {/* Mobile Buy Now Button (appears after products on mobile) */}
-                  <div className="block lg:hidden mb-6">
-                    <Button 
-                      onClick={() => {
-                        if (buyNowUrl && buyNowUrl !== '#') {
-                          window.location.href = buyNowUrl;
-                        }
-                      }}
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-                    >
-                      Buy Now - ₹{totalPrice}
-                    </Button>
-                  </div>
+                  
 
+                </div>
+
+                {/* Full Width Buy Now Button Widget */}
+                <div className="w-full mb-8">
+                  <div className="bg-gradient-to-r from-[#913177] to-[#b54394] rounded-xl p-6 text-white shadow-xl">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="text-center md:text-left">
+                        <div className="text-sm opacity-90 mb-1">🎯 EXCLUSIVELY YOURS</div>
+                        <div className="text-2xl font-bold mb-1">Your Total Investment</div>
+                        <div className="flex items-center justify-center md:justify-start gap-2">
+                          <span className="text-3xl font-bold">₹{totalPrice}</span>
+                          {originalPrice > totalPrice && (
+                            <span className="text-lg opacity-75 line-through">₹{originalPrice}</span>
+                          )}
+                        </div>
+                        {discountPercentage > 0 && (
+                          <div className="text-sm mt-1 opacity-90">
+                            🔥 SAVE ₹{originalPrice - totalPrice} ({discountPercentage}% OFF)
+                          </div>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          if (buyNowUrl && buyNowUrl !== '#') {
+                            window.location.href = buyNowUrl;
+                          }
+                        }}
+                        className="w-full md:w-auto px-8 h-14 text-lg font-bold bg-white text-[#913177] hover:bg-gray-100 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+                      >
+                        Buy Now
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Right Column - Pricing Summary (Desktop) */}
