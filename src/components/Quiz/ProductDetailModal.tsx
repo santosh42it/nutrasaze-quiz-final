@@ -28,15 +28,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ isOpen, 
         <div className="p-6">
           {/* Product Image */}
           {product.image_url && (
-            <div className="mb-6">
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full aspect-square object-contain rounded-lg bg-gray-50"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
-                }}
-              />
+            <div className="mb-6 flex justify-center">
+              <div className="w-64 h-64">
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="w-full h-full object-contain rounded-lg bg-gray-50 shadow-sm"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                  }}
+                />
+              </div>
             </div>
           )}
 
