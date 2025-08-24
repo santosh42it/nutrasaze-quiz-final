@@ -1174,12 +1174,26 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </div>
           )}
 
-          {/* Products Section */}
+          {/* Your Key Health Focus Areas Section */}
+          {matchedTags.length > 0 && (
+            <Card className="mb-6 border-0 shadow-sm bg-white">
+              <CardContent className="p-6 md:p-8">
+                <div className="text-center">
+                  <h2 className="text-xl font-medium text-[#1d0917] mb-4">
+                    Your Key Health Focus Areas
+                  </h2>
+                  <TagDisplay tags={matchedTags} className="mb-4" />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Products Section with New Design */}
           <Card className="mb-6 border-0 shadow-sm bg-white">
             <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col md:flex-row gap-8">
+              <div className="flex flex-col lg:flex-row gap-8">
 
-                {/* Left Column - Products List */}
+                {/* Left Column - Products List with New Design */}
                 <div className="flex-1">
                   <div className="text-center mb-8">
                     <h1 className="[font-family:'DM_Serif_Display',Helvetica] text-4xl font-normal text-[#1d0917] mb-4">
@@ -1188,53 +1202,116 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     <p className="text-lg text-gray-600 mb-6">
                       Based on your responses, here are our recommendations for you
                     </p>
-
-                    {matchedTags.length > 0 && (
-                      <div className="mb-8">
-                        <h2 className="text-xl font-medium text-[#1d0917] mb-4">
-                          Your Key Health Focus Areas
-                        </h2>
-                        <TagDisplay tags={matchedTags} className="mb-6" />
-                      </div>
-                    )}
                   </div>
 
-                  {/* Removed Enhanced Transformation Kit Title */}
+                  {/* New Product Cards Design */}
+                  <div className="mb-8">
+                    {recommendedProducts.length > 0 ? (
+                      <div className={`
+                        ${recommendedProducts.length > 3 
+                          ? 'overflow-x-auto pb-4' 
+                          : 'flex justify-center'
+                        }
+                      `}>
+                        <div className={`
+                          flex gap-4 
+                          ${recommendedProducts.length > 3 
+                            ? 'min-w-max' 
+                            : 'flex-wrap justify-center'
+                          }
+                          md:gap-6
+                        `}>
+                          {recommendedProducts.map((product, index) => (
+                            <div 
+                              key={product.id} 
+                              className={`
+                                flex-shrink-0 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden
+                                ${recommendedProducts.length > 3 
+                                  ? 'w-72 md:w-80' 
+                                  : 'w-72 md:w-80 max-w-sm'
+                                }
+                              `}
+                              style={{
+                                background: index === 0 
+                                  ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
+                                  : index === 1 
+                                    ? 'linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%)'
+                                    : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                              }}
+                            >
+                              {/* Product Image */}
+                              <div className="h-48 bg-white/20 flex items-center justify-center overflow-hidden">
+                                <img
+                                  src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                                  }}
+                                />
+                              </div>
 
-                  <div className="space-y-4">
-                    {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
-                      <div key={product.id} className="flex items-center gap-4 p-3 bg-gradient-to-r from-[#fff4fc] to-white rounded-lg shadow-sm border border-[#913177]/10">
-                        <img
-                          src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
-                          alt={product.name}
-                          className="w-12 h-12 object-cover rounded-lg"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
-                          }}
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-[#1d0917] text-sm">{product.name}</div>
-                          <div className="text-xs text-[#6d6d6e]">
-                            {product.description?.substring(0, 50)}...
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-[#913177]">₹{product.srp || product.mrp || '999'}</div>
+                              {/* Product Info */}
+                              <div className="p-6 bg-white">
+                                <h3 className="text-lg font-bold text-[#1d0917] mb-2">
+                                  Product {String.fromCharCode(65 + index)}
+                                </h3>
+                                <h4 className="text-md font-semibold text-[#1d0917] mb-3">
+                                  {product.name}
+                                </h4>
+                                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                                  {product.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
+                                </p>
+
+                                {/* Price */}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-bold text-[#913177]">
+                                      ₹{product.srp || product.mrp || '999'}
+                                    </span>
+                                    {product.mrp && product.srp && product.mrp > product.srp && (
+                                      <span className="text-sm text-gray-500 line-through">
+                                        ₹{product.mrp}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1">
+                                    View more
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    )) : (
-                      // This should not appear if our fallback logic above works correctly
+                    ) : (
                       <div className="text-center p-6 text-gray-500">
                         <p>Loading your personalized recommendations...</p>
                       </div>
                     )}
                   </div>
 
+                  {/* Mobile Buy Now Button (appears after products on mobile) */}
+                  <div className="block lg:hidden mb-6">
+                    <Button 
+                      onClick={() => {
+                        if (buyNowUrl && buyNowUrl !== '#') {
+                          window.location.href = buyNowUrl;
+                        }
+                      }}
+                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+                    >
+                      Buy Now - ₹{totalPrice}
+                    </Button>
+                  </div>
 
                 </div>
 
                 {/* Right Column - Pricing Summary (Desktop) */}
-                <div className="w-full md:w-80">
+                <div className="w-full lg:w-80">
                   <div className="bg-white border border-[#913177]/20 rounded-lg p-6 md:sticky md:top-4 shadow-lg">
                     {/* Removed Urgency Banner with Live Timer */}
 
@@ -1274,7 +1351,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           window.location.href = buyNowUrl;
                         }
                       }}
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden md:block text-center flex items-center justify-center"
+                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden lg:block text-center flex items-center justify-center"
                     >
                       Buy Now
                     </Button>
