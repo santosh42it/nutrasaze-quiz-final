@@ -39,23 +39,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {
     if (!html) return '';
-    
+
     // Create a temporary div to parse HTML
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
-    
+
     // Get text content and split by lines/sentences
     const text = tempDiv.textContent || tempDiv.innerText || '';
     const words = text.split(' ');
-    
+
     // Approximate 15-20 words per line for truncation
     const wordsPerLine = 15;
     const maxWords = maxLines * wordsPerLine;
-    
+
     if (words.length <= maxWords) {
       return html;
     }
-    
+
     // Take first portion of words and add ellipsis
     const truncatedText = words.slice(0, maxWords).join(' ') + '...';
     return truncatedText;
@@ -1149,6 +1149,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
   const buyNowUrl = generateBuyNowUrl();
 
+  // Helper function for description preview
+  const getDescriptionPreview = (html: string | null | undefined) => {
+    if (!html) return 'A unique blend of natural ingredients to support your health goals.';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    return text.substring(0, 200) + (text.length > 200 ? '...' : '');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Logo */}
@@ -1202,7 +1211,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 className="w-full h-auto rounded-lg shadow-sm"
                 onError={(e) => {
                   console.error('Banner image failed to load:', activeBanner.image_url);
-                  e.currentTarget.style.display = 'none';
+                  (e.target as HTMLImageElement).style.display = 'none'; // Hide broken image
                 }}
               />
             </div>
@@ -1272,12 +1281,41 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                 <h3 className="text-lg font-bold text-[#1d0917] mb-3">
                                   {product.name}
                                 </h3>
-                                <div className="text-sm text-gray-600 mb-4 leading-relaxed">
-                                  <div dangerouslySetInnerHTML={{ 
-                                    __html: truncateDescription(product.description || 'Natural supplement formulated to support your health and wellness goals with carefully selected ingredients.') 
-                                  }} />
+                                {/* Description */}
+                                <div className="text-gray-600 text-sm mb-4">
+                                  {getDescriptionPreview(product.description)}
+                                  {product.description && product.description.length > 200 && (
+                                    <button
+                                      onClick={() => handleViewMore(product)}
+                                      className="text-[#913177] hover:text-[#7a2a66] ml-1 underline"
+                                    >
+                                      View More
+                                    </button>
+                                  )}
                                 </div>
 
+                                {/* What's in your kit? */}
+                                <div className="mb-4">
+                                  <h4 className="font-semibold text-gray-800 mb-2">What's in your kit?</h4>
+                                  <ul className="text-sm text-gray-600 space-y-1">
+                                    <li>• 30-day supply of personalized supplements</li>
+                                    <li>• Individual sachets for daily convenience</li>
+                                    <li>• Detailed instruction guide</li>
+                                    <li>• Progress tracking chart</li>
+                                  </ul>
+                                </div>
+
+                                {/* What can you expect? */}
+                                <div className="mb-4">
+                                  <h4 className="font-semibold text-gray-800 mb-2">What can you expect?</h4>
+                                  <ul className="text-sm text-gray-600 space-y-1">
+                                    <li>• Improved energy levels within 2-3 weeks</li>
+                                    <li>• Better sleep quality and mood</li>
+                                    <li>• Enhanced immune system support</li>
+                                    <li>• Personalized nutrition guidance</li>
+                                  </ul>
+                                </div>
+                                
                                 {/* Price */}
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
@@ -1312,7 +1350,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     )}
                   </div>
 
-                  
+
 
                 </div>
 
