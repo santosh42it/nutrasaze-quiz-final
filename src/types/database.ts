@@ -46,6 +46,8 @@ export interface QuestionOption {
 export interface Tag {
   id: number;
   name: string;
+  icon_url?: string;
+  description?: string;
   created_at?: string;
 }
 

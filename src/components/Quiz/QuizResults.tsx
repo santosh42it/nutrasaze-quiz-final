@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
-import type { QuizResponse, QuizAnswer, Product } from "../../types/database";
+import type { QuizResponse, QuizAnswer, Product, Tag } from "../../types/database";
+import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -26,6 +27,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [matchedTags, setMatchedTags] = useState<Tag[]>([]); // State to store matched tags
   const [answerKey, setAnswerKey] = useState<any>(null); // State to store the matched answer key
   const [resultId, setResultId] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string>('');
@@ -209,6 +211,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Collect all unique tags from user's answers
       const userTags = new Set<string>();
       const answerTagMapping: { [key: string]: string[] } = {};
+      const allSelectedOptionIds: number[] = []; // Store IDs of selected options
 
       // Process each answer to extract tags
       for (const [questionId, answerValue] of Object.entries(answers)) {
@@ -246,6 +249,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         }
 
         console.log(`✅ Found selected option: "${selectedOption.option_text}"`);
+        allSelectedOptionIds.push(selectedOption.id); // Store the selected option ID
 
         // Extract tags from the selected option
         const tagsForThisAnswer: string[] = [];
@@ -273,6 +277,31 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.log('❌ No tags found - using fallback products');
         await setFallbackProducts();
         return;
+      }
+
+      // Get all tags for the matched options
+      const { data: optionTagsData } = await supabase
+        .from('option_tags')
+        .select('tag_id')
+        .in('option_id', allSelectedOptionIds);
+
+      if (!optionTagsData) {
+        console.log('No option tags found');
+        await setFallbackProducts();
+        return;
+      }
+
+      const selectedTagIds = [...new Set(optionTagsData.map(ot => ot.tag_id))];
+      console.log('Selected tag IDs:', selectedTagIds);
+
+      // Fetch the actual tag data to display
+      const { data: tagsData } = await supabase
+        .from('tags')
+        .select('*')
+        .in('id', selectedTagIds);
+
+      if (tagsData) {
+        setMatchedTags(tagsData); // Set the fetched tags to the state
       }
 
       // Create sorted tag combination for answer key matching
@@ -1202,7 +1231,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                 {/* Left Column - Products List */}
                 <div className="flex-1">
+                  <div className="text-center mb-8">
+                    <h1 className="[font-family:'DM_Serif_Display',Helvetica] text-4xl font-normal text-[#1d0917] mb-4">
+                      Your Personalized Results
+                    </h1>
+                    <p className="text-lg text-gray-600 mb-6">
+                      Based on your responses, here are our recommendations for you
+                    </p>
 
+                    {matchedTags.length > 0 && (
+                      <div className="mb-8">
+                        <h2 className="text-xl font-medium text-[#1d0917] mb-4">
+                          Your Key Health Focus Areas
+                        </h2>
+                        <TagDisplay tags={matchedTags} className="mb-6" />
+                      </div>
+                    )}
+                  </div>
 
                   {/* Enhanced Transformation Kit Title */}
                   <div className="bg-gradient-to-r from-[#913177] via-[#b54394] to-[#913177] rounded-xl p-6 mb-6 relative overflow-hidden">

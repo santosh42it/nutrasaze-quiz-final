@@ -28,7 +28,8 @@ interface AdminStore {
 
   // Tag methods
   fetchTags: () => Promise<void>;
-  addTag: (name: string) => Promise<void>;
+  addTag: (name: string, icon_url?: string, description?: string) => Promise<void>;
+  updateTag: (id: number, name: string, icon_url?: string, description?: string) => Promise<void>;
   deleteTag: (id: number) => Promise<void>;
 
   // Product methods
@@ -184,6 +185,41 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  addTag: async (name: string, icon_url?: string, description?: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('tags')
+        .insert({ name, icon_url, description })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set({ tags: [...get().tags, data] });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  updateTag: async (id: number, name: string, icon_url?: string, description?: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('tags')
+        .update({ name, icon_url, description })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set({ 
+        tags: get().tags.map(tag => tag.id === id ? data : tag)
+      });
+    } catch (error) {
+      set({ error: (error as Error).message });
     }
   },
 
