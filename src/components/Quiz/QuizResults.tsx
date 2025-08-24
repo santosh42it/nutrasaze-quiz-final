@@ -1234,139 +1234,105 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           {/* Products Section with New Design */}
           <Card className="mb-6 border-0 shadow-sm bg-white">
             <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col lg:flex-row gap-8">
+              <div className="text-center mb-8">
+                <h1 className="[font-family:'DM_Serif_Display',Helvetica] text-4xl font-normal text-[#1d0917] mb-4">
+                  Your Personalized Results
+                </h1>
+                <p className="text-lg text-gray-600 mb-6">
+                  Based on your responses, here are our recommendations for you
+                </p>
+              </div>
 
-                {/* Left Column - Products List with New Design */}
-                <div className="flex-1">
-                  <div className="text-center mb-8">
-                    <h1 className="[font-family:'DM_Serif_Display',Helvetica] text-4xl font-normal text-[#1d0917] mb-4">
-                      Your Personalized Results
-                    </h1>
-                    <p className="text-lg text-gray-600 mb-6">
-                      Based on your responses, here are our recommendations for you
-                    </p>
-                  </div>
-
-                  {/* New Product Cards Design */}
-                  <div className="mb-8">
-                    {recommendedProducts.length > 0 ? (
-                      <div className="overflow-x-auto pb-4">
-                        <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
-                          {recommendedProducts.map((product, index) => (
-                            <div 
-                              key={product.id} 
-                              className="flex-shrink-0 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden w-64 sm:w-72 md:w-80"
-                              style={{
-                                background: index === 0 
-                                  ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
-                                  : index === 1 
-                                    ? 'linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%)'
-                                    : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+              {/* Product Cards Row */}
+              <div className="mb-8">
+                {recommendedProducts.length > 0 ? (
+                  <div className="overflow-x-auto pb-4">
+                    <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
+                      {recommendedProducts.map((product, index) => (
+                        <div 
+                          key={product.id} 
+                          className="flex-shrink-0 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden w-64 sm:w-72 md:w-80"
+                          style={{
+                            background: index === 0 
+                              ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
+                              : index === 1 
+                                ? 'linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%)'
+                                : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                          }}
+                        >
+                          {/* Product Image */}
+                          <div className="h-48 bg-white/20 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
                               }}
-                            >
-                              {/* Product Image */}
-                              <div className="h-48 bg-white/20 flex items-center justify-center overflow-hidden">
-                                <img
-                                  src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
-                                  }}
-                                />
-                              </div>
+                            />
+                          </div>
 
-                              {/* Product Info */}
-                              <div className="p-6 bg-white">
-                                <h3 className="text-lg font-bold text-[#1d0917] mb-3">
-                                  {product.name}
-                                </h3>
-                                {/* Description */}
-                                <div className="text-gray-600 text-sm mb-4">
-                                  {getDescriptionPreview(product.description)}
-                                  {product.description && product.description.length > 200 && (
-                                    <button
-                                      onClick={() => handleViewMore(product)}
-                                      className="text-[#913177] hover:text-[#7a2a66] ml-1 underline"
-                                    >
-                                      View More
-                                    </button>
-                                  )}
-                                </div>
-
-                                
-                                
-                                {/* Price */}
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg font-bold text-[#913177]">
-                                      ₹{product.srp || product.mrp || '999'}
-                                    </span>
-                                    {product.mrp && product.srp && product.mrp > product.srp && (
-                                      <span className="text-sm text-gray-500 line-through">
-                                        ₹{product.mrp}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button 
-                                    onClick={() => handleViewMore(product)}
-                                    className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1"
-                                  >
-                                    View more
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
+                          {/* Product Info */}
+                          <div className="p-6 bg-white">
+                            <h3 className="text-lg font-bold text-[#1d0917] mb-3">
+                              {product.name}
+                            </h3>
+                            {/* Description */}
+                            <div className="text-gray-600 text-sm mb-4">
+                              {getDescriptionPreview(product.description)}
+                              {product.description && product.description.length > 200 && (
+                                <button
+                                  onClick={() => handleViewMore(product)}
+                                  className="text-[#913177] hover:text-[#7a2a66] ml-1 underline"
+                                >
+                                  View More
+                                </button>
+                              )}
                             </div>
-                          ))}
+
+                            {/* Price */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg font-bold text-[#913177]">
+                                  ₹{product.srp || product.mrp || '999'}
+                                </span>
+                                {product.mrp && product.srp && product.mrp > product.srp && (
+                                  <span className="text-sm text-gray-500 line-through">
+                                    ₹{product.mrp}
+                                  </span>
+                                )}
+                              </div>
+                              <button 
+                                onClick={() => handleViewMore(product)}
+                                className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1"
+                              >
+                                View more
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-center p-6 text-gray-500">
-                        <p>Loading your personalized recommendations...</p>
-                      </div>
-                    )}
-                  </div>
-
-
-
-                </div>
-
-                {/* Simplified Pricing Section */}
-                <div className="w-full mb-8 text-center">
-                  <div className="text-4xl font-bold text-[#913177] mb-2">
-                    ₹{totalPrice}
-                    {originalPrice > totalPrice && (
-                      <span className="text-2xl text-gray-500 line-through ml-3">₹{originalPrice}</span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600 mb-3">(Inclusive of all taxes)</div>
-                  {discountPercentage > 0 && (
-                    <div className="text-lg font-bold text-[#913177] mb-6">
-                      🔥 SAVE ₹{originalPrice - totalPrice} ({discountPercentage}% OFF)
+                      ))}
                     </div>
-                  )}
-                  <Button 
-                    onClick={() => {
-                      if (buyNowUrl && buyNowUrl !== '#') {
-                        window.location.href = buyNowUrl;
-                      }
-                    }}
-                    className="w-full max-w-md h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-                  >
-                    Buy Now
-                  </Button>
-                </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-6 text-gray-500">
+                    <p>Loading your personalized recommendations...</p>
+                  </div>
+                )}
+              </div>
 
-                {/* Right Column - Simplified Pricing Summary (Desktop) */}
-                <div className="w-full lg:w-80">
-                  <div className="bg-white border border-[#913177]/20 rounded-lg p-6 md:sticky md:top-4 shadow-lg text-center">
-                    <div className="text-3xl font-bold text-[#913177] mb-2">
+              {/* Pricing and Buy Now Section Row */}
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left Side - Total Price Summary */}
+                <div className="flex-1">
+                  <div className="bg-gradient-to-r from-[#f8f4f7] to-[#fff4fc] rounded-xl p-6 text-center">
+                    <div className="text-4xl font-bold text-[#913177] mb-2">
                       ₹{totalPrice}
                       {originalPrice > totalPrice && (
-                        <span className="text-xl text-gray-500 line-through ml-3">₹{originalPrice}</span>
+                        <span className="text-2xl text-gray-500 line-through ml-3">₹{originalPrice}</span>
                       )}
                     </div>
                     <div className="text-sm text-gray-600 mb-3">(Inclusive of all taxes)</div>
@@ -1375,20 +1341,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         🔥 SAVE ₹{originalPrice - totalPrice} ({discountPercentage}% OFF)
                       </div>
                     )}
-
-                    {/* Desktop Buy Now Button */}
                     <Button 
                       onClick={() => {
                         if (buyNowUrl && buyNowUrl !== '#') {
                           window.location.href = buyNowUrl;
                         }
                       }}
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 hidden lg:flex items-center justify-center mb-6"
+                      className="w-full max-w-md h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
                     >
                       Buy Now
                     </Button>
+                  </div>
+                </div>
 
-                    {/* Features */}
+                {/* Right Side - Features */}
+                <div className="w-full lg:w-80">
+                  <div className="bg-white border border-[#913177]/20 rounded-lg p-6 shadow-lg">
+                    <h3 className="text-lg font-bold text-[#1d0917] mb-4 text-center">What's Included</h3>
                     <div className="space-y-3">
                       {[
                         "👨‍⚕️ FREE expert consultation (Worth ₹2000)",
