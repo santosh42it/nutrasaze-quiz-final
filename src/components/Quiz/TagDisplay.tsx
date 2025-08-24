@@ -18,11 +18,11 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({ tags, className = '' }) 
           className="flex flex-col items-center gap-2 p-3 bg-white rounded-lg shadow-sm border border-[#e9d6e4]"
         >
           {tag.icon_url && (
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#382c30' }}>
               <img
                 src={tag.icon_url}
                 alt={tag.name}
-                className="w-full h-full object-cover"
+                className="w-8 h-8 object-contain"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.parentElement!.innerHTML = `
