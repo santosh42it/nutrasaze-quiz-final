@@ -1243,78 +1243,100 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 </p>
               </div>
 
-              {/* Product Cards Row */}
-              <div className="mb-8">
+              {/* Product Cards Row with Scrolling Indicators */}
+              <div className="mb-8 relative">
                 {recommendedProducts.length > 0 ? (
-                  <div className="overflow-x-auto pb-4">
-                    <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
-                      {recommendedProducts.map((product, index) => (
-                        <div 
-                          key={product.id} 
-                          className="flex-shrink-0 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden w-64 sm:w-72 md:w-80"
-                          style={{
-                            background: index === 0 
-                              ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
-                              : index === 1 
-                                ? 'linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%)'
-                                : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
-                          }}
-                        >
-                          {/* Product Image */}
-                          <div className="h-48 bg-white/20 flex items-center justify-center overflow-hidden">
-                            <img
-                              src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
-                              }}
-                            />
-                          </div>
+                  <div className="relative">
+                    {/* Scrolling indicator for desktop */}
+                    <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-4 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                        Scroll
+                      </div>
+                    </div>
 
-                          {/* Product Info */}
-                          <div className="p-6 bg-white">
-                            <h3 className="text-lg font-bold text-[#1d0917] mb-3">
-                              {product.name}
-                            </h3>
-                            {/* Description */}
-                            <div className="text-gray-600 text-sm mb-4">
-                              {getDescriptionPreview(product.description)}
-                              {product.description && product.description.length > 200 && (
-                                <button
-                                  onClick={() => handleViewMore(product)}
-                                  className="text-[#913177] hover:text-[#7a2a66] ml-1 underline"
-                                >
-                                  View More
-                                </button>
-                              )}
+                    <div className="overflow-x-auto pb-4 scrollbar-hide">
+                      <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
+                        {recommendedProducts.map((product, index) => (
+                          <div 
+                            key={product.id} 
+                            className="flex-shrink-0 bg-white rounded-xl shadow-lg overflow-hidden w-64 sm:w-72 md:w-80"
+                            style={{
+                              background: index === 0 
+                                ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
+                                : index === 1 
+                                  ? 'linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%)'
+                                  : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                            }}
+                          >
+                            {/* Product Image - 1:1 Aspect Ratio */}
+                            <div className="aspect-square bg-white/20 flex items-center justify-center overflow-hidden">
+                              <img
+                                src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                                }}
+                              />
                             </div>
 
-                            {/* Price */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg font-bold text-[#913177]">
-                                  ₹{product.srp || product.mrp || '999'}
-                                </span>
-                                {product.mrp && product.srp && product.mrp > product.srp && (
-                                  <span className="text-sm text-gray-500 line-through">
-                                    ₹{product.mrp}
-                                  </span>
+                            {/* Product Info */}
+                            <div className="p-6 bg-white">
+                              <h3 className="text-lg font-bold text-[#1d0917] mb-3">
+                                {product.name}
+                              </h3>
+                              {/* Description */}
+                              <div className="text-gray-600 text-sm mb-4">
+                                {getDescriptionPreview(product.description)}
+                                {product.description && product.description.length > 200 && (
+                                  <button
+                                    onClick={() => handleViewMore(product)}
+                                    className="text-[#913177] hover:text-[#7a2a66] ml-1 underline"
+                                  >
+                                    View More
+                                  </button>
                                 )}
                               </div>
-                              <button 
-                                onClick={() => handleViewMore(product)}
-                                className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1"
-                              >
-                                View more
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </button>
+
+                              {/* Price */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg font-bold text-[#913177]">
+                                    ₹{product.srp || product.mrp || '999'}
+                                  </span>
+                                  {product.mrp && product.srp && product.mrp > product.srp && (
+                                    <span className="text-sm text-gray-500 line-through">
+                                      ₹{product.mrp}
+                                    </span>
+                                  )}
+                                </div>
+                                <button 
+                                  onClick={() => handleViewMore(product)}
+                                  className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1"
+                                >
+                                  View more
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mobile scrolling indicator */}
+                    <div className="md:hidden flex justify-center mt-3">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                        Swipe to see more
+                      </div>
                     </div>
                   </div>
                 ) : (
