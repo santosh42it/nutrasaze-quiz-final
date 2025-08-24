@@ -4,6 +4,7 @@ import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
 import type { QuizResponse, QuizAnswer, Product, Tag, Banner } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
+import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -32,6 +33,39 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [resultId, setResultId] = useState<string>('');
   const [resultUrl, setResultUrl] = useState<string>('');
   const [activeBanner, setActiveBanner] = useState<Banner | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Function to truncate HTML content and show first 5 lines
+  const truncateDescription = (html: string, maxLines: number = 5): string => {
+    if (!html) return '';
+    
+    // Create a temporary div to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Get text content and split by lines/sentences
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    const words = text.split(' ');
+    
+    // Approximate 15-20 words per line for truncation
+    const wordsPerLine = 15;
+    const maxWords = maxLines * wordsPerLine;
+    
+    if (words.length <= maxWords) {
+      return html;
+    }
+    
+    // Take first portion of words and add ellipsis
+    const truncatedText = words.slice(0, maxWords).join(' ') + '...';
+    return truncatedText;
+  };
+
+  // Function to handle product view more
+  const handleViewMore = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
 
   // Extract user info from answers - improved logic to avoid mismatched data
   const extractedUserInfo = useMemo(() => {
@@ -1238,9 +1272,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                 <h3 className="text-lg font-bold text-[#1d0917] mb-3">
                                   {product.name}
                                 </h3>
-                                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                                  {product.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'}
-                                </p>
+                                <div className="text-sm text-gray-600 mb-4 leading-relaxed">
+                                  <div dangerouslySetInnerHTML={{ 
+                                    __html: truncateDescription(product.description || 'Natural supplement formulated to support your health and wellness goals with carefully selected ingredients.') 
+                                  }} />
+                                </div>
 
                                 {/* Price */}
                                 <div className="flex items-center justify-between">
@@ -1254,7 +1290,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                       </span>
                                     )}
                                   </div>
-                                  <button className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1">
+                                  <button 
+                                    onClick={() => handleViewMore(product)}
+                                    className="text-[#913177] font-semibold text-sm hover:text-[#7d2b65] transition-colors flex items-center gap-1"
+                                  >
                                     View more
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1408,6 +1447,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </Button>
           </div>
         </div>
+
+        {/* Product Detail Modal */}
+        <ProductDetailModal
+          isOpen={isModalOpen}
+          product={selectedProduct}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedProduct(null);
+          }}
+        />
       </div>
     </div>
   );

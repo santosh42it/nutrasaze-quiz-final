@@ -61,13 +61,13 @@ export interface OptionTag {
 export interface Product {
   id: number;
   name: string;
-  description?: string;
+  description: string; // HTML/rich text content
   image_url?: string;
   url?: string;
   mrp?: number;
   srp?: number;
-  shopify_variant_id?: string;
   is_active: boolean;
+  shopify_variant_id?: string;
   created_at: string;
   updated_at: string;
 }

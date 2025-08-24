@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
+import { RichTextEditor } from '../ui/rich-text-editor';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import type { Product } from '../../types/database';
 
@@ -142,12 +143,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onSave, on
             <label className="block text-sm font-medium text-[#1d0917] mb-2">
               Description *
             </label>
-            <textarea
+            <RichTextEditor
               value={formData.description || ''}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Enter product description"
-              className="w-full px-3 py-2 border border-[#e9d6e4] rounded-md focus:outline-none focus:ring-2 focus:ring-[#913177] focus:border-transparent"
-              rows={3}
+              onChange={(value) => setFormData({ ...formData, description: value })}
+              placeholder="Enter product description with formatting..."
+              className="border border-[#e9d6e4] rounded-md"
             />
           </div>
 
@@ -357,9 +357,11 @@ export const ProductManager: React.FC = () => {
                       <h4 className="[font-family:'DM_Serif_Display',Helvetica] text-lg text-[#1d0917] font-medium mb-2">
                         {product.name}
                       </h4>
-                      <p className="text-sm text-[#3d3d3d] mb-3 line-clamp-2">
-                        {product.description || 'No description provided'}
-                      </p>
+                      <div className="text-sm text-[#3d3d3d] mb-3 line-clamp-2">
+                        <div dangerouslySetInnerHTML={{ 
+                          __html: product.description || 'No description provided' 
+                        }} />
+                      </div>
                     </div>
                     <div className={`ml-2 px-2 py-1 rounded-full text-xs ${
                       product.is_active 
