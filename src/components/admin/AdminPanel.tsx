@@ -5,6 +5,7 @@ import { TagManager } from './TagManager';
 import { ProductManager } from './ProductManager';
 import { ResponsesReport } from './ResponsesReport';
 import { AnswerKeyManager } from './AnswerKeyManager';
+import { BannerManager } from './BannerManager';
 import { SuperAdminToggle } from './SuperAdminToggle';
 import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
@@ -12,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const AdminPanel: React.FC = () => {
   const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys } = useAdminStore();
-  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses' | 'answerkey'>('responses');
+  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses' | 'answerkey' | 'banners'>('responses');
   const [superAdminEnabled, setSuperAdminEnabled] = useState(false);
   const navigate = useNavigate();
 
@@ -86,7 +87,8 @@ export const AdminPanel: React.FC = () => {
                 { key: 'questions', label: 'Quiz Questions', alwaysVisible: false },
                 { key: 'tags', label: 'Tags', alwaysVisible: false },
                 { key: 'products', label: 'Products', alwaysVisible: false },
-                { key: 'answerkey', label: 'Answer Key', alwaysVisible: false }
+                { key: 'answerkey', label: 'Answer Key', alwaysVisible: false },
+                { key: 'banners', label: 'Banners', alwaysVisible: false }
               ]
                 .filter(tab => tab.alwaysVisible || superAdminEnabled)
                 .map((tab) => (
@@ -118,9 +120,10 @@ export const AdminPanel: React.FC = () => {
             {activeTab === 'tags' && superAdminEnabled && <TagManager />}
             {activeTab === 'products' && superAdminEnabled && <ProductManager />}
             {activeTab === 'answerkey' && superAdminEnabled && <AnswerKeyManager />}
+            {activeTab === 'banners' && superAdminEnabled && <BannerManager />}
 
             {/* Show access denied message for edit tabs when super admin is disabled */}
-            {(activeTab !== 'responses' && !superAdminEnabled) && (
+            {(activeTab !== 'responses' && activeTab !== 'banners' && !superAdminEnabled) && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🔒</div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">Access Restricted</h3>

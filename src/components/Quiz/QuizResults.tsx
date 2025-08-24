@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
-import type { QuizResponse, QuizAnswer, Product, Tag } from "../../types/database";
+import type { QuizResponse, QuizAnswer, Product, Tag, Banner } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 
 interface QuizResultsProps {
@@ -31,6 +31,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [answerKey, setAnswerKey] = useState<any>(null); // State to store the matched answer key
   const [resultId, setResultId] = useState<string>('');
   const [resultUrl, setResultUrl] = useState<string>('');
+  const [activeBanner, setActiveBanner] = useState<Banner | null>(null);
 
   // Extract user info from answers - improved logic to avoid mismatched data
   const extractedUserInfo = useMemo(() => {
@@ -457,6 +458,25 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   };
 
+  // Function to fetch active banner
+  const fetchActiveBanner = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        setActiveBanner(data);
+      }
+    } catch (error) {
+      console.error('Error fetching active banner:', error);
+    }
+  };
+
   // Helper function to set fallback products
   const setFallbackProducts = async () => {
     console.log('Setting fallback products...');
@@ -872,6 +892,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Get recommended products after successful save
       await getRecommendedProducts();
 
+      // Fetch active banner
+      await fetchActiveBanner();
+
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error in saveResponses:', {
@@ -986,6 +1009,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             // Fallback to default products
             console.log('Setting fallback products due to recommendation error');
             await setFallbackProducts();
+          }
+
+          // Load active banner
+          console.log('Loading active banner...');
+          try {
+            await fetchActiveBanner();
+            console.log('Active banner loaded successfully');
+          } catch (bannerError) {
+            console.error('Error loading active banner:', bannerError);
           }
 
           console.log('=== EXISTING RESULTS DATA LOAD COMPLETE ===');
@@ -1126,6 +1158,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               </div>
             </CardContent>
           </Card>
+
+          {/* Banner Display */}
+          {activeBanner && (
+            <div className="mb-6">
+              <img 
+                src={activeBanner.image_url} 
+                alt={activeBanner.name}
+                className="w-full h-auto rounded-lg shadow-sm"
+                onError={(e) => {
+                  console.error('Banner image failed to load:', activeBanner.image_url);
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
 
           {/* Products Section */}
           <Card className="mb-6 border-0 shadow-sm bg-white">
