@@ -1294,27 +1294,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                   )}
                                 </div>
 
-                                {/* What's in your kit? */}
-                                <div className="mb-4">
-                                  <h4 className="font-semibold text-gray-800 mb-2">What's in your kit?</h4>
-                                  <ul className="text-sm text-gray-600 space-y-1">
-                                    <li>• 30-day supply of personalized supplements</li>
-                                    <li>• Individual sachets for daily convenience</li>
-                                    <li>• Detailed instruction guide</li>
-                                    <li>• Progress tracking chart</li>
-                                  </ul>
-                                </div>
-
-                                {/* What can you expect? */}
-                                <div className="mb-4">
-                                  <h4 className="font-semibold text-gray-800 mb-2">What can you expect?</h4>
-                                  <ul className="text-sm text-gray-600 space-y-1">
-                                    <li>• Improved energy levels within 2-3 weeks</li>
-                                    <li>• Better sleep quality and mood</li>
-                                    <li>• Enhanced immune system support</li>
-                                    <li>• Personalized nutrition guidance</li>
-                                  </ul>
-                                </div>
+                                
                                 
                                 {/* Price */}
                                 <div className="flex items-center justify-between">
