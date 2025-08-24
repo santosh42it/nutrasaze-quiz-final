@@ -1384,7 +1384,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       {[
                         "👨‍⚕️ FREE expert consultation (Worth ₹2000)",
                         "🚚 Secure & fast delivery (2-3 days)",
-                        "📞 24/7 WhatsApp support",
+                        "📞 Personalized WhatsApp support",
                         "🔬 Lab-tested, certified supplements"
                       ].map((feature, index) => (
                         <div key={index} className="flex items-center gap-3">
