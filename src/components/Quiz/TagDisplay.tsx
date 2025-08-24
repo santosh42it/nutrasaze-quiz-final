@@ -15,10 +15,10 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({ tags, className = '' }) 
       {tags.map((tag) => (
         <div
           key={tag.id}
-          className="flex flex-col items-center gap-2 p-3 bg-white rounded-lg shadow-sm border border-[#e9d6e4]"
+          className="flex flex-col items-center gap-2 p-3"
         >
           {tag.icon_url && (
-            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#382c30' }}>
+            <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ backgroundColor: '#5a303e' }}>
               <img
                 src={tag.icon_url}
                 alt={tag.name}
@@ -37,7 +37,7 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({ tags, className = '' }) 
           <div className="text-center">
             <h3 className="text-sm font-medium text-[#1d0917]">{tag.name}</h3>
             {tag.description && (
-              <p className="text-xs text-gray-600 mt-1">{tag.description}</p>
+              <p className="text-xs text-gray-600 mt-1" title="Tag title">{tag.description}</p>
             )}
           </div>
         </div>
