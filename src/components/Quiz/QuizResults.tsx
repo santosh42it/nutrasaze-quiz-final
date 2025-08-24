@@ -29,7 +29,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [matchedTags, setMatchedTags] = useState<Tag[]>([]); // State to store matched tags
   const [answerKey, setAnswerKey] = useState<any>(null); // State to store the matched answer key
-  const [resultId, setResultId] = useState<string | null>(null);
+  const [resultId, setResultId] = useState<string>('');
   const [resultUrl, setResultUrl] = useState<string>('');
 
   // Extract user info from answers - improved logic to avoid mismatched data
@@ -901,84 +901,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Use a ref to track if we've already initiated a save to prevent multiple calls
   const hasInitiatedSave = React.useRef(false);
 
-  // Urgency timer state with persistence
-  const [timeRemaining, setTimeRemaining] = useState(() => {
-    // Check if there's a stored timer for this session
-    const storedTimer = localStorage.getItem('nutrasage_offer_timer');
-    const storedTimestamp = localStorage.getItem('nutrasage_offer_timestamp');
-
-    if (storedTimer && storedTimestamp) {
-      const elapsed = Math.floor((Date.now() - parseInt(storedTimestamp)) / 1000);
-      const remaining = parseInt(storedTimer) - elapsed;
-
-      // If timer hasn't expired, use remaining time
-      if (remaining > 0) {
-        return remaining;
-      }
-    }
-
-    // Start new 6-hour timer for more realistic urgency
-    const newTimer = 6 * 60 * 60; // 6 hours in seconds
-    localStorage.setItem('nutrasage_offer_timer', newTimer.toString());
-    localStorage.setItem('nutrasage_offer_timestamp', Date.now().toString());
-    return newTimer;
-  });
-
-  // Timer effect for urgency countdown with persistence
-  useEffect(() => {
-    if (timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          const newTime = prev - 1;
-          // Update localStorage every minute to reduce writes
-          if (newTime % 60 === 0) {
-            localStorage.setItem('nutrasage_offer_timer', newTime.toString());
-            localStorage.setItem('nutrasage_offer_timestamp', Date.now().toString());
-          }
-          return newTime;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    } else {
-      // Timer expired - could show different message or reset
-      localStorage.removeItem('nutrasage_offer_timer');
-      localStorage.removeItem('nutrasage_offer_timestamp');
-    }
-  }, [timeRemaining]);
-
-  // Format time remaining with more realistic display
-  const formatTimeRemaining = () => {
-    if (timeRemaining <= 0) {
-      return "EXPIRED";
-    }
-
-    const hours = Math.floor(timeRemaining / 3600);
-    const minutes = Math.floor((timeRemaining % 3600) / 60);
-    const seconds = timeRemaining % 60;
-
-    // Show different format based on time remaining
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
-
-  // Get urgency message based on time remaining
-  const getUrgencyMessage = () => {
-    if (timeRemaining <= 0) {
-      return "OFFER EXPIRED - Contact support for availability";
-    } else if (timeRemaining < 3600) { // Less than 1 hour
-      return "⚡ HURRY! Only minutes left!";
-    } else if (timeRemaining < 7200) { // Less than 2 hours
-      return "🔥 Limited time offer ending soon!";
-    } else {
-      return "⏰ Special pricing ends soon!";
-    }
-  };
-
   useEffect(() => {
     // Only save if it's not an existing result view and we haven't initiated save
     if (!isViewingExistingResults && !isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
@@ -1192,26 +1114,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   Hello {extractedUserInfo?.name || 'User'}!
                 </h2>
 
-                <div className="bg-gradient-to-r from-[#913177] to-[#b54394] text-white rounded-lg p-6 mb-6">
-                  <div className="text-lg md:text-xl font-semibold mb-2">
-                    🎯 Your Personalized Health Journey
-                  </div>
-                  <div className="text-sm opacity-90 mb-4">
-                    Stage 1 of your transformation • Results expected in 3-4 weeks
-                  </div>
-
-                  {/* Enhanced Progress Bar */}
-                  <div className="bg-white/20 rounded-full p-1 mb-3">
-                    <div className="bg-white h-3 rounded-full flex items-center justify-end pr-2" style={{width: '85%'}}>
-                      <span className="text-[#913177] text-xs font-bold">85%</span>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium">
-                    Health Improvement Possibility
-                  </div>
-                </div>
-
-                {/* Health Analysis */}
+                {/* Removed Health Journey Progress Section */}
                 <div className="bg-green-50 rounded-lg p-6 mb-4 text-left">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Health Analysis</h3>
                   <div className="text-gray-800 text-sm leading-relaxed">
@@ -1249,50 +1152,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     )}
                   </div>
 
-                  {/* Enhanced Transformation Kit Title */}
-                  <div className="bg-gradient-to-r from-[#913177] via-[#b54394] to-[#913177] rounded-xl p-6 mb-6 relative overflow-hidden">
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-
-                    {/* Content */}
-                    <div className="relative z-10 text-center">
-                      <div className="flex items-center justify-center gap-2 mb-3">
-                        <span className="text-2xl">🎯</span>
-                        <div className="h-px bg-white/30 flex-1 max-w-[50px]"></div>
-                        <span className="text-xs font-semibold text-white/80 tracking-wider uppercase">
-                          STAGE 1
-                        </span>
-                        <div className="h-px bg-white/30 flex-1 max-w-[50px]"></div>
-                        <span className="text-2xl">🎯</span>
-                      </div>
-
-                      <h4 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2 leading-tight">
-                        Your Personalized 1-Month
-                      </h4>
-                      <div className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-3 tracking-wide">
-                        TRANSFORMATION KIT
-                      </div>
-
-                      <div className="flex items-center justify-center gap-4 text-white/90 text-sm">
-                        <div className="flex items-center gap-1">
-                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                          <span>Custom Formula</span>
-                        </div>
-                        <div className="w-px h-4 bg-white/30"></div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                          <span>Science-Backed</span>
-                        </div>
-                        <div className="w-px h-4 bg-white/30"></div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-                          <span>Lab-Tested</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Removed Enhanced Transformation Kit Title */}
 
                   <div className="space-y-4">
                     {recommendedProducts.length > 0 ? recommendedProducts.map((product, index) => (
@@ -1329,25 +1189,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 {/* Right Column - Pricing Summary (Desktop) */}
                 <div className="w-full md:w-80">
                   <div className="bg-white border border-[#913177]/20 rounded-lg p-6 md:sticky md:top-4 shadow-lg">
-                    {/* Urgency Banner with Live Timer */}
-                    <div className={`text-white text-center py-3 px-3 rounded-lg mb-4 border-2 ${
-                      timeRemaining <= 0 
-                        ? 'bg-gradient-to-r from-gray-500 to-gray-600 border-gray-300' 
-                        : timeRemaining < 3600 
-                        ? 'bg-gradient-to-r from-red-600 to-red-700 border-red-400 animate-pulse' 
-                        : 'bg-gradient-to-r from-red-500 to-red-600 border-red-300'
-                    }`}>
-                      <div className="text-sm font-bold mb-1">{getUrgencyMessage()}</div>
-                      <div className="text-xl font-mono font-black tracking-wider mb-1">
-                        {formatTimeRemaining()}
-                      </div>
-                      <div className="text-xs opacity-90">
-                        {timeRemaining <= 0 
-                          ? "📞 Call +91 7093619881 for current pricing" 
-                          : "💊 Your personalized formula is reserved!"
-                        }
-                      </div>
-                    </div>
+                    {/* Removed Urgency Banner with Live Timer */}
 
                     <div className="text-center mb-6">
                       <div className="text-sm text-[#913177] font-semibold mb-2">🎯 EXCLUSIVELY YOURS</div>
@@ -1392,21 +1234,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
 
 
-                    {/* Urgency Message */}
-                    <div className="text-center mt-3 hidden md:block">
-                      <div className={`text-xs font-semibold ${
-                        timeRemaining <= 0 
-                          ? 'text-gray-600' 
-                          : timeRemaining < 3600 
-                          ? 'text-red-600 animate-bounce' 
-                          : 'text-red-600'
-                      }`}>
-                        {timeRemaining <= 0 
-                          ? "⏰ OFFER EXPIRED" 
-                          : `🔥 OFFER EXPIRES IN ${formatTimeRemaining()}`
-                        }
-                      </div>
-                    </div>
+                    {/* Removed Urgency Message */}
 
                     {/* Features */}
                     <div className="mt-6 space-y-3">
