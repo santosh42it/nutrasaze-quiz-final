@@ -10,11 +10,11 @@ export const TagManager: React.FC = () => {
   const { tags, addTag, updateTag, deleteTag } = useAdminStore();
   const [newTagName, setNewTagName] = useState('');
   const [newTagIconUrl, setNewTagIconUrl] = useState('');
-  const [newTagDescription, setNewTagDescription] = useState('');
+  const [newTagTitle, setNewTagTitle] = useState(''); // Changed from newTagDescription
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [editTagName, setEditTagName] = useState('');
   const [editTagIconUrl, setEditTagIconUrl] = useState('');
-  const [editTagDescription, setEditTagDescription] = useState('');
+  const [editTagTitle, setEditTagTitle] = useState(''); // Changed from editTagDescription
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; tag: Tag | null }>({
     isOpen: false,
     tag: null
@@ -24,35 +24,35 @@ export const TagManager: React.FC = () => {
     e.preventDefault();
     if (!newTagName.trim()) return;
 
-    await addTag(newTagName, newTagIconUrl, newTagDescription);
+    await addTag(newTagName, newTagIconUrl, newTagTitle); // Changed to newTagTitle
     setNewTagName('');
     setNewTagIconUrl('');
-    setNewTagDescription('');
+    setNewTagTitle(''); // Changed from setNewTagDescription
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTag || !editTagName.trim()) return;
 
-    await updateTag(editingTag.id, editTagName, editTagIconUrl, editTagDescription);
+    await updateTag(editingTag.id, editTagName, editTagIconUrl, editTagTitle); // Changed to editTagTitle
     setEditingTag(null);
     setEditTagName('');
     setEditTagIconUrl('');
-    setEditTagDescription('');
+    setEditTagTitle(''); // Changed from setEditTagDescription
   };
 
   const startEdit = (tag: Tag) => {
     setEditingTag(tag);
     setEditTagName(tag.name);
     setEditTagIconUrl(tag.icon_url || '');
-    setEditTagDescription(tag.description || '');
+    setEditTagTitle(tag.title || ''); // Changed from setEditTagDescription and property name
   };
 
   const cancelEdit = () => {
     setEditingTag(null);
     setEditTagName('');
     setEditTagIconUrl('');
-    setEditTagDescription('');
+    setEditTagTitle(''); // Changed from setEditTagDescription
   };
 
   const handleDeleteClick = (tag: Tag) => {
@@ -95,9 +95,9 @@ export const TagManager: React.FC = () => {
             />
             <Input
               type="text"
-              value={newTagDescription}
-              onChange={(e) => setNewTagDescription(e.target.value)}
-              placeholder="Enter description (optional)"
+              value={newTagTitle}
+              onChange={(e) => setNewTagTitle(e.target.value)}
+              placeholder="Enter title (optional)"
               className="border-[#e9d6e4]"
             />
             <Button
@@ -131,9 +131,9 @@ export const TagManager: React.FC = () => {
                 />
                 <Input
                   type="text"
-                  value={editTagDescription}
-                  onChange={(e) => setEditTagDescription(e.target.value)}
-                  placeholder="Description (optional)"
+                  value={editTagTitle}
+                  onChange={(e) => setEditTagTitle(e.target.value)}
+                  placeholder="Title (optional)"
                   className="border-[#e9d6e4]"
                 />
                 <div className="flex gap-2">
@@ -177,8 +177,9 @@ export const TagManager: React.FC = () => {
                     )}
                     <div>
                       <h4 className="font-medium text-[#1d0917]">{tag.name}</h4>
-                      {tag.description && (
-                        <p className="text-sm text-gray-600">{tag.description}</p>
+                      {/* Changed to display tag.title and removed tooltip */}
+                      {tag.title && (
+                        <p className="text-sm text-gray-600">{tag.title}</p>
                       )}
                     </div>
                   </div>

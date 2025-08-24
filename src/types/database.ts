@@ -47,7 +47,7 @@ export interface Tag {
   id: number;
   name: string;
   icon_url?: string;
-  description?: string;
+  title?: string;
   created_at?: string;
 }
 

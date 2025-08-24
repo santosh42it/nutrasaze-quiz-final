@@ -28,8 +28,8 @@ interface AdminStore {
 
   // Tag methods
   fetchTags: () => Promise<void>;
-  addTag: (name: string, icon_url?: string, description?: string) => Promise<void>;
-  updateTag: (id: number, name: string, icon_url?: string, description?: string) => Promise<void>;
+  addTag: (name: string, icon_url?: string, title?: string) => Promise<void>;
+  updateTag: (id: number, name: string, icon_url?: string, title?: string) => Promise<void>;
   deleteTag: (id: number) => Promise<void>;
 
   // Product methods
@@ -188,11 +188,15 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
-  addTag: async (name: string, icon_url?: string, description?: string) => {
+  addTag: async (name: string, icon_url?: string, title?: string) => {
     try {
       const { data, error } = await supabase
         .from('tags')
-        .insert({ name, icon_url, description })
+        .insert([{ 
+          name: name.trim(), 
+          icon_url: icon_url?.trim() || null,
+          title: title?.trim() || null
+        }])
         .select()
         .single();
 
@@ -204,19 +208,21 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
-  updateTag: async (id: number, name: string, icon_url?: string, description?: string) => {
+  updateTag: async (id: number, name: string, icon_url?: string, title?: string) => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tags')
-        .update({ name, icon_url, description })
-        .eq('id', id)
-        .select()
-        .single();
+        .update({ 
+          name: name.trim(), 
+          icon_url: icon_url?.trim() || null,
+          title: title?.trim() || null
+        })
+        .eq('id', id);
 
       if (error) throw error;
 
       set({ 
-        tags: get().tags.map(tag => tag.id === id ? data : tag)
+        tags: get().tags.map(tag => tag.id === id ? { ...tag, name, icon_url, title } : tag)
       });
     } catch (error) {
       set({ error: (error as Error).message });

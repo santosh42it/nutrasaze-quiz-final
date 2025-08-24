@@ -36,8 +36,8 @@ export const TagDisplay: React.FC<TagDisplayProps> = ({ tags, className = '' }) 
           )}
           <div className="text-center">
             <h3 className="text-sm font-medium text-[#1d0917]">{tag.name}</h3>
-            {tag.description && (
-              <p className="text-xs text-gray-600 mt-1" title="Tag title">{tag.description}</p>
+            {tag.title && (
+              <p className="text-xs text-gray-600 mt-1">{tag.title}</p>
             )}
           </div>
         </div>
