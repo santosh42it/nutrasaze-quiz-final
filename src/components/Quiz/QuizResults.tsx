@@ -1472,7 +1472,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   What can you expect?
                 </h2>
                 
-                <div className="max-w-4xl mx-auto space-y-4">
+                {/* Desktop Layout - Vertical stacked */}
+                <div className="hidden md:block max-w-4xl mx-auto space-y-4">
                   {/* Month 1 - Always show full image and text */}
                   <div className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg group">
                     <div 
@@ -1557,6 +1558,83 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           Once you go personalised, you'll never go back. You'll find yourself telling your friends & family the benefits of joining the future of personalised healthcare.
                         </p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Layout - Horizontal scroll with 1.5 cards visible */}
+                <div className="md:hidden">
+                  <div className="overflow-x-auto pb-4 scrollbar-hide">
+                    <div className="flex gap-4" style={{ width: 'calc(100vw + 50vw)' }}>
+                      {/* Month 1 Card */}
+                      <div className="flex-shrink-0 w-[calc(100vw-3rem)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
+                        <div className="relative h-48 overflow-hidden">
+                          <img 
+                            src="https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=800"
+                            alt="Month 1 - Energy boost"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=400";
+                            }}
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="text-lg font-bold text-[#1d0917] mb-2">Month 1</h3>
+                          <p className="text-[#6d6d6e] text-sm leading-relaxed">
+                            After about 4 weeks you might start to feel higher energy levels. Your sleep patterns may start to improve.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Month 3 Card */}
+                      <div className="flex-shrink-0 w-[calc(100vw-3rem)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F3F6E3' }}>
+                        <div className="relative h-48 overflow-hidden">
+                          <img 
+                            src="https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=800"
+                            alt="Month 3 - Skin improvement"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=400";
+                            }}
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="text-lg font-bold text-[#1d0917] mb-2">Month 3</h3>
+                          <p className="text-[#6d6d6e] text-sm leading-relaxed">
+                            Within 3 months, you may start seeing improvements in your skin, hair and nails and faster recovery from workouts.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Month 6 Card */}
+                      <div className="flex-shrink-0 w-[calc(100vw-3rem)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
+                        <div className="relative h-48 overflow-hidden">
+                          <img 
+                            src="https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=800"
+                            alt="Month 6 - Lifestyle transformation"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=400";
+                            }}
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="text-lg font-bold text-[#1d0917] mb-2">Month 6</h3>
+                          <p className="text-[#6d6d6e] text-sm leading-relaxed">
+                            Once you go personalised, you'll never go back. You'll find yourself telling your friends & family the benefits of joining the future of personalised healthcare.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile scroll indicator */}
+                  <div className="flex justify-center mt-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                      Swipe to see more
                     </div>
                   </div>
                 </div>
