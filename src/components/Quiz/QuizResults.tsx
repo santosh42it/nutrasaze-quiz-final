@@ -1421,6 +1421,67 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </CardContent>
           </Card>
 
+          {/* What's in your kit Section */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 md:p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
+                  What's in your kit?
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                  {/* 2 months nutrition plan */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <svg className="w-6 h-6 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[#1d0917] font-medium">2 months nutrition plan</div>
+                    </div>
+                  </div>
+
+                  {/* Personalised diet chart */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <svg className="w-6 h-6 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[#1d0917] font-medium">Personalised diet chart</div>
+                    </div>
+                  </div>
+
+                  {/* Expert made exercise plan */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <svg className="w-6 h-6 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[#1d0917] font-medium">Expert made exercise plan</div>
+                    </div>
+                  </div>
+
+                  {/* NutraSage support */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <svg className="w-6 h-6 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 3v6m0 6v6m6-12h-6m-6 0h6" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[#1d0917] font-medium">NutraSage support</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Contact Info */}
           <div className="text-center text-sm text-[#6d6d6e] space-y-1">
             <p>Our experts will review your responses and contact you within 24 hours.</p>
