@@ -1482,6 +1482,58 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </CardContent>
           </Card>
 
+          {/* What can you expect Section */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 md:p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
+                  What can you expect?
+                </h2>
+                
+                <div className="max-w-4xl mx-auto">
+                  {/* Hero Image */}
+                  <div className="mb-8 rounded-xl overflow-hidden">
+                    <img 
+                      src="https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=800"
+                      alt="Person exercising outdoors"
+                      className="w-full h-48 md:h-64 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=400";
+                      }}
+                    />
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="space-y-6 text-left">
+                    {/* Month 1 */}
+                    <div className="bg-[#f8f9fa] rounded-xl p-6">
+                      <h3 className="text-lg font-bold text-[#1d0917] mb-3">Month 1</h3>
+                      <p className="text-[#6d6d6e] leading-relaxed">
+                        After about 4 weeks you might start to feel higher energy levels. Your sleep patterns may start to improve.
+                      </p>
+                    </div>
+
+                    {/* Month 3 */}
+                    <div className="bg-[#f8f9fa] rounded-xl p-6">
+                      <h3 className="text-lg font-bold text-[#1d0917] mb-3">Month 3</h3>
+                      <p className="text-[#6d6d6e] leading-relaxed">
+                        Within 3 months, you may start seeing improvements in your skin, hair and nails and faster recovery from workouts.
+                      </p>
+                    </div>
+
+                    {/* Month 6 */}
+                    <div className="bg-[#f8f9fa] rounded-xl p-6">
+                      <h3 className="text-lg font-bold text-[#1d0917] mb-3">Month 6</h3>
+                      <p className="text-[#6d6d6e] leading-relaxed">
+                        Once you go personalised, you'll never go back. You'll find yourself telling your friends & family the benefits of joining the future of personalised healthcare.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Contact Info */}
           <div className="text-center text-sm text-[#6d6d6e] space-y-1">
             <p>Our experts will review your responses and contact you within 24 hours.</p>
