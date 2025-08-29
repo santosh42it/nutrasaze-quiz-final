@@ -1346,10 +1346,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 )}
               </div>
 
-              {/* Pricing and Buy Now Section Row */}
-              <div className="flex flex-col lg:flex-row gap-8">
-                {/* Left Side - Total Price Summary */}
-                <div className="flex-1">
+              {/* Pricing and Buy Now Section */}
+              <div className="max-w-2xl mx-auto">
+                {/* Total Price Summary */}
+                <div>
                   <div className="bg-gradient-to-r from-[#f8f4f7] to-[#fff4fc] rounded-xl p-6 text-center">
                     <div className="text-4xl font-bold text-[#913177] mb-2">
                       ₹{totalPrice}
@@ -1376,29 +1376,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   </div>
                 </div>
 
-                {/* Right Side - Features */}
-                <div className="w-full lg:w-80">
-                  <div className="bg-white border border-[#913177]/20 rounded-lg p-6 shadow-lg">
-                    <h3 className="text-lg font-bold text-[#1d0917] mb-4 text-center">What's Included</h3>
-                    <div className="space-y-3">
-                      {[
-                        "👨‍⚕️ FREE expert consultation (Worth ₹2000)",
-                        "🚚 Secure & fast delivery (2-3 days)",
-                        "📞 Personalized WhatsApp support",
-                        "🔬 Lab-tested, certified supplements"
-                      ].map((feature, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <div className="w-4 h-4 bg-[#913177] rounded-full flex items-center justify-center">
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                          <span className="text-sm text-[#6d6d6e]">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                
               </div>
             </CardContent>
           </Card>
