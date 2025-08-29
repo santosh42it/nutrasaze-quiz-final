@@ -48,6 +48,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
         console.log('Fetching quiz response for ID:', responseId);
 
         // Test database connection first
+        console.log('Testing database connection...');
         const { data: testData, error: testError } = await supabase
           .from('quiz_responses')
           .select('count(*)')
@@ -55,19 +56,49 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
 
         if (testError) {
           console.error('Database connection test failed:', testError);
-          setError('Database connection error');
+          console.error('Connection error details:', {
+            message: testError.message,
+            details: testError.details,
+            hint: testError.hint,
+            code: testError.code,
+            supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+            hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
+          });
+          setError(`Database connection error: ${testError.message}`);
           setLoading(false);
           return;
         }
 
-        console.log('Database connection test passed');
+        console.log('Database connection test passed, count result:', testData);
 
-        // Fetch quiz response
-        const { data: response, error: responseError } = await supabase
-          .from('quiz_responses')
-          .select('*')
-          .eq('id', responseId)
-          .single();
+        // Fetch quiz response with retry mechanism
+        console.log('Fetching quiz response with ID:', responseId);
+        let response = null;
+        let responseError = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries && !response) {
+          const { data: responseData, error: fetchError } = await supabase
+            .from('quiz_responses')
+            .select('*')
+            .eq('id', responseId)
+            .single();
+
+          if (fetchError) {
+            retryCount++;
+            console.log(`Attempt ${retryCount} failed:`, fetchError.message);
+            
+            if (retryCount < maxRetries) {
+              console.log(`Retrying in ${retryCount * 1000}ms...`);
+              await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
+            } else {
+              responseError = fetchError;
+            }
+          } else {
+            response = responseData;
+          }
+        }
 
         if (responseError) {
           console.error('Error fetching quiz response:', responseError);
@@ -197,8 +228,11 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
           <div className="mb-6 p-4 bg-red-50 rounded-lg text-left">
             <h3 className="font-semibold text-red-800 mb-2">Debug Info:</h3>
             <p className="text-sm text-red-700">Result ID: {resultId}</p>
+            <p className="text-sm text-red-700">Extracted Response ID: {resultId ? resultId.split('-')[0] : 'N/A'}</p>
             <p className="text-sm text-red-700">Error: {error}</p>
             <p className="text-sm text-red-700">URL: {window.location.href}</p>
+            <p className="text-sm text-red-700">Supabase URL: {import.meta.env.VITE_SUPABASE_URL ? 'Connected' : 'Not found'}</p>
+            <p className="text-sm text-red-700">Environment: {import.meta.env.MODE}</p>
           </div>
 
           <div className="space-y-3">

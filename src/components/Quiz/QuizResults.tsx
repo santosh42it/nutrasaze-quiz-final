@@ -1410,7 +1410,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
                   What's in your kit?
                 </h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
                   {/* 2 months nutrition plan */}
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
@@ -1471,7 +1471,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
                   What can you expect?
                 </h2>
-                
+
                 {/* Desktop Layout - Vertical stacked */}
                 <div className="hidden md:block max-w-4xl mx-auto space-y-4">
                   {/* Month 1 - Always show full image and text */}
@@ -1492,7 +1492,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
                       </div>
-                      
+
                       {/* Text content - always visible */}
                       <div className="p-6">
                         <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">Month 1</h3>
@@ -1521,7 +1521,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
                       </div>
-                      
+
                       {/* Text content - always visible */}
                       <div className="p-6">
                         <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">Month 3</h3>
@@ -1550,7 +1550,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
                       </div>
-                      
+
                       {/* Text content - always visible */}
                       <div className="p-6">
                         <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">Month 6</h3>
