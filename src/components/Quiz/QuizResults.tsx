@@ -1404,7 +1404,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           </Card>
 
           {/* What's in your kit Section */}
-          <Card className="mb-6 border-0 shadow-sm bg-white">
+          <Card className="mb-6 border-0 shadow-sm" style={{backgroundColor: '#E6EEFC'}}>
             <CardContent className="p-6 md:p-8">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
