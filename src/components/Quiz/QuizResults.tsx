@@ -1403,24 +1403,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </CardContent>
           </Card>
 
-          {/* Take Assessment Again */}
-          <Card className="mb-6 border-0 shadow-sm bg-white">
-            <CardContent className="p-6 text-center">
-              <h3 className="text-lg font-semibold text-[#1d0917] mb-3">
-                Want to Update Your Assessment?
-              </h3>
-              <p className="text-sm text-[#6d6d6e] mb-4">
-                Your health needs change over time. Take the assessment again to get updated recommendations.
-              </p>
-              <Button 
-                onClick={() => window.location.href = '/'}
-                className="bg-white border-2 border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300"
-              >
-                🔄 Take Assessment Again
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* What's in your kit Section */}
           <Card className="mb-6 border-0 shadow-sm bg-white">
             <CardContent className="p-6 md:p-8">
@@ -1580,6 +1562,24 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Take Assessment Again */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-lg font-semibold text-[#1d0917] mb-3">
+                Want to Update Your Assessment?
+              </h3>
+              <p className="text-sm text-[#6d6d6e] mb-4">
+                Your health needs change over time. Take the assessment again to get updated recommendations.
+              </p>
+              <Button 
+                onClick={() => window.location.href = '/'}
+                className="bg-white border-2 border-[#913177] text-[#913177] hover:bg-[#913177] hover:text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300"
+              >
+                🔄 Take Assessment Again
+              </Button>
             </CardContent>
           </Card>
 
