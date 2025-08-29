@@ -14,10 +14,9 @@ export const checkSupabaseConnection = async () => {
     const { supabase } = await import('./supabase');
     
     // Test basic connection
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('quiz_responses')
-      .select('count(*)')
-      .limit(1);
+      .select('*', { count: 'exact', head: true });
 
     if (error) {
       console.error('❌ Supabase connection failed:', error);
@@ -25,7 +24,7 @@ export const checkSupabaseConnection = async () => {
     }
 
     console.log('✅ Supabase connection successful');
-    return { success: true, data };
+    return { success: true, count };
     
   } catch (error) {
     console.error('❌ Connection check failed:', error);

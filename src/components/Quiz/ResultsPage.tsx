@@ -49,10 +49,9 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
 
         // Test database connection first
         console.log('Testing database connection...');
-        const { data: testData, error: testError } = await supabase
+        const { count: testCount, error: testError } = await supabase
           .from('quiz_responses')
-          .select('count(*)')
-          .limit(1);
+          .select('*', { count: 'exact', head: true });
 
         if (testError) {
           console.error('Database connection test failed:', testError);
@@ -69,7 +68,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
           return;
         }
 
-        console.log('Database connection test passed, count result:', testData);
+        console.log('Database connection test passed, count result:', testCount);
 
         // Fetch quiz response with retry mechanism
         console.log('Fetching quiz response with ID:', responseId);
