@@ -332,7 +332,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Fetch the actual tag data to display
       const { data: tagsData, error: tagsError } = await supabase
         .from('tags')
-        .select('*')
+        .select('id, name, icon_url, title, description')
         .in('id', selectedTagIds);
 
       if (tagsError) {
@@ -341,8 +341,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.log('Fetched tag data with icons:', tagsData.map(tag => ({
           id: tag.id,
           name: tag.name,
-          icon: tag.icon,
-          iconPresent: !!tag.icon
+          icon_url: tag.icon_url,
+          iconPresent: !!tag.icon_url
         })));
         setMatchedTags(tagsData); // Set the fetched tags to the state
       }
@@ -1281,14 +1281,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           <div className="relative z-10 text-center">
                             {/* Icon */}
                             <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center group-hover:from-[#913177]/20 group-hover:to-[#b54394]/20 transition-all duration-300">
-                              {tag.icon && tag.icon.trim() !== '' ? (
+                              {tag.icon_url && tag.icon_url.trim() !== '' ? (
                                 <img 
-                                  src={tag.icon} 
+                                  src={tag.icon_url} 
                                   alt={tag.name}
                                   className="w-6 h-6 object-contain"
                                   style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                                   onError={(e) => {
-                                    console.log('Icon failed to load:', tag.icon);
+                                    console.log('Icon failed to load:', tag.icon_url);
                                     (e.target as HTMLImageElement).style.display = 'none';
                                     // Show fallback icon
                                     const fallbackIcon = e.target?.parentElement?.querySelector('.fallback-icon');
@@ -1297,12 +1297,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                     }
                                   }}
                                   onLoad={() => {
-                                    console.log('Icon loaded successfully:', tag.icon);
+                                    console.log('Icon loaded successfully:', tag.icon_url);
                                   }}
                                 />
                               ) : null}
                               <svg 
-                                className={`w-6 h-6 text-[#913177] fallback-icon ${tag.icon && tag.icon.trim() !== '' ? 'hidden' : 'block'}`} 
+                                className={`w-6 h-6 text-[#913177] fallback-icon ${tag.icon_url && tag.icon_url.trim() !== '' ? 'hidden' : 'block'}`} 
                                 fill="none" 
                                 stroke="currentColor" 
                                 viewBox="0 0 24 24"
@@ -1361,14 +1361,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                               <div className="text-center">
                                 {/* Icon */}
                                 <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center">
-                                  {tag.icon && tag.icon.trim() !== '' ? (
+                                  {tag.icon_url && tag.icon_url.trim() !== '' ? (
                                     <img 
-                                      src={tag.icon} 
+                                      src={tag.icon_url} 
                                       alt={tag.name}
                                       className="w-7 h-7 object-contain"
                                       style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                                       onError={(e) => {
-                                        console.log('Mobile icon failed to load:', tag.icon);
+                                        console.log('Mobile icon failed to load:', tag.icon_url);
                                         (e.target as HTMLImageElement).style.display = 'none';
                                         // Show fallback icon
                                         const fallbackIcon = e.target?.parentElement?.querySelector('.fallback-icon-mobile');
@@ -1377,12 +1377,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                         }
                                       }}
                                       onLoad={() => {
-                                        console.log('Mobile icon loaded successfully:', tag.icon);
+                                        console.log('Mobile icon loaded successfully:', tag.icon_url);
                                       }}
                                     />
                                   ) : null}
                                   <svg 
-                                    className={`w-7 h-7 text-[#913177] fallback-icon-mobile ${tag.icon && tag.icon.trim() !== '' ? 'hidden' : 'block'}`} 
+                                    className={`w-7 h-7 text-[#913177] fallback-icon-mobile ${tag.icon_url && tag.icon_url.trim() !== '' ? 'hidden' : 'block'}`} 
                                     fill="none" 
                                     stroke="currentColor" 
                                     viewBox="0 0 24 24"

@@ -48,6 +48,7 @@ export interface Tag {
   name: string;
   icon_url?: string;
   title?: string;
+  description?: string;
   created_at?: string;
 }
 
