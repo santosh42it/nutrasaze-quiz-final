@@ -1176,7 +1176,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8 pt-24">
+      <div className="container mx-auto px-4 py-6 pb-24 md:pb-8 pt-16">
         <div className="max-w-4xl mx-auto">
 
           {/* Compact Assessment Report Card */}
