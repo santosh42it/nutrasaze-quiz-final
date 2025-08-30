@@ -1545,7 +1545,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Orange.svg" 
+                        src="./attached_assets/Orange.svg" 
                         alt="Orange icon" 
                         className="w-6 h-6 object-contain"
                         style={{ 
@@ -1556,13 +1556,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
-                          target.parentElement!.innerHTML = `
-                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="8" fill="#1d0917"/>
+                          target.parentElement!.querySelector('.fallback-icon')!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#913177]" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="8" fill="#913177"/>
                             </svg>
                           `;
+                          target.parentElement!.querySelector('.fallback-icon')!.style.display = 'block';
                         }}
                       />
+                      <div className="fallback-icon hidden w-6 h-6 text-[#913177]">🍊</div>
                     </div>
                     <div className="text-left">
                       <div className="text-[#1d0917] font-medium">2 months nutrition plan</div>
@@ -1573,7 +1575,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Barbell.svg" 
+                        src="./attached_assets/Barbell.svg" 
                         alt="Barbell icon" 
                         className="w-6 h-6 object-contain"
                         style={{ 
@@ -1584,15 +1586,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
-                          target.parentElement!.innerHTML = `
-                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
-                              <rect x="2" y="10" width="20" height="4" rx="2" fill="#1d0917"/>
-                              <circle cx="6" cy="12" r="3" fill="#1d0917"/>
-                              <circle cx="18" cy="12" r="3" fill="#1d0917"/>
+                          target.parentElement!.querySelector('.fallback-icon')!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#913177]" fill="currentColor" viewBox="0 0 24 24">
+                              <rect x="2" y="10" width="20" height="4" rx="2" fill="#913177"/>
+                              <circle cx="6" cy="12" r="3" fill="#913177"/>
+                              <circle cx="18" cy="12" r="3" fill="#913177"/>
                             </svg>
                           `;
+                          target.parentElement!.querySelector('.fallback-icon')!.style.display = 'block';
                         }}
                       />
+                      <div className="fallback-icon hidden w-6 h-6 text-[#913177]">🏋️</div>
                     </div>
                     <div className="text-left">
                       <div className="text-[#1d0917] font-medium">Exercise plan</div>
@@ -1603,7 +1607,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/NotePencil.svg" 
+                        src="./attached_assets/NotePencil.svg" 
                         alt="Note pencil icon" 
                         className="w-6 h-6 object-contain"
                         style={{ 
@@ -1614,13 +1618,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
-                          target.parentElement!.innerHTML = `
-                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1d0917"/>
+                          target.parentElement!.querySelector('.fallback-icon')!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#913177]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#913177"/>
                             </svg>
                           `;
+                          target.parentElement!.querySelector('.fallback-icon')!.style.display = 'block';
                         }}
                       />
+                      <div className="fallback-icon hidden w-6 h-6 text-[#913177]">📝</div>
                     </div>
                     <div className="text-left">
                       <div className="text-[#1d0917] font-medium">Personalised diet chart</div>
@@ -1631,7 +1637,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Headset.svg" 
+                        src="./attached_assets/Headset.svg" 
                         alt="Headset icon" 
                         className="w-6 h-6 object-contain"
                         style={{ 
@@ -1642,13 +1648,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
-                          target.parentElement!.innerHTML = `
-                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 1C7.48 1 4 4.48 4 9v7c0 1.1.9 2 2 2h2v-8H6V9c0-3.31 2.69-6 6-6s6 2.69 6 6v1h-2v8h2c1.1 0 2-.9 2-2V9c0-4.52-3.48-8-8-8z" fill="#1d0917"/>
+                          target.parentElement!.querySelector('.fallback-icon')!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#913177]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 1C7.48 1 4 4.48 4 9v7c0 1.1.9 2 2 2h2v-8H6V9c0-3.31 2.69-6 6-6s6 2.69 6 6v1h-2v8h2c1.1 0 2-.9 2-2V9c0-4.52-3.48-8-8-8z" fill="#913177"/>
                             </svg>
                           `;
+                          target.parentElement!.querySelector('.fallback-icon')!.style.display = 'block';
                         }}
                       />
+                      <div className="fallback-icon hidden w-6 h-6 text-[#913177]">🎧</div>
                     </div>
                     <div className="text-left">
                       <div className="text-[#1d0917] font-medium">Health support</div>
