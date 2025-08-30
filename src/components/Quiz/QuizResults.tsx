@@ -1237,7 +1237,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           {/* Your Key Health Focus Areas Section */}
           {matchedTags.length > 0 && (
-            <Card className="mb-6 border-0 shadow-sm overflow-hidden" style={{backgroundColor: '#e8f4fd'}}>
+            <Card className="mb-6 border-0 shadow-sm overflow-hidden" style={{backgroundColor: '#f0f8ff'}}>
               <CardContent className="p-6 md:p-8">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-3">
@@ -1391,15 +1391,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               <div className="mb-8 relative">
                 {recommendedProducts.length > 0 ? (
                   <div className="relative">
-                    {/* Scrolling indicator for desktop */}
-                    <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-4 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
-                      <div className="flex items-center gap-1 text-xs text-gray-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                        Scroll
+                    {/* Scrolling indicator for desktop - only show when needed */}
+                    {recommendedProducts.length > 3 && (
+                      <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-4 z-10 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                          Scroll
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="overflow-x-auto pb-4 scrollbar-hide">
                       <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
@@ -1415,8 +1417,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                   : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
                             }}
                           >
-                            {/* Product Image - 1:1 Aspect Ratio */}
-                            <div className="aspect-square bg-white/20 flex items-center justify-center overflow-hidden">
+                            {/* Product Image - 1:1 Aspect Ratio - Clickable */}
+                            <div 
+                              className="aspect-square bg-white/20 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => handleViewMore(product)}
+                            >
                               <img
                                 src={product.image_url || "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400"}
                                 alt={product.name}
@@ -1473,15 +1478,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       </div>
                     </div>
 
-                    {/* Mobile scrolling indicator */}
-                    <div className="md:hidden flex justify-center mt-3">
-                      <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                        Swipe to see more
+                    {/* Mobile scrolling indicator - only show when needed */}
+                    {recommendedProducts.length > 2 && (
+                      <div className="md:hidden flex justify-center mt-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                          Swipe to see more
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center p-6 text-gray-500">
