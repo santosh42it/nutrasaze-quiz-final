@@ -307,15 +307,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       console.log('All unique user tags collected:', Array.from(userTags));
       console.log('Total unique tags:', userTags.size);
 
-      // If no tags found, create some generic health areas and use fallback products
+      // If no tags found, use fallback products
       if (userTags.size === 0) {
-        console.log('❌ No tags found - creating generic health areas and using fallback products');
-        const genericTags = [
-          { id: 1, name: 'General Wellness', icon_url: null, title: null, description: 'Overall health and vitality' },
-          { id: 2, name: 'Energy Support', icon_url: null, title: null, description: 'Natural energy enhancement' },
-          { id: 3, name: 'Immune Health', icon_url: null, title: null, description: 'Immune system support' }
-        ];
-        setMatchedTags(genericTags);
+        console.log('❌ No tags found - using fallback products');
         await setFallbackProducts();
         return;
       }
@@ -336,41 +330,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       console.log('Selected tag IDs:', selectedTagIds);
 
       // Fetch the actual tag data to display
-      const { data: tagsData, error: tagsError } = await supabase
+      const { data: tagsData } = await supabase
         .from('tags')
-        .select('id, name, icon_url, title, description')
+        .select('*')
         .in('id', selectedTagIds);
 
-      if (tagsError) {
-        console.error('Error fetching tag data:', tagsError);
-        // Create fallback tags even if there's an error
-        const fallbackTags = selectedTagIds.map((id, index) => ({
-          id,
-          name: Array.from(userTags)[index] || `Health Area ${index + 1}`,
-          icon_url: null,
-          title: null,
-          description: null
-        }));
-        setMatchedTags(fallbackTags);
-      } else if (tagsData && tagsData.length > 0) {
-        console.log('Fetched tag data with icons:', tagsData.map(tag => ({
-          id: tag.id,
-          name: tag.name,
-          icon_url: tag.icon_url,
-          iconPresent: !!tag.icon_url
-        })));
+      if (tagsData) {
         setMatchedTags(tagsData); // Set the fetched tags to the state
-      } else {
-        console.log('No tag data found, creating fallback tags');
-        // Create fallback tags if no data is returned
-        const fallbackTags = Array.from(userTags).map((tagName, index) => ({
-          id: index + 1,
-          name: tagName,
-          icon_url: null,
-          title: null,
-          description: null
-        }));
-        setMatchedTags(fallbackTags);
       }
 
       // Create sorted tag combination for answer key matching
@@ -1271,207 +1237,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           {/* Your Key Health Focus Areas Section */}
           {matchedTags.length > 0 && (
-            <Card className="mb-6 border-0 shadow-sm bg-white overflow-hidden">
-              <CardContent className="p-0">
-                <div className="bg-gradient-to-r from-[#913177]/5 via-[#b54394]/5 to-[#913177]/5 p-6 md:p-8">
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-3">
-                      <svg className="w-5 h-5 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm font-medium text-[#913177]">Personalized Analysis</span>
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-2">
-                      Your Key Health Focus Areas
-                    </h2>
-                    <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-                      Based on your responses, we've identified these priority areas for your wellness journey
-                    </p>
-                  </div>
-
-                  {/* Desktop Version - Grid Layout */}
-                  <div className="hidden md:block">
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
-                      {matchedTags.map((tag, index) => (
-                        <div
-                          key={tag.id}
-                          className="group relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100"
-                          style={{
-                            animationDelay: `${index * 100}ms`
-                          }}
-                        >
-                          {/* Background gradient overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-[#913177]/0 to-[#b54394]/0 group-hover:from-[#913177]/5 group-hover:to-[#b54394]/5 rounded-2xl transition-all duration-300"></div>
-                          
-                          {/* Content */}
-                          <div className="relative z-10 text-center">
-                            {/* Icon */}
-                            <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center group-hover:from-[#913177]/20 group-hover:to-[#b54394]/20 transition-all duration-300">
-                              {tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? (
-                                <img 
-                                  src={tag.icon_url} 
-                                  alt={tag.name}
-                                  className="w-6 h-6 object-contain icon-image"
-                                  style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
-                                  onError={(e) => {
-                                    console.log('Icon failed to load:', tag.icon_url);
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    // Show fallback icon
-                                    const fallbackIcon = e.target?.parentElement?.querySelector('.fallback-icon');
-                                    if (fallbackIcon) {
-                                      (fallbackIcon as HTMLElement).style.display = 'block';
-                                    }
-                                  }}
-                                  onLoad={() => {
-                                    console.log('Icon loaded successfully:', tag.icon_url);
-                                    // Hide fallback icon when real icon loads
-                                    const fallbackIcon = (e.target as HTMLImageElement)?.parentElement?.querySelector('.fallback-icon');
-                                    if (fallbackIcon) {
-                                      (fallbackIcon as HTMLElement).style.display = 'none';
-                                    }
-                                  }}
-                                />
-                              ) : null}
-                              <svg 
-                                className={`w-6 h-6 text-[#913177] fallback-icon ${tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? 'hidden' : 'block'}`} 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </div>
-                            
-                            {/* Tag name */}
-                            <h3 className="font-semibold text-[#1d0917] text-sm md:text-base mb-1 group-hover:text-[#913177] transition-colors duration-300">
-                              {tag.name}
-                            </h3>
-                            
-                            {/* Description if available */}
-                            {tag.description && (
-                              <p className="text-xs text-gray-600 line-clamp-2">
-                                {tag.description}
-                              </p>
-                            )}
-
-                            {/* Priority indicator */}
-                            <div className="flex items-center justify-center mt-2">
-                              <div className="w-2 h-2 bg-[#913177] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Mobile Version - Horizontal Scroll */}
-                  <div className="md:hidden">
-                    <div className="relative">
-                      {/* Scroll indicator */}
-                      <div className="flex items-center justify-center mb-3">
-                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white/70 backdrop-blur-sm px-3 py-1 rounded-full">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                          </svg>
-                          Swipe to explore all areas
-                        </div>
-                      </div>
-
-                      {/* Scrollable container */}
-                      <div className="overflow-x-auto pb-4 scrollbar-hide">
-                        <div className="flex gap-4 px-4" style={{ width: `calc(${matchedTags.length * 200}px + 2rem)` }}>
-                          {matchedTags.map((tag, index) => (
-                            <div
-                              key={tag.id}
-                              className="flex-shrink-0 w-48 bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
-                              style={{
-                                animationDelay: `${index * 150}ms`
-                              }}
-                            >
-                              {/* Content */}
-                              <div className="text-center">
-                                {/* Icon */}
-                                <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center">
-                                  {tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? (
-                                    <img 
-                                      src={tag.icon_url} 
-                                      alt={tag.name}
-                                      className="w-7 h-7 object-contain icon-image-mobile"
-                                      style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
-                                      onError={(e) => {
-                                        console.log('Mobile icon failed to load:', tag.icon_url);
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        // Show fallback icon
-                                        const fallbackIcon = e.target?.parentElement?.querySelector('.fallback-icon-mobile');
-                                        if (fallbackIcon) {
-                                          (fallbackIcon as HTMLElement).style.display = 'block';
-                                        }
-                                      }}
-                                      onLoad={() => {
-                                        console.log('Mobile icon loaded successfully:', tag.icon_url);
-                                        // Hide fallback icon when real icon loads
-                                        const fallbackIcon = (e.target as HTMLImageElement)?.parentElement?.querySelector('.fallback-icon-mobile');
-                                        if (fallbackIcon) {
-                                          (fallbackIcon as HTMLElement).style.display = 'none';
-                                        }
-                                      }}
-                                    />
-                                  ) : null}
-                                  <svg 
-                                    className={`w-7 h-7 text-[#913177] fallback-icon-mobile ${tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? 'hidden' : 'block'}`} 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                </div>
-                                
-                                {/* Tag name */}
-                                <h3 className="font-semibold text-[#1d0917] text-sm mb-2">
-                                  {tag.name}
-                                </h3>
-                                
-                                {/* Description if available */}
-                                {tag.description && (
-                                  <p className="text-xs text-gray-600 line-clamp-3">
-                                    {tag.description}
-                                  </p>
-                                )}
-
-                                {/* Priority indicator */}
-                                <div className="flex items-center justify-center mt-3">
-                                  <div className="px-2 py-1 bg-[#913177]/10 rounded-full">
-                                    <div className="w-1.5 h-1.5 bg-[#913177] rounded-full"></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Gradient fade effects on edges */}
-                      <div className="absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-[#913177]/5 to-transparent pointer-events-none"></div>
-                      <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-[#913177]/5 to-transparent pointer-events-none"></div>
-                    </div>
-                  </div>
-
-                  {/* Bottom decoration */}
-                  <div className="flex items-center justify-center mt-6">
-                    <div className="flex gap-2">
-                      {[...Array(Math.min(matchedTags.length, 5))].map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="w-2 h-2 bg-[#913177]/20 rounded-full"
-                          style={{
-                            animationDelay: `${i * 200}ms`,
-                            backgroundColor: i < 3 ? '#913177' : '#913177'
-                          }}
-                        ></div>
-                      ))}
-                    </div>
-                  </div>
+            <Card className="mb-6 border-0 shadow-sm bg-white">
+              <CardContent className="p-6 md:p-8">
+                <div className="text-center">
+                  <h2 className="text-xl font-medium text-[#1d0917] mb-4">
+                    Your Key Health Focus Areas
+                  </h2>
+                  <TagDisplay tags={matchedTags} className="mb-4" />
                 </div>
               </CardContent>
             </Card>
