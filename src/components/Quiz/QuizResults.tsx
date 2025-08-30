@@ -307,9 +307,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       console.log('All unique user tags collected:', Array.from(userTags));
       console.log('Total unique tags:', userTags.size);
 
-      // If no tags found, use fallback products
+      // If no tags found, create some generic health areas and use fallback products
       if (userTags.size === 0) {
-        console.log('❌ No tags found - using fallback products');
+        console.log('❌ No tags found - creating generic health areas and using fallback products');
+        const genericTags = [
+          { id: 1, name: 'General Wellness', icon_url: null, title: null, description: 'Overall health and vitality' },
+          { id: 2, name: 'Energy Support', icon_url: null, title: null, description: 'Natural energy enhancement' },
+          { id: 3, name: 'Immune Health', icon_url: null, title: null, description: 'Immune system support' }
+        ];
+        setMatchedTags(genericTags);
         await setFallbackProducts();
         return;
       }
@@ -337,7 +343,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       if (tagsError) {
         console.error('Error fetching tag data:', tagsError);
-      } else if (tagsData) {
+        // Create fallback tags even if there's an error
+        const fallbackTags = selectedTagIds.map((id, index) => ({
+          id,
+          name: Array.from(userTags)[index] || `Health Area ${index + 1}`,
+          icon_url: null,
+          title: null,
+          description: null
+        }));
+        setMatchedTags(fallbackTags);
+      } else if (tagsData && tagsData.length > 0) {
         console.log('Fetched tag data with icons:', tagsData.map(tag => ({
           id: tag.id,
           name: tag.name,
@@ -345,6 +360,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           iconPresent: !!tag.icon_url
         })));
         setMatchedTags(tagsData); // Set the fetched tags to the state
+      } else {
+        console.log('No tag data found, creating fallback tags');
+        // Create fallback tags if no data is returned
+        const fallbackTags = Array.from(userTags).map((tagName, index) => ({
+          id: index + 1,
+          name: tagName,
+          icon_url: null,
+          title: null,
+          description: null
+        }));
+        setMatchedTags(fallbackTags);
       }
 
       // Create sorted tag combination for answer key matching
@@ -1281,11 +1307,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           <div className="relative z-10 text-center">
                             {/* Icon */}
                             <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center group-hover:from-[#913177]/20 group-hover:to-[#b54394]/20 transition-all duration-300">
-                              {tag.icon_url && tag.icon_url.trim() !== '' ? (
+                              {tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? (
                                 <img 
                                   src={tag.icon_url} 
                                   alt={tag.name}
-                                  className="w-6 h-6 object-contain"
+                                  className="w-6 h-6 object-contain icon-image"
                                   style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                                   onError={(e) => {
                                     console.log('Icon failed to load:', tag.icon_url);
@@ -1298,16 +1324,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                   }}
                                   onLoad={() => {
                                     console.log('Icon loaded successfully:', tag.icon_url);
+                                    // Hide fallback icon when real icon loads
+                                    const fallbackIcon = (e.target as HTMLImageElement)?.parentElement?.querySelector('.fallback-icon');
+                                    if (fallbackIcon) {
+                                      (fallbackIcon as HTMLElement).style.display = 'none';
+                                    }
                                   }}
                                 />
                               ) : null}
                               <svg 
-                                className={`w-6 h-6 text-[#913177] fallback-icon ${tag.icon_url && tag.icon_url.trim() !== '' ? 'hidden' : 'block'}`} 
+                                className={`w-6 h-6 text-[#913177] fallback-icon ${tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? 'hidden' : 'block'}`} 
                                 fill="none" 
                                 stroke="currentColor" 
                                 viewBox="0 0 24 24"
                               >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
                             
@@ -1361,11 +1392,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                               <div className="text-center">
                                 {/* Icon */}
                                 <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center">
-                                  {tag.icon_url && tag.icon_url.trim() !== '' ? (
+                                  {tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? (
                                     <img 
                                       src={tag.icon_url} 
                                       alt={tag.name}
-                                      className="w-7 h-7 object-contain"
+                                      className="w-7 h-7 object-contain icon-image-mobile"
                                       style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                                       onError={(e) => {
                                         console.log('Mobile icon failed to load:', tag.icon_url);
@@ -1378,16 +1409,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                       }}
                                       onLoad={() => {
                                         console.log('Mobile icon loaded successfully:', tag.icon_url);
+                                        // Hide fallback icon when real icon loads
+                                        const fallbackIcon = (e.target as HTMLImageElement)?.parentElement?.querySelector('.fallback-icon-mobile');
+                                        if (fallbackIcon) {
+                                          (fallbackIcon as HTMLElement).style.display = 'none';
+                                        }
                                       }}
                                     />
                                   ) : null}
                                   <svg 
-                                    className={`w-7 h-7 text-[#913177] fallback-icon-mobile ${tag.icon_url && tag.icon_url.trim() !== '' ? 'hidden' : 'block'}`} 
+                                    className={`w-7 h-7 text-[#913177] fallback-icon-mobile ${tag.icon_url && tag.icon_url.trim() !== '' && tag.icon_url !== 'null' ? 'hidden' : 'block'}`} 
                                     fill="none" 
                                     stroke="currentColor" 
                                     viewBox="0 0 24 24"
                                   >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                 </div>
                                 
