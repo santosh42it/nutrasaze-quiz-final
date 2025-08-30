@@ -1179,23 +1179,41 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       <div className="container mx-auto px-4 py-6 pb-24 md:pb-8 pt-24">
         <div className="max-w-4xl mx-auto">
 
-          {/* Assessment Report Card */}
-          <Card className="mb-6 border-0 shadow-sm bg-white">
-            <CardContent className="p-6 md:p-8">
-              <div className="text-center">
-                <div className="text-sm text-gray-500 mb-2">Assessment Report</div>
+          {/* Compact Assessment Report Card */}
+          <Card className="mb-6 border-0 shadow-lg bg-gradient-to-r from-[#913177] to-[#b54394] text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+            <CardContent className="p-4 md:p-6 relative z-10">
+              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                {/* Left side - Welcome & Icon */}
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-white/80 text-xs md:text-sm font-medium">Assessment Complete</div>
+                    <h2 className="text-lg md:text-2xl font-bold text-white">
+                      Hello {extractedUserInfo?.name || 'User'}!
+                    </h2>
+                  </div>
+                </div>
 
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                  Hello {extractedUserInfo?.name || 'User'}!
-                </h2>
-
-                {/* Removed Health Journey Progress Section */}
-                <div className="bg-green-50 rounded-lg p-6 mb-4 text-left">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Health Analysis</h3>
-                  <div className="text-gray-800 text-sm leading-relaxed">
-                    Based on your quiz responses, we've identified key areas for improvement. 
-                    Your personalized supplement plan targets nutritional gaps and lifestyle factors 
-                    that can significantly enhance your overall wellness and energy levels.
+                {/* Right side - Health Analysis */}
+                <div className="flex-1 bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm md:text-base font-semibold text-white mb-1">Your Personalized Health Analysis</h3>
+                      <p className="text-white/90 text-xs md:text-sm leading-relaxed">
+                        Based on your responses, we've created a targeted supplement plan to address your nutritional gaps and lifestyle factors for optimal wellness.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
