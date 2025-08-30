@@ -87,7 +87,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = () => {
           if (fetchError) {
             retryCount++;
             console.log(`Attempt ${retryCount} failed:`, fetchError.message);
-            
+
             if (retryCount < maxRetries) {
               console.log(`Retrying in ${retryCount * 1000}ms...`);
               await new Promise(resolve => setTimeout(resolve, retryCount * 1000));

@@ -505,9 +505,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       if (!error && data) {
         setActiveBanner(data);
+      } else if (error) {
+        console.error('Error fetching banner:', error);
       }
     } catch (error) {
-      console.error('Error fetching active banner:', error);
+      console.error('Exception fetching active banner:', error);
     }
   };
 
@@ -528,9 +530,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.log('Using database fallback products:', dbProducts.map(p => p.name));
         setRecommendedProducts(dbProducts);
         return;
+      } else if (error) {
+        console.error('Error fetching database fallback products:', error);
       }
     } catch (error) {
-      console.error('Error fetching database fallback products:', error);
+      console.error('Exception fetching database fallback products:', error);
     }
 
     // Use hardcoded fallback
@@ -1000,9 +1004,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Separate useEffect to load products when viewing existing results
   useEffect(() => {
     if (isViewingExistingResults && recommendedProducts.length === 0) {
-      console.log('Loading products for existing results view...');
+      console.log('Loading data for existing results view...');
 
-      // First load questions if not already loaded
       const loadDataForExistingResults = async () => {
         try {
           console.log('=== EXISTING RESULTS DATA LOAD START ===');
@@ -1019,7 +1022,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 .order('order_index');
 
               if (questionsError) {
+                console.error('=== QUESTION LOADING ERROR ===');
                 console.error('Error loading questions:', questionsError);
+                console.error('Stack trace:', questionsError?.stack);
                 // Continue without questions - we'll use fallback products
               } else if (fetchedQuestions && fetchedQuestions.length > 0) {
                 setQuestions(fetchedQuestions);
@@ -1028,21 +1033,46 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 console.warn('No questions found in database');
               }
             } catch (questionError) {
+              console.error('=== EXCEPTION LOADING QUESTIONS ===');
               console.error('Exception loading questions:', questionError);
               // Continue without questions
             }
           }
 
-          // Then load products
+          // Load products
           console.log('Loading recommended products...');
           try {
             await getRecommendedProducts();
             console.log('Recommended products loaded successfully');
           } catch (productError) {
+            console.error('=== PRODUCT LOADING ERROR ===');
             console.error('Error getting recommended products:', productError);
-            // Fallback to default products
+            console.error('Stack trace:', productError?.stack);
+
+            // Fallback to default products with error handling
             console.log('Setting fallback products due to recommendation error');
-            await setFallbackProducts();
+            try {
+              await setFallbackProducts();
+              console.log('Fallback products set successfully');
+            } catch (fallbackError) {
+              console.error('=== FALLBACK PRODUCTS ERROR ===');
+              console.error('Error setting fallback products:', fallbackError);
+
+              // Set hardcoded products manually
+              setRecommendedProducts([
+                { 
+                  id: 999, 
+                  name: "Health Essentials Kit", 
+                  description: "Your personalized nutrition solution", 
+                  mrp: 1299, 
+                  srp: 999, 
+                  image_url: null, 
+                  is_active: true, 
+                  shopify_variant_id: null, 
+                  url: 'https://nutrasage.in' 
+                }
+              ]);
+            }
           }
 
           // Load active banner
@@ -1051,7 +1081,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             await fetchActiveBanner();
             console.log('Active banner loaded successfully');
           } catch (bannerError) {
+            console.error('=== BANNER LOADING ERROR ===');
             console.error('Error loading active banner:', bannerError);
+            console.error('Stack trace:', bannerError?.stack);
+            // Banner loading failure is not critical, continue without it
           }
 
           console.log('=== EXISTING RESULTS DATA LOAD COMPLETE ===');
