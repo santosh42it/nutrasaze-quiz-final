@@ -1277,9 +1277,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
                           'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)'
                         ];
-                        
+
                         const tagGradient = gradients[index % gradients.length];
-                        
+
                         return (
                           <div
                             key={tag.id}
@@ -1292,7 +1292,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                               {/* Background decoration */}
                               <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8"></div>
                               <div className="absolute bottom-0 left-0 w-12 h-12 bg-white/5 rounded-full -ml-6 -mb-6"></div>
-                              
+
                               {/* Icon container with proper SVG handling */}
                               <div className="w-10 h-10 md:w-12 md:h-12 mb-2 md:mb-3 flex items-center justify-center relative z-10">
                                 {tag.icon_url ? (
@@ -1347,7 +1347,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                                   </svg>
                                 )}
                               </div>
-                              
+
                               {/* Tag name */}
                               <div className="text-xs md:text-sm font-semibold text-center leading-tight relative z-10">
                                 {tag.name}
@@ -1520,7 +1520,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   </div>
                 </div>
 
-                
+
               </div>
             </CardContent>
           </Card>
@@ -1805,8 +1805,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         </div>
 
         {/* Mobile Sticky Buy Now Button */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-4 md:hidden z-50">
-          <div className="flex items-center justify-between mb-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#913177]/20 p-3 md:hidden z-50">
+          {/* Free extras callout */}
+          <div className="text-center mb-3 bg-gradient-to-r from-[#e8f4fd] to-[#f0f8ff] rounded-lg p-2 border border-[#913177]/20">
+            <div className="text-[#913177] font-bold text-xs mb-1">🎁 FREE INCLUDED</div>
+            <div className="text-[#1d0917] text-xs">2 Months Diet + Exercise Plan</div>
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-sm text-[#6d6d6e]">Total</div>
               <div className="flex items-center gap-2">
@@ -1819,13 +1825,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             <Button 
               onClick={() => {
                 if (buyNowUrl && buyNowUrl !== '#') {
-                  // Open in same tab to avoid cart refresh issues
                   window.location.href = buyNowUrl;
                 }
               }}
-              className="px-4 h-12 text-sm font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-md flex items-center justify-center"
+              className="px-6 h-14 text-base font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-xl shadow-lg flex items-center justify-center"
             >
-              Buy Now
+              🛒 Buy Now
             </Button>
           </div>
         </div>
