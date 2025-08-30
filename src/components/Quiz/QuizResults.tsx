@@ -1237,7 +1237,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           {/* Your Key Health Focus Areas Section */}
           {matchedTags.length > 0 && (
-            <Card className="mb-6 border-0 shadow-sm overflow-hidden" style={{backgroundColor: '#f8fafb'}}>
+            <Card className="mb-6 border-0 shadow-sm overflow-hidden" style={{backgroundColor: '#e8f4fd'}}>
               <CardContent className="p-6 md:p-8">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-3">
