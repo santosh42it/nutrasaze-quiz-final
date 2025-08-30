@@ -1404,7 +1404,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     )}
 
                     <div className="overflow-x-auto pb-4 scrollbar-hide">
-                      <div className="flex gap-4 md:gap-6" style={{ minWidth: 'max-content' }}>
+                      <div className={`flex gap-4 md:gap-6 ${recommendedProducts.length <= 2 ? 'justify-center' : ''}`} style={recommendedProducts.length > 2 ? { minWidth: 'max-content' } : {}}>
                         {recommendedProducts.map((product, index) => (
                           <div 
                             key={product.id} 
