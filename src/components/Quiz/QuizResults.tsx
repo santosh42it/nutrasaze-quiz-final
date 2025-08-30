@@ -1162,9 +1162,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     <div className="min-h-screen bg-gray-50">
       {/* Header with Logo */}
       <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex justify-center items-center">
-            <div className="text-center mb-8">
+            <div className="text-center">
               <img 
                 src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Logo_3.png?v=1745153339" 
                 alt="NutraSage" 
