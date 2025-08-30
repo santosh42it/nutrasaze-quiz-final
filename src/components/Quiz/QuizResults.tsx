@@ -1359,7 +1359,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     </div>
                   </div>
 
-                  {/* Mobile scroll indicator - only show when scrolling is needed */}
+                  {/* Mobile scroll indicator - only show when needed */}
                   {matchedTags.length > 2 && (
                     <div className="md:hidden flex justify-center mt-3">
                       <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
@@ -1547,8 +1547,21 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       <img 
                         src="/attached_assets/Orange.svg" 
                         alt="Orange icon" 
-                        className="w-6 h-6"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        className="w-6 h-6 object-contain"
+                        style={{ 
+                          filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)',
+                          maxWidth: '24px',
+                          maxHeight: '24px'
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="8" fill="#1d0917"/>
+                            </svg>
+                          `;
+                        }}
                       />
                     </div>
                     <div className="text-left">
@@ -1560,14 +1573,29 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/NotePencil.svg" 
-                        alt="Note pencil icon" 
-                        className="w-6 h-6"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        src="/attached_assets/Barbell.svg" 
+                        alt="Barbell icon" 
+                        className="w-6 h-6 object-contain"
+                        style={{ 
+                          filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)',
+                          maxWidth: '24px',
+                          maxHeight: '24px'
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
+                              <rect x="2" y="10" width="20" height="4" rx="2" fill="#1d0917"/>
+                              <circle cx="6" cy="12" r="3" fill="#1d0917"/>
+                              <circle cx="18" cy="12" r="3" fill="#1d0917"/>
+                            </svg>
+                          `;
+                        }}
                       />
                     </div>
                     <div className="text-left">
-                      <div className="text-[#1d0917] font-medium">Personalised diet chart</div>
+                      <div className="text-[#1d0917] font-medium">Exercise plan</div>
                     </div>
                   </div>
 
@@ -1575,14 +1603,27 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Barbell.svg" 
-                        alt="Barbell icon" 
-                        className="w-6 h-6"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        src="/attached_assets/NotePencil.svg" 
+                        alt="Note pencil icon" 
+                        className="w-6 h-6 object-contain"
+                        style={{ 
+                          filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)',
+                          maxWidth: '24px',
+                          maxHeight: '24px'
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#1d0917"/>
+                            </svg>
+                          `;
+                        }}
                       />
                     </div>
                     <div className="text-left">
-                      <div className="text-[#1d0917] font-medium">Expert made exercise plan</div>
+                      <div className="text-[#1d0917] font-medium">Personalised diet chart</div>
                     </div>
                   </div>
 
@@ -1592,12 +1633,25 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       <img 
                         src="/attached_assets/Headset.svg" 
                         alt="Headset icon" 
-                        className="w-6 h-6"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        className="w-6 h-6 object-contain"
+                        style={{ 
+                          filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)',
+                          maxWidth: '24px',
+                          maxHeight: '24px'
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = `
+                            <svg className="w-6 h-6 text-[#1d0917]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 1C7.48 1 4 4.48 4 9v7c0 1.1.9 2 2 2h2v-8H6V9c0-3.31 2.69-6 6-6s6 2.69 6 6v1h-2v8h2c1.1 0 2-.9 2-2V9c0-4.52-3.48-8-8-8z" fill="#1d0917"/>
+                            </svg>
+                          `;
+                        }}
                       />
                     </div>
                     <div className="text-left">
-                      <div className="text-[#1d0917] font-medium">NutraSage support</div>
+                      <div className="text-[#1d0917] font-medium">Health support</div>
                     </div>
                   </div>
                 </div>
