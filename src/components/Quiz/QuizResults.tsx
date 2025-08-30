@@ -330,12 +330,20 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       console.log('Selected tag IDs:', selectedTagIds);
 
       // Fetch the actual tag data to display
-      const { data: tagsData } = await supabase
+      const { data: tagsData, error: tagsError } = await supabase
         .from('tags')
         .select('*')
         .in('id', selectedTagIds);
 
-      if (tagsData) {
+      if (tagsError) {
+        console.error('Error fetching tag data:', tagsError);
+      } else if (tagsData) {
+        console.log('Fetched tag data with icons:', tagsData.map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          icon: tag.icon,
+          iconPresent: !!tag.icon
+        })));
         setMatchedTags(tagsData); // Set the fetched tags to the state
       }
 
@@ -1273,18 +1281,34 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           <div className="relative z-10 text-center">
                             {/* Icon */}
                             <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center group-hover:from-[#913177]/20 group-hover:to-[#b54394]/20 transition-all duration-300">
-                              {tag.icon ? (
+                              {tag.icon && tag.icon.trim() !== '' ? (
                                 <img 
                                   src={tag.icon} 
                                   alt={tag.name}
-                                  className="w-6 h-6"
+                                  className="w-6 h-6 object-contain"
                                   style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                                  onError={(e) => {
+                                    console.log('Icon failed to load:', tag.icon);
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    // Show fallback icon
+                                    const fallbackIcon = e.target?.parentElement?.querySelector('.fallback-icon');
+                                    if (fallbackIcon) {
+                                      (fallbackIcon as HTMLElement).style.display = 'block';
+                                    }
+                                  }}
+                                  onLoad={() => {
+                                    console.log('Icon loaded successfully:', tag.icon);
+                                  }}
                                 />
-                              ) : (
-                                <svg className="w-6 h-6 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              )}
+                              ) : null}
+                              <svg 
+                                className={`w-6 h-6 text-[#913177] fallback-icon ${tag.icon && tag.icon.trim() !== '' ? 'hidden' : 'block'}`} 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
                             </div>
                             
                             {/* Tag name */}
@@ -1337,18 +1361,34 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                               <div className="text-center">
                                 {/* Icon */}
                                 <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-[#913177]/10 to-[#b54394]/10 rounded-xl flex items-center justify-center">
-                                  {tag.icon ? (
+                                  {tag.icon && tag.icon.trim() !== '' ? (
                                     <img 
                                       src={tag.icon} 
                                       alt={tag.name}
-                                      className="w-7 h-7"
+                                      className="w-7 h-7 object-contain"
                                       style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                                      onError={(e) => {
+                                        console.log('Mobile icon failed to load:', tag.icon);
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        // Show fallback icon
+                                        const fallbackIcon = e.target?.parentElement?.querySelector('.fallback-icon-mobile');
+                                        if (fallbackIcon) {
+                                          (fallbackIcon as HTMLElement).style.display = 'block';
+                                        }
+                                      }}
+                                      onLoad={() => {
+                                        console.log('Mobile icon loaded successfully:', tag.icon);
+                                      }}
                                     />
-                                  ) : (
-                                    <svg className="w-7 h-7 text-[#913177]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  )}
+                                  ) : null}
+                                  <svg 
+                                    className={`w-7 h-7 text-[#913177] fallback-icon-mobile ${tag.icon && tag.icon.trim() !== '' ? 'hidden' : 'block'}`} 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
                                 </div>
                                 
                                 {/* Tag name */}
