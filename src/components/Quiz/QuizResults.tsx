@@ -1237,13 +1237,135 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           {/* Your Key Health Focus Areas Section */}
           {matchedTags.length > 0 && (
-            <Card className="mb-6 border-0 shadow-sm bg-white">
+            <Card className="mb-6 border-0 shadow-sm bg-white overflow-hidden">
               <CardContent className="p-6 md:p-8">
-                <div className="text-center">
-                  <h2 className="text-xl font-medium text-[#1d0917] mb-4">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-3">
                     Your Key Health Focus Areas
                   </h2>
-                  <TagDisplay tags={matchedTags} className="mb-4" />
+                  <p className="text-gray-600 text-sm md:text-base">
+                    Based on your responses, we've identified these priority areas for your wellness journey
+                  </p>
+                </div>
+
+                {/* Horizontal Scrolling Tags Container */}
+                <div className="relative">
+                  {/* Desktop scroll indicator */}
+                  <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md">
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                      Scroll
+                    </div>
+                  </div>
+
+                  {/* Scrollable tags container */}
+                  <div className="overflow-x-auto pb-4 scrollbar-hide">
+                    <div className="flex gap-4 md:gap-6 px-1" style={{ minWidth: 'max-content' }}>
+                      {matchedTags.map((tag, index) => {
+                        // Generate gradient colors for each tag
+                        const gradients = [
+                          'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                          'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                          'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                          'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                          'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                          'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)'
+                        ];
+                        
+                        const tagGradient = gradients[index % gradients.length];
+                        
+                        return (
+                          <div
+                            key={tag.id}
+                            className="flex-shrink-0 group cursor-pointer transform hover:scale-105 transition-all duration-300"
+                          >
+                            <div 
+                              className="w-28 h-28 md:w-32 md:h-32 rounded-2xl p-4 md:p-5 flex flex-col items-center justify-center text-white shadow-lg relative overflow-hidden"
+                              style={{ background: tagGradient }}
+                            >
+                              {/* Background decoration */}
+                              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8"></div>
+                              <div className="absolute bottom-0 left-0 w-12 h-12 bg-white/5 rounded-full -ml-6 -mb-6"></div>
+                              
+                              {/* Icon container with proper SVG handling */}
+                              <div className="w-10 h-10 md:w-12 md:h-12 mb-2 md:mb-3 flex items-center justify-center relative z-10">
+                                {tag.icon_url ? (
+                                  <div className="w-full h-full">
+                                    <img
+                                      src={tag.icon_url}
+                                      alt={`${tag.name} icon`}
+                                      className="w-full h-full object-contain filter brightness-0 invert"
+                                      style={{
+                                        filter: 'brightness(0) saturate(100%) invert(100%)'
+                                      }}
+                                      onError={(e) => {
+                                        console.error('Tag icon failed to load:', tag.icon_url);
+                                        // Fallback to default icon if image fails
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const fallbackIcon = target.nextElementSibling as HTMLElement;
+                                        if (fallbackIcon) {
+                                          fallbackIcon.style.display = 'block';
+                                        }
+                                      }}
+                                    />
+                                    {/* Fallback icon (hidden by default) */}
+                                    <svg 
+                                      className="w-full h-full text-white hidden" 
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        strokeWidth={2} 
+                                        d="M13 10V3L4 14h7v7l9-11h-7z" 
+                                      />
+                                    </svg>
+                                  </div>
+                                ) : (
+                                  // Default icon if no icon_url
+                                  <svg 
+                                    className="w-full h-full text-white" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path 
+                                      strokeLinecap="round" 
+                                      strokeLinejoin="round" 
+                                      strokeWidth={2} 
+                                      d="M13 10V3L4 14h7v7l9-11h-7z" 
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              
+                              {/* Tag name */}
+                              <div className="text-xs md:text-sm font-semibold text-center leading-tight relative z-10">
+                                {tag.name}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Mobile scroll indicator */}
+                  <div className="md:hidden flex justify-center mt-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                      Swipe to see more
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
