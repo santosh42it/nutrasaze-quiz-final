@@ -91,17 +91,6 @@ export interface Banner {
   updated_at: string;
 }
 
-export interface Expectation {
-  id: number;
-  title: string;
-  description: string;
-  image_url: string;
-  order_index: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface QuizReport {
   totalResponses: number;
   ageDistribution: {

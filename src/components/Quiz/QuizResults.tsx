@@ -35,7 +35,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [activeBanner, setActiveBanner] = useState<Banner | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [expectations, setExpectations] = useState<any[]>([]); // State to store expectations
 
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {
@@ -578,102 +577,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     setRecommendedProducts(hardcodedProducts);
   };
 
-  // Function to fetch product details by IDs
-  const fetchProducts = async (productIds: string) => {
-    try {
-      const ids = productIds.split(',').map(id => parseInt(id.trim()));
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .in('id', ids)
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      setRecommendedProducts(data || []); // Use setRecommendedProducts here
-
-      // Calculate total price
-      const total = (data || []).reduce((sum, product) => sum + (product.srp || 0), 0);
-      setTotalPrice(total);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      await setFallbackProducts(); // Ensure fallback on error
-    }
-  };
-
-  // Function to fetch expectations from the database
-  const fetchExpectations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('expectations')
-        .select('*')
-        .eq('is_active', true)
-        .order('order_index');
-
-      if (error) {
-        console.error('Error fetching expectations:', error);
-        // Fallback to hardcoded data if Supabase query fails
-        setExpectations([
-          {
-            id: 1,
-            title: 'Personalised diet chart',
-            description: 'Get a customized nutrition plan tailored to your specific health goals and dietary preferences.',
-            image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Orange.svg?v=1756607641'
-          },
-          {
-            id: 2,
-            title: 'Expert made exercise plan',
-            description: 'Receive professionally designed workout routines that match your fitness level and objectives.',
-            image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Barbell.svg?v=1756607640'
-          },
-          {
-            id: 3,
-            title: 'NutraSage support',
-            description: 'Access our dedicated support team for guidance and assistance throughout your health journey.',
-            image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Headset.svg?v=1756607640'
-          },
-          {
-            id: 4,
-            title: 'Progress tracking',
-            description: 'Monitor your health improvements with detailed analytics and progress reports.',
-            image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/NotePencil.svg?v=1756607642'
-          }
-        ]);
-      } else {
-        setExpectations(data || []);
-      }
-    } catch (error) {
-      console.error('Exception fetching expectations:', error);
-      // Ensure fallback data is set in case of exception
-      setExpectations([
-        {
-          id: 1,
-          title: 'Personalised diet chart',
-          description: 'Get a customized nutrition plan tailored to your specific health goals and dietary preferences.',
-          image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Orange.svg?v=1756607641'
-        },
-        {
-          id: 2,
-          title: 'Expert made exercise plan',
-          description: 'Receive professionally designed workout routines that match your fitness level and objectives.',
-          image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Barbell.svg?v=1756607640'
-        },
-        {
-          id: 3,
-          title: 'NutraSage support',
-          description: 'Access our dedicated support team for guidance and assistance throughout your health journey.',
-          image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Headset.svg?v=1756607640'
-        },
-        {
-          id: 4,
-          title: 'Progress tracking',
-          description: 'Monitor your health improvements with detailed analytics and progress reports.',
-          image_url: 'https://cdn.shopify.com/s/files/1/0707/7766/7749/files/NotePencil.svg?v=1756607642'
-        }
-      ]);
-    }
-  };
-
   const saveResponses = async () => {
     // Prevent multiple submissions with more robust checking
     if (isSubmitting || isSubmitted) {
@@ -1060,13 +963,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const hasInitiatedSave = React.useRef(false);
 
   useEffect(() => {
-    // Fetch expectations when the component mounts, only if not viewing existing results
-    if (!isViewingExistingResults) {
-      fetchExpectations();
-    }
-  }, [isViewingExistingResults]); // Dependency array ensures this runs only once or when viewing status changes
-
-  useEffect(() => {
     // Only save if it's not an existing result view and we haven't initiated save
     if (!isViewingExistingResults && !isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
       hasInitiatedSave.current = true;
@@ -1171,8 +1067,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               setRecommendedProducts([
                 { 
                   id: 999, 
-                  name: "Essential Wellness Kit", 
-                  description: "Your personalized supplement selection", 
+                  name: "Health Essentials Kit", 
+                  description: "Your personalized nutrition solution", 
                   mrp: 1299, 
                   srp: 999, 
                   image_url: null, 
@@ -1670,81 +1566,150 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </CardContent>
           </Card>
 
-          {/* What's in your kit section */}
-          <Card className="mb-6 border-0 shadow-sm bg-white">
+          {/* What's in your kit Section */}
+          <Card className="mb-6 border-0 shadow-sm" style={{backgroundColor: '#E6EEFC'}}>
             <CardContent className="p-6 md:p-8">
               <div className="text-center mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
                   What's in your kit?
                 </h2>
-                <p className="text-gray-600 text-base md:text-lg">
-                  Your personalized supplement selection based on your health assessment
-                </p>
-              </div>
 
-              {/* Kit Contents */}
-              <div className="max-w-4xl mx-auto">
-                {recommendedProducts.length > 0 ? (
-                  <div className="space-y-4">
-                    {recommendedProducts.map((product, index) => (
-                      <div key={product.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex-shrink-0 w-12 h-12 bg-[#913177] text-white rounded-full flex items-center justify-center font-bold text-lg">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-[#1d0917] mb-1">
-                            {product.name}
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            {getDescriptionPreview(product.description)}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0 text-right">
-                          <div className="text-lg font-bold text-[#913177]">
-                            ₹{product.srp || product.mrp || '999'}
-                          </div>
-                          {product.mrp && product.srp && product.mrp > product.srp && (
-                            <div className="text-sm text-gray-500 line-through">
-                              ₹{product.mrp}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Kit benefits */}
-                    <div className="mt-6 p-4 bg-gradient-to-r from-[#f8f4f7] to-[#fff4fc] rounded-lg">
-                      <h4 className="font-semibold text-[#1d0917] mb-3 flex items-center">
-                        <span className="mr-2">🎁</span>
-                        What's included with your kit:
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#913177]">✓</span>
-                          <span>2 months diet plan <span className="text-[#913177] font-medium">Free</span></span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#913177]">✓</span>
-                          <span>Expert exercise plan <span className="text-[#913177] font-medium">Free</span></span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#913177]">✓</span>
-                          <span>NutraSage support <span className="text-[#913177] font-medium">Free</span></span>
-                        </div>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                  {/* 2 months nutrition plan */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <img 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Orange.svg?v=1756607641" 
+                        alt="Orange icon" 
+                        className="w-6 h-6"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        onError={(e) => {
+                          console.error('Orange icon failed to load from CDN');
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallbackIcon = target.nextElementSibling as HTMLElement;
+                          if (fallbackIcon) fallbackIcon.style.display = 'block';
+                        }}
+                      />
+                      {/* Fallback SVG icon */}
+                      <svg 
+                        className="w-6 h-6 text-[#913177] hidden" 
+                        fill="currentColor" 
+                        viewBox="0 0 256 256"
+                      >
+                        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.49,99.51a12,12,0,0,1,0,17l-32,32a12,12,0,0,1-17,0l-16-16a12,12,0,1,1,17-17L132,123l23.51-23.52A12,12,0,0,1,172.49,99.51Z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[#1d0917] font-medium">2 months nutrition plan</div>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center p-6 text-gray-500">
-                    <p>Loading your personalized kit contents...</p>
+
+                  {/* Personalised diet chart */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4 relative">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <img 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/NotePencil.svg?v=1756607642" 
+                        alt="Note pencil icon" 
+                        className="w-6 h-6"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        onError={(e) => {
+                          console.error('NotePencil icon failed to load from CDN');
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallbackIcon = target.nextElementSibling as HTMLElement;
+                          if (fallbackIcon) fallbackIcon.style.display = 'block';
+                        }}
+                      />
+                      {/* Fallback SVG icon */}
+                      <svg 
+                        className="w-6 h-6 text-[#913177] hidden" 
+                        fill="currentColor" 
+                        viewBox="0 0 256 256"
+                      >
+                        <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64,24,84.68Z" />
+                      </svg>
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="text-[#1d0917] font-medium">Personalised diet chart</div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                      FREE
+                    </div>
                   </div>
-                )}
+
+                  {/* Expert made exercise plan */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4 relative">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <img 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Barbell.svg?v=1756607640" 
+                        alt="Barbell icon" 
+                        className="w-6 h-6"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        onError={(e) => {
+                          console.error('Barbell icon failed to load from CDN');
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallbackIcon = target.nextElementSibling as HTMLElement;
+                          if (fallbackIcon) fallbackIcon.style.display = 'block';
+                        }}
+                      />
+                      {/* Fallback SVG icon */}
+                      <svg 
+                        className="w-6 h-6 text-[#913177] hidden" 
+                        fill="currentColor" 
+                        viewBox="0 0 256 256"
+                      >
+                        <path d="M248,120v16a8,8,0,0,1-8,8H224v24a16,16,0,0,1-16,16H192a16,16,0,0,1-16-16V144H80v24a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V144H16a8,8,0,0,1-8-8V120a8,8,0,0,1,8-8H32V88A16,16,0,0,1,48,72H64A16,16,0,0,1,80,88v24h96V88a16,16,0,0,1,16-16h16a16,16,0,0,1,16,16v24h16A8,8,0,0,1,248,120ZM64,88v80H48V88Zm144,80V88h16v80Z" />
+                      </svg>
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="text-[#1d0917] font-medium">Expert made exercise plan</div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                      FREE
+                    </div>
+                  </div>
+
+                  {/* NutraSage support */}
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4 relative">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <img 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Headset.svg?v=1756607640" 
+                        alt="Headset icon" 
+                        className="w-6 h-6"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
+                        onError={(e) => {
+                          console.error('Headset icon failed to load from CDN');
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallbackIcon = target.nextElementSibling as HTMLElement;
+                          if (fallbackIcon) fallbackIcon.style.display = 'block';
+                        }}
+                      />
+                      {/* Fallback SVG icon */}
+                      <svg 
+                        className="w-6 h-6 text-[#913177] hidden" 
+                        fill="currentColor" 
+                        viewBox="0 0 256 256"
+                      >
+                        <path d="M232,128v40a16,16,0,0,1-16,16H200a16,16,0,0,1-16-16V136a8,8,0,0,0-8-8H128a8,8,0,0,1,0-16h48a24,24,0,0,1,24,24v32h16V128A80,80,0,0,0,56,128v40h16V136a24,24,0,0,1,24-24h48a8,8,0,0,1,0,16H96a8,8,0,0,0-8,8v32a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V128a96,96,0,0,1,192,0Z" />
+                      </svg>
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="text-[#1d0917] font-medium">NutraSage support</div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                      FREE
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* What can you expect section */}
-          <Card className="mb-6 border-0 shadow-sm" style={{backgroundColor: '#E6EEFC'}}>
+          {/* What can you expect Section */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
             <CardContent className="p-6 md:p-8">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-8">
