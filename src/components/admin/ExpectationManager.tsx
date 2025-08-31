@@ -148,6 +148,7 @@ export const ExpectationManager: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium mb-1">Image URL</label>
+                <p className="text-xs text-gray-600 mb-2">Recommended image size: 480×320 px</p>
                 <input
                   type="url"
                   value={formData.image_url}
