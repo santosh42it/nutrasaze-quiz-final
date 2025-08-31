@@ -1,2 +1,13 @@
 
-/*    /index.html   200
+# Static assets
+/assets/* /assets/:splat 200
+/*.js /*.js 200
+/*.css /*.css 200
+/*.png /*.png 200
+/*.jpg /*.jpg 200
+/*.svg /*.svg 200
+
+# SPA routes
+/results/* /index.html 200
+/admin/* /index.html 200
+/* /index.html 200
