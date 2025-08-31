@@ -1578,19 +1578,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Orange.svg" 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Orange.svg?v=1756607641" 
                         alt="Orange icon" 
                         className="w-6 h-6"
                         style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                         onError={(e) => {
-                          console.error('Orange icon failed to load, trying fallback path');
+                          console.error('Orange icon failed to load from CDN');
                           const target = e.target as HTMLImageElement;
-                          // Try absolute path first
-                          if (!target.src.includes('/attached_assets/')) {
-                            target.src = '/attached_assets/Orange.svg';
-                            return;
-                          }
-                          // If still fails, hide image and show fallback
                           target.style.display = 'none';
                           const fallbackIcon = target.nextElementSibling as HTMLElement;
                           if (fallbackIcon) fallbackIcon.style.display = 'block';
@@ -1614,19 +1608,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/NotePencil.svg" 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/NotePencil.svg?v=1756607642" 
                         alt="Note pencil icon" 
                         className="w-6 h-6"
                         style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                         onError={(e) => {
-                          console.error('NotePencil icon failed to load, trying fallback path');
+                          console.error('NotePencil icon failed to load from CDN');
                           const target = e.target as HTMLImageElement;
-                          // Try absolute path first
-                          if (!target.src.includes('/attached_assets/')) {
-                            target.src = '/attached_assets/NotePencil.svg';
-                            return;
-                          }
-                          // If still fails, hide image and show fallback
                           target.style.display = 'none';
                           const fallbackIcon = target.nextElementSibling as HTMLElement;
                           if (fallbackIcon) fallbackIcon.style.display = 'block';
@@ -1650,19 +1638,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Barbell.svg" 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Barbell.svg?v=1756607640" 
                         alt="Barbell icon" 
                         className="w-6 h-6"
                         style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                         onError={(e) => {
-                          console.error('Barbell icon failed to load, trying fallback path');
+                          console.error('Barbell icon failed to load from CDN');
                           const target = e.target as HTMLImageElement;
-                          // Try absolute path first
-                          if (!target.src.includes('/attached_assets/')) {
-                            target.src = '/attached_assets/Barbell.svg';
-                            return;
-                          }
-                          // If still fails, hide image and show fallback
                           target.style.display = 'none';
                           const fallbackIcon = target.nextElementSibling as HTMLElement;
                           if (fallbackIcon) fallbackIcon.style.display = 'block';
@@ -1686,19 +1668,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
-                        src="/attached_assets/Headset.svg" 
+                        src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Headset.svg?v=1756607640" 
                         alt="Headset icon" 
                         className="w-6 h-6"
                         style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(47%) saturate(1434%) hue-rotate(298deg) brightness(96%) contrast(96%)' }}
                         onError={(e) => {
-                          console.error('Headset icon failed to load, trying fallback path');
+                          console.error('Headset icon failed to load from CDN');
                           const target = e.target as HTMLImageElement;
-                          // Try absolute path first
-                          if (!target.src.includes('/attached_assets/')) {
-                            target.src = '/attached_assets/Headset.svg';
-                            return;
-                          }
-                          // If still fails, hide image and show fallback
                           target.style.display = 'none';
                           const fallbackIcon = target.nextElementSibling as HTMLElement;
                           if (fallbackIcon) fallbackIcon.style.display = 'block';
