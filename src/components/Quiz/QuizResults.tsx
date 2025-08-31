@@ -1001,6 +1001,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting]); // Added dependencies
 
+  // Scroll to top when component loads
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Separate useEffect to load products when viewing existing results
   useEffect(() => {
     if (isViewingExistingResults && recommendedProducts.length === 0) {
