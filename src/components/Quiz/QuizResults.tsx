@@ -1441,18 +1441,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         {recommendedProducts.map((product, index) => (
                           <div 
                             key={product.id} 
-                            className="flex-shrink-0 bg-white rounded-xl shadow-lg overflow-hidden w-64 sm:w-72 md:w-80"
-                            style={{
-                              background: index === 0 
-                                ? 'linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%)' 
-                                : index === 1 
-                                  ? 'linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%)'
-                                  : 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
-                            }}
+                            className="flex-shrink-0 bg-white rounded-xl shadow-lg overflow-hidden w-64 sm:w-72 md:w-80 border border-gray-100"
                           >
                             {/* Product Image - 1:1 Aspect Ratio - Clickable */}
                             <div 
-                              className="aspect-square bg-white/20 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                              className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => handleViewMore(product)}
                             >
                               <img
