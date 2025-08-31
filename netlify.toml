@@ -1,4 +1,5 @@
 
+
 [build]
   publish = "dist"
   command = "npm run build"
@@ -7,7 +8,7 @@
   NODE_VERSION = "18"
   SECRETS_SCAN_ENABLED = "false"
 
-# Serve static assets with correct MIME types - these need to be first
+# Static asset headers - these need to be first
 [[headers]]
   for = "/assets/*"
   [headers.values]
@@ -18,21 +19,30 @@
   for = "*.js"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=86400"
 
 [[headers]]
   for = "*.mjs"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=86400"
 
 [[headers]]
   for = "*.css"
   [headers.values]
     Content-Type = "text/css"
+    Cache-Control = "public, max-age=86400"
 
-# Static asset redirects - these must come BEFORE SPA redirects
+# Static asset redirects - MUST be first and most specific
 [[redirects]]
   from = "/assets/*"
   to = "/assets/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*/*.js"
+  to = "/:splat/:splat.js"
   status = 200
   force = true
 
@@ -66,6 +76,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/*.ico"
+  to = "/:splat.ico"
+  status = 200
+  force = true
+
 # SPA routing redirects - these come AFTER static assets
 [[redirects]]
   from = "/results/*"
@@ -89,3 +105,4 @@
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
+
