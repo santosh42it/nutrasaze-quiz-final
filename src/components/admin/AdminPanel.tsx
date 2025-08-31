@@ -6,14 +6,15 @@ import { ProductManager } from './ProductManager';
 import { ResponsesReport } from './ResponsesReport';
 import { AnswerKeyManager } from './AnswerKeyManager';
 import { BannerManager } from './BannerManager';
+import { ExpectationManager } from './ExpectationManager';
 import { SuperAdminToggle } from './SuperAdminToggle';
 import { Button } from '../ui/button';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 export const AdminPanel: React.FC = () => {
-  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys } = useAdminStore();
-  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses' | 'answerkey' | 'banners'>('responses');
+  const { fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys, fetchExpectations } = useAdminStore();
+  const [activeTab, setActiveTab] = useState<'questions' | 'tags' | 'products' | 'responses' | 'answerkey' | 'banners' | 'expectations'>('responses');
   const [superAdminEnabled, setSuperAdminEnabled] = useState(false);
   const navigate = useNavigate();
 
@@ -25,7 +26,8 @@ export const AdminPanel: React.FC = () => {
     fetchQuestionTags();
     fetchOptionTags();
     fetchAnswerKeys();
-  }, [fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys]);
+    fetchExpectations();
+  }, [fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys, fetchExpectations]);
 
   const handleSignOut = async () => {
     try {
@@ -88,7 +90,8 @@ export const AdminPanel: React.FC = () => {
                 { key: 'tags', label: 'Tags', alwaysVisible: false },
                 { key: 'products', label: 'Products', alwaysVisible: false },
                 { key: 'answerkey', label: 'Answer Key', alwaysVisible: false },
-                { key: 'banners', label: 'Banners', alwaysVisible: false }
+                { key: 'banners', label: 'Banners', alwaysVisible: false },
+                { key: 'expectations', label: 'Expectations', alwaysVisible: false }
               ]
                 .filter(tab => tab.alwaysVisible || superAdminEnabled)
                 .map((tab) => (
@@ -121,6 +124,7 @@ export const AdminPanel: React.FC = () => {
             {activeTab === 'products' && superAdminEnabled && <ProductManager />}
             {activeTab === 'answerkey' && superAdminEnabled && <AnswerKeyManager />}
             {activeTab === 'banners' && superAdminEnabled && <BannerManager />}
+            {activeTab === 'expectations' && superAdminEnabled && <ExpectationManager />}
 
             {/* Show access denied message for edit tabs when super admin is disabled */}
             {(activeTab !== 'responses' && activeTab !== 'banners' && !superAdminEnabled) && (

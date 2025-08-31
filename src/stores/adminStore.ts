@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Question, QuestionOption, Tag, Product, OptionTag, AnswerKey } from '../types/database';
+import type { Question, QuestionOption, Tag, Product, OptionTag, QuestionTag, AnswerKey, Banner, Expectation } from '../types/database';
 
 interface AdminStore {
   // State
@@ -10,6 +10,9 @@ interface AdminStore {
   products: Product[];
   optionTags: OptionTag[];
   answerKeys: AnswerKey[]; // Added for answer key management
+  banners: Banner[];
+  expectations: Expectation[];
+
   loading: boolean;
   error: string | null;
 
@@ -22,7 +25,7 @@ interface AdminStore {
 
   // Option methods
   fetchOptions: () => Promise<void>;
-  addOption: (option: Omit<QuestionOption, 'id'>) => Promise<{ data: QuestionOption | null; error: Error | null }>;
+  addOption: (option: Partial<QuestionOption>) => Promise<{ data: QuestionOption | null; error: Error | null }>;
   updateOption: (id: number, updates: Partial<QuestionOption>) => Promise<{ data: QuestionOption | null; error: Error | null }>;
   deleteOption: (id: number) => Promise<void>;
 
@@ -42,11 +45,17 @@ interface AdminStore {
   fetchOptionTags: () => Promise<void>;
   updateOptionTags: (optionId: number, tagIds: number[]) => Promise<void>;
 
-  // Answer Key methods (Added)
+  // Answer Key methods
   fetchAnswerKeys: () => Promise<void>;
   addAnswerKey: (answerKey: Partial<AnswerKey>) => Promise<void>;
   updateAnswerKey: (id: number, updates: Partial<AnswerKey>) => Promise<void>;
   deleteAnswerKey: (id: number) => Promise<void>;
+
+  // Banner methods (Assuming this was intended based on typical admin stores)
+  fetchBanners: () => Promise<void>;
+
+  // Expectation methods
+  fetchExpectations: () => Promise<void>;
 
   // Question Tags methods (deprecated - moved to options)
   fetchQuestionTags: () => Promise<void>;
@@ -63,6 +72,9 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   products: [],
   optionTags: [],
   answerKeys: [], // Initialize answerKeys state
+  banners: [],
+  expectations: [],
+
   loading: false,
   error: null,
 
@@ -437,6 +449,36 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       throw error;
     }
   },
+
+  // Banner methods
+  fetchBanners: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('banners')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        set({ banners: data || [] });
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+      }
+    },
+
+    // Expectation methods
+    fetchExpectations: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('expectations')
+          .select('*')
+          .order('order_index');
+
+        if (error) throw error;
+        set({ expectations: data || [] });
+      } catch (error) {
+        console.error('Error fetching expectations:', error);
+      }
+    },
 
   // Question Tags methods
   fetchQuestionTags: async () => {
