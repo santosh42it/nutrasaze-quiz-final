@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
-import type { QuizResponse, QuizAnswer, Product, Tag, Banner } from "../../types/database";
+import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
 
@@ -35,6 +35,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [activeBanner, setActiveBanner] = useState<Banner | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expectations, setExpectations] = useState<Expectation[]>([]);
 
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {
@@ -513,6 +514,25 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   };
 
+  // Function to fetch expectations
+  const fetchExpectations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expectations')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index');
+
+      if (!error && data) {
+        setExpectations(data);
+      } else if (error) {
+        console.error('Error fetching expectations:', error);
+      }
+    } catch (error) {
+      console.error('Exception fetching expectations:', error);
+    }
+  };
+
   // Helper function to set fallback products
   const setFallbackProducts = async () => {
     console.log('Setting fallback products...');
@@ -933,6 +953,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Fetch active banner
       await fetchActiveBanner();
 
+      // Fetch expectations
+      await fetchExpectations();
+
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error in saveResponses:', {
@@ -1090,6 +1113,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             console.error('Error loading active banner:', bannerError);
             console.error('Stack trace:', bannerError?.stack);
             // Banner loading failure is not critical, continue without it
+          }
+
+          // Load expectations
+          console.log('Loading expectations...');
+          try {
+            await fetchExpectations();
+            console.log('Expectations loaded successfully');
+          } catch (expectationsError) {
+            console.error('=== EXPECTATIONS LOADING ERROR ===');
+            console.error('Error loading expectations:', expectationsError);
+            console.error('Stack trace:', expectationsError?.stack);
+            // Expectations loading failure is not critical, continue without them
           }
 
           console.log('=== EXISTING RESULTS DATA LOAD COMPLETE ===');
@@ -1716,172 +1751,96 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   What can you expect?
                 </h2>
 
-                {/* Desktop Layout - Vertical stacked */}
-                <div className="hidden md:block max-w-4xl mx-auto space-y-4">
-                  {/* Month 1 - Always show full image and text */}
-                  <div className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg group">
-                    <div 
-                      className="relative"
-                      style={{ backgroundColor: '#F1ECD7' }}
-                    >
-                      {/* Full width image that changes on hover */}
-                      <div className="relative h-48 md:h-56 overflow-hidden">
-                        <img 
-                          src="https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=800"
-                          alt="Month 1 - Energy boost"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=400";
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
-                      </div>
+                {expectations.length > 0 ? (
+                  <>
+                    {/* Desktop Layout - Vertical stacked */}
+                    <div className="hidden md:block max-w-4xl mx-auto space-y-4">
+                      {expectations.map((expectation, index) => {
+                        const backgroundColors = ['#F1ECD7', '#F3F6E3', '#F1ECD7'];
+                        const backgroundColor = backgroundColors[index % backgroundColors.length];
+                        
+                        return (
+                          <div key={expectation.id} className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg group">
+                            <div 
+                              className="relative"
+                              style={{ backgroundColor }}
+                            >
+                              {/* Full width image that changes on hover */}
+                              <div className="relative h-48 md:h-56 overflow-hidden">
+                                <img 
+                                  src={expectation.image_url}
+                                  alt={expectation.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
+                              </div>
 
-                      {/* Text content - always visible */}
-                      <div className="p-6">
-                        <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">Month 1</h3>
-                        <p className="text-[#6d6d6e] text-sm md:text-base leading-relaxed">
-                          After about 4 weeks you might start to feel higher energy levels. Your sleep patterns may start to improve.
-                        </p>
-                      </div>
+                              {/* Text content - always visible */}
+                              <div className="p-6">
+                                <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">{expectation.title}</h3>
+                                <p className="text-[#6d6d6e] text-sm md:text-base leading-relaxed">
+                                  {expectation.description}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
 
-                  {/* Month 3 - Always show text, image changes on hover */}
-                  <div className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg group">
-                    <div 
-                      className="relative"
-                      style={{ backgroundColor: '#F3F6E3' }}
-                    >
-                      {/* Full width image that changes on hover */}
-                      <div className="relative h-48 md:h-56 overflow-hidden">
-                        <img 
-                          src="https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=800"
-                          alt="Month 3 - Skin improvement"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=400";
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
+                    {/* Mobile Layout - Horizontal scroll with 1.5 cards visible */}
+                    <div className="md:hidden">
+                      <div className="overflow-x-auto pb-4 scrollbar-hide px-4">
+                        <div className="flex gap-4">
+                          {expectations.map((expectation, index) => {
+                            const backgroundColors = ['#F1ECD7', '#F3F6E3', '#F1ECD7'];
+                            const backgroundColor = backgroundColors[index % backgroundColors.length];
+                            
+                            return (
+                              <div key={expectation.id} className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor }}>
+                                <div className="relative h-48 overflow-hidden">
+                                  <img 
+                                    src={expectation.image_url}
+                                    alt={expectation.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg?auto=compress&cs=tinysrgb&w=400";
+                                    }}
+                                  />
+                                </div>
+                                <div className="p-4">
+                                  <h3 className="text-lg font-bold text-[#1d0917] mb-2">{expectation.title}</h3>
+                                  <p className="text-[#6d6d6e] text-sm leading-relaxed">
+                                    {expectation.description}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      {/* Text content - always visible */}
-                      <div className="p-6">
-                        <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">Month 3</h3>
-                        <p className="text-[#6d6d6e] text-sm md:text-base leading-relaxed">
-                          Within 3 months, you may start seeing improvements in your skin, hair and nails and faster recovery from workouts.
-                        </p>
-                      </div>
+                      {/* Mobile scroll indicator */}
+                      {expectations.length > 1 && (
+                        <div className="flex justify-center mt-3">
+                          <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                            Swipe to see more
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  </>
+                ) : (
+                  <div className="text-center p-6 text-gray-500">
+                    <p>Loading expectations...</p>
                   </div>
-
-                  {/* Month 6 - Always show text, image changes on hover */}
-                  <div className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg group">
-                    <div 
-                      className="relative"
-                      style={{ backgroundColor: '#F1ECD7' }}
-                    >
-                      {/* Full width image that changes on hover */}
-                      <div className="relative h-48 md:h-56 overflow-hidden">
-                        <img 
-                          src="https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=800"
-                          alt="Month 6 - Lifestyle transformation"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=400";
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-300"></div>
-                      </div>
-
-                      {/* Text content - always visible */}
-                      <div className="p-6">
-                        <h3 className="text-lg md:text-xl font-bold text-[#1d0917] mb-3">Month 6</h3>
-                        <p className="text-[#6d6d6e] text-sm md:text-base leading-relaxed">
-                          Once you go personalised, you'll never go back. You'll find yourself telling your friends & family the benefits of joining the future of personalised healthcare.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mobile Layout - Horizontal scroll with 1.5 cards visible */}
-                <div className="md:hidden">
-                  <div className="overflow-x-auto pb-4 scrollbar-hide px-4">
-                    <div className="flex gap-4">
-                      {/* Month 1 Card */}
-                      <div className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
-                        <div className="relative h-48 overflow-hidden">
-                          <img 
-                            src="https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=800"
-                            alt="Month 1 - Energy boost"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=400";
-                            }}
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h3 className="text-lg font-bold text-[#1d0917] mb-2">Month 1</h3>
-                          <p className="text-[#6d6d6e] text-sm leading-relaxed">
-                            After about 4 weeks you might start to feel higher energy levels. Your sleep patterns may start to improve.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Month 3 Card */}
-                      <div className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F3F6E3' }}>
-                        <div className="relative h-48 overflow-hidden">
-                          <img 
-                            src="https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=800"
-                            alt="Month 3 - Skin improvement"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=400";
-                            }}
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h3 className="text-lg font-bold text-[#1d0917] mb-2">Month 3</h3>
-                          <p className="text-[#6d6d6e] text-sm leading-relaxed">
-                            Within 3 months, you may start seeing improvements in your skin, hair and nails and faster recovery from workouts.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Month 6 Card */}
-                      <div className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
-                        <div className="relative h-48 overflow-hidden">
-                          <img 
-                            src="https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=800"
-                            alt="Month 6 - Lifestyle transformation"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=400";
-                            }}
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h3 className="text-lg font-bold text-[#1d0917] mb-2">Month 6</h3>
-                          <p className="text-[#6d6d6e] text-sm leading-relaxed">
-                            Once you go personalised, you'll never go back. You'll find yourself telling your friends & family the benefits of joining the future of personalised healthcare.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mobile scroll indicator */}
-                  <div className="flex justify-center mt-3">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                      Swipe to see more
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>

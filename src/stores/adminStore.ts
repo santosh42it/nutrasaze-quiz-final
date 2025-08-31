@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Question, QuestionOption, Tag, Product, OptionTag, AnswerKey } from '../types/database';
+import type { Question, QuestionOption, Tag, Product, AnswerKey, Banner, Expectation } from '../types/database';
 
 interface AdminStore {
   // State
@@ -12,6 +12,7 @@ interface AdminStore {
   answerKeys: AnswerKey[]; // Added for answer key management
   loading: boolean;
   error: string | null;
+  expectations: Expectation[];
 
   // Question methods
   fetchQuestions: () => Promise<void>;
@@ -42,7 +43,7 @@ interface AdminStore {
   fetchOptionTags: () => Promise<void>;
   updateOptionTags: (optionId: number, tagIds: number[]) => Promise<void>;
 
-  // Answer Key methods (Added)
+  // Answer Key methods
   fetchAnswerKeys: () => Promise<void>;
   addAnswerKey: (answerKey: Partial<AnswerKey>) => Promise<void>;
   updateAnswerKey: (id: number, updates: Partial<AnswerKey>) => Promise<void>;
@@ -53,6 +54,13 @@ interface AdminStore {
   addQuestionTag: (questionId: number, tagId: number) => Promise<void>;
   removeQuestionTag: (questionId: number, tagId: number) => Promise<void>;
   updateQuestionTags: (questionId: number, tagIds: number[]) => Promise<void>;
+
+  // Expectation methods
+  fetchExpectations: () => Promise<void>;
+  addExpectation: (expectation: Omit<Expectation, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  updateExpectation: (id: number, updates: Partial<Expectation>) => Promise<void>;
+  deleteExpectation: (id: number) => Promise<void>;
+  reorderExpectations: (expectations: Expectation[]) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
@@ -65,6 +73,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   answerKeys: [], // Initialize answerKeys state
   loading: false,
   error: null,
+  expectations: [],
+  setExpectations: (expectations) => set({ expectations }),
 
   fetchQuestions: async () => {
     set({ loading: true });
@@ -528,6 +538,94 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         });
       }
     } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  fetchExpectations: async () => {
+    set({ loading: true });
+    try {
+      const { data, error } = await supabase
+        .from('expectations')
+        .select('*')
+        .order('order_index');
+
+      if (error) throw error;
+      set({ expectations: data });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  addExpectation: async (expectation) => {
+    try {
+      const { error } = await supabase
+        .from('expectations')
+        .insert([expectation]);
+
+      if (error) throw error;
+      await get().fetchExpectations();
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  updateExpectation: async (id, updates) => {
+    try {
+      const { error } = await supabase
+        .from('expectations')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+      await get().fetchExpectations();
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  deleteExpectation: async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('expectations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set(state => ({
+        expectations: state.expectations.filter(expectation => expectation.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting expectation:', error);
+      throw error;
+    }
+  },
+
+  reorderExpectations: async (reorderedExpectations: Expectation[]) => {
+    try {
+      // Update local state immediately for smooth UI
+      set({ expectations: reorderedExpectations });
+
+      // Update each expectation's order_index in the database
+      const updates = reorderedExpectations.map((expectation, index) => ({
+        id: expectation.id,
+        order_index: index
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('expectations')
+          .update({ order_index: update.order_index })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      // Revert to original order on error
+      get().fetchExpectations();
       set({ error: (error as Error).message });
     }
   }
