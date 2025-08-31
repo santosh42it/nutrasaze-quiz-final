@@ -1803,7 +1803,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   <div className="overflow-x-auto pb-4 scrollbar-hide px-4">
                     <div className="flex gap-4">
                       {/* Month 1 Card */}
-                      <div className="flex-shrink-0 w-[calc(100vw-6rem)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
+                      <div className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
                         <div className="relative h-48 overflow-hidden">
                           <img 
                             src="https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -1823,7 +1823,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       </div>
 
                       {/* Month 3 Card */}
-                      <div className="flex-shrink-0 w-[calc(100vw-6rem)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F3F6E3' }}>
+                      <div className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F3F6E3' }}>
                         <div className="relative h-48 overflow-hidden">
                           <img 
                             src="https://images.pexels.com/photos/4046760/pexels-photo-4046760.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -1843,7 +1843,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       </div>
 
                       {/* Month 6 Card */}
-                      <div className="flex-shrink-0 w-[calc(100vw-6rem)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
+                      <div className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor: '#F1ECD7' }}>
                         <div className="relative h-48 overflow-hidden">
                           <img 
                             src="https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=800"
