@@ -1670,6 +1670,79 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             </CardContent>
           </Card>
 
+          {/* What's in your kit section */}
+          <Card className="mb-6 border-0 shadow-sm bg-white">
+            <CardContent className="p-6 md:p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-4">
+                  What's in your kit?
+                </h2>
+                <p className="text-gray-600 text-base md:text-lg">
+                  Your personalized supplement selection based on your health assessment
+                </p>
+              </div>
+
+              {/* Kit Contents */}
+              <div className="max-w-4xl mx-auto">
+                {recommendedProducts.length > 0 ? (
+                  <div className="space-y-4">
+                    {recommendedProducts.map((product, index) => (
+                      <div key={product.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="flex-shrink-0 w-12 h-12 bg-[#913177] text-white rounded-full flex items-center justify-center font-bold text-lg">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-[#1d0917] mb-1">
+                            {product.name}
+                          </h3>
+                          <p className="text-gray-600 text-sm">
+                            {getDescriptionPreview(product.description)}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <div className="text-lg font-bold text-[#913177]">
+                            ₹{product.srp || product.mrp || '999'}
+                          </div>
+                          {product.mrp && product.srp && product.mrp > product.srp && (
+                            <div className="text-sm text-gray-500 line-through">
+                              ₹{product.mrp}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Kit benefits */}
+                    <div className="mt-6 p-4 bg-gradient-to-r from-[#f8f4f7] to-[#fff4fc] rounded-lg">
+                      <h4 className="font-semibold text-[#1d0917] mb-3 flex items-center">
+                        <span className="mr-2">🎁</span>
+                        What's included with your kit:
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#913177]">✓</span>
+                          <span>2 months diet plan <span className="text-[#913177] font-medium">Free</span></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#913177]">✓</span>
+                          <span>Expert exercise plan <span className="text-[#913177] font-medium">Free</span></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#913177]">✓</span>
+                          <span>NutraSage support <span className="text-[#913177] font-medium">Free</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-6 text-gray-500">
+                    <p>Loading your personalized kit contents...</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* What can you expect section */}
           <Card className="mb-6 border-0 shadow-sm" style={{backgroundColor: '#E6EEFC'}}>
             <CardContent className="p-6 md:p-8">
