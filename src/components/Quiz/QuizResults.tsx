@@ -1919,7 +1919,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           {/* Free extras callout */}
           <div className="text-center mb-3 bg-gradient-to-r from-[#e8f4fd] to-[#f0f8ff] rounded-lg p-2 border border-[#913177]/20">
             <div className="text-[#913177] font-bold text-xs mb-1">🎁 FREE INCLUDED</div>
-            <div className="text-[#1d0917] text-xs">2 Months Diet + Exercise Plan</div>
+            <div className="text-[#1d0917] text-xs">2 months diet + exercise plan included with this package</div>
           </div>
 
           <div className="flex items-center justify-between mb-4">
