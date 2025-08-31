@@ -7,10 +7,11 @@
   NODE_VERSION = "18"
   SECRETS_SCAN_ENABLED = "false"
 
-# Serve static assets with correct MIME types
+# Serve static assets with correct MIME types - these need to be first
 [[headers]]
   for = "/assets/*"
   [headers.values]
+    Content-Type = "application/javascript"
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
@@ -28,7 +29,44 @@
   [headers.values]
     Content-Type = "text/css"
 
-# Handle SPA routing - this should be last
+# Static asset redirects - these must come BEFORE SPA redirects
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*.js"
+  to = "/:splat.js"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*.css"
+  to = "/:splat.css"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*.png"
+  to = "/:splat.png"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*.jpg"
+  to = "/:splat.jpg"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*.svg"
+  to = "/:splat.svg"
+  status = 200
+  force = true
+
+# SPA routing redirects - these come AFTER static assets
 [[redirects]]
   from = "/results/*"
   to = "/index.html"
@@ -39,6 +77,7 @@
   to = "/index.html"
   status = 200
 
+# Catch-all SPA redirect - this must be LAST
 [[redirects]]
   from = "/*"
   to = "/index.html"

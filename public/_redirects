@@ -1,13 +1,16 @@
 
-# Static assets
-/assets/* /assets/:splat 200
-/*.js /*.js 200
-/*.css /*.css 200
-/*.png /*.png 200
-/*.jpg /*.jpg 200
-/*.svg /*.svg 200
+# Static assets - MUST be first and most specific
+/assets/* /assets/:splat 200!
+/*.js /:splat.js 200!
+/*.css /:splat.css 200!
+/*.png /:splat.png 200!
+/*.jpg /:splat.jpg 200!
+/*.svg /:splat.svg 200!
+/*.ico /:splat.ico 200!
 
-# SPA routes
+# SPA routes - these come after static assets
 /results/* /index.html 200
 /admin/* /index.html 200
+
+# Catch-all SPA redirect - MUST be last
 /* /index.html 200
