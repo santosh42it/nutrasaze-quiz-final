@@ -1605,7 +1605,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                   </div>
 
                   {/* Personalised diet chart */}
-                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4 relative">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
                         src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/NotePencil.svg?v=1756607642" 
@@ -1629,13 +1629,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64,24,84.68Z" />
                       </svg>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left flex-1">
                       <div className="text-[#1d0917] font-medium">Personalised diet chart</div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                      FREE
                     </div>
                   </div>
 
                   {/* Expert made exercise plan */}
-                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4 relative">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
                         src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Barbell.svg?v=1756607640" 
@@ -1659,13 +1662,16 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         <path d="M248,120v16a8,8,0,0,1-8,8H224v24a16,16,0,0,1-16,16H192a16,16,0,0,1-16-16V144H80v24a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V144H16a8,8,0,0,1-8-8V120a8,8,0,0,1,8-8H32V88A16,16,0,0,1,48,72H64A16,16,0,0,1,80,88v24h96V88a16,16,0,0,1,16-16h16a16,16,0,0,1,16,16v24h16A8,8,0,0,1,248,120ZM64,88v80H48V88Zm144,80V88h16v80Z" />
                       </svg>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left flex-1">
                       <div className="text-[#1d0917] font-medium">Expert made exercise plan</div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                      FREE
                     </div>
                   </div>
 
                   {/* NutraSage support */}
-                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4">
+                  <div className="bg-[#f8f9fa] rounded-xl p-6 flex items-center gap-4 relative">
                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <img 
                         src="https://cdn.shopify.com/s/files/1/0707/7766/7749/files/Headset.svg?v=1756607640" 
@@ -1689,8 +1695,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         <path d="M232,128v40a16,16,0,0,1-16,16H200a16,16,0,0,1-16-16V136a8,8,0,0,0-8-8H128a8,8,0,0,1,0-16h48a24,24,0,0,1,24,24v32h16V128A80,80,0,0,0,56,128v40h16V136a24,24,0,0,1,24-24h48a8,8,0,0,1,0,16H96a8,8,0,0,0-8,8v32a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V128a96,96,0,0,1,192,0Z" />
                       </svg>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left flex-1">
                       <div className="text-[#1d0917] font-medium">NutraSage support</div>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                      FREE
                     </div>
                   </div>
                 </div>
