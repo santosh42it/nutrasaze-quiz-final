@@ -1539,7 +1539,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         <span className="text-2xl text-gray-500 line-through ml-3">₹{originalPrice}</span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600 mb-3">(Inclusive of all taxes)</div>
+                    <div className="text-sm text-gray-600 mb-2">MRP incl. of all taxes</div>
+                    <div className="text-sm text-[#913177] font-medium mb-3">
+                      2 months diet + exercise plan included with this package
+                    </div>
                     {discountPercentage > 0 && (
                       <div className="text-lg font-bold text-[#913177] mb-6">
                         🔥 SAVE ₹{originalPrice - totalPrice} ({discountPercentage}% OFF)
@@ -1551,7 +1554,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           window.location.href = buyNowUrl;
                         }
                       }}
-                      className="w-full max-w-md h-14 text-lg font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+                      className="w-full max-w-lg h-16 text-xl font-bold bg-gradient-to-r from-[#913177] to-[#b54394] hover:from-[#7d2b65] hover:to-[#9d3b80] text-white rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
                     >
                       Buy Now
                     </Button>
