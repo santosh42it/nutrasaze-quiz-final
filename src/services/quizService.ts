@@ -7,6 +7,14 @@ export interface QuizQuestionFromDB extends DBQuestion {
   options?: QuestionOption[];
 }
 
+export interface ProgressiveSaveData {
+  responseId?: number;
+  email?: string;
+  name?: string;
+  contact?: string;
+  age?: number;
+}
+
 export const loadQuestionsFromDatabase = async (): Promise<Question[]> => {
   try {
     console.log('Loading questions from database...');
@@ -84,6 +92,117 @@ export const loadQuestionsFromDatabase = async (): Promise<Question[]> => {
 
   } catch (error) {
     console.error('Error loading questions from database:', error);
+    throw error;
+  }
+};
+
+// Progressive auto-save functions
+export const createPartialResponse = async (email: string): Promise<number> => {
+  try {
+    console.log('Creating partial response for email:', email);
+    
+    const { data, error } = await supabase
+      .from('quiz_responses')
+      .insert([
+        {
+          name: '',
+          email: email,
+          contact: '',
+          age: 0,
+          status: 'partial'
+        }
+      ])
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error creating partial response:', error);
+      throw error;
+    }
+
+    console.log('Created partial response with ID:', data.id);
+    return data.id;
+  } catch (error) {
+    console.error('Error in createPartialResponse:', error);
+    throw error;
+  }
+};
+
+export const updatePartialResponse = async (
+  responseId: number, 
+  updates: Partial<{ name: string; contact: string; age: number }>
+): Promise<void> => {
+  try {
+    console.log('Updating partial response:', responseId, updates);
+    
+    const { error } = await supabase
+      .from('quiz_responses')
+      .update(updates)
+      .eq('id', responseId);
+
+    if (error) {
+      console.error('Error updating partial response:', error);
+      throw error;
+    }
+
+    console.log('Updated partial response successfully');
+  } catch (error) {
+    console.error('Error in updatePartialResponse:', error);
+    throw error;
+  }
+};
+
+export const saveQuizAnswer = async (
+  responseId: number,
+  questionId: number | string,
+  answerText: string,
+  additionalInfo?: string,
+  fileUrl?: string
+): Promise<void> => {
+  try {
+    console.log('Saving quiz answer:', { responseId, questionId, answerText });
+    
+    const { error } = await supabase
+      .from('quiz_answers')
+      .insert([
+        {
+          response_id: responseId,
+          question_id: parseInt(questionId.toString()),
+          answer_text: answerText,
+          additional_info: additionalInfo || null,
+          file_url: fileUrl || null
+        }
+      ]);
+
+    if (error) {
+      console.error('Error saving quiz answer:', error);
+      throw error;
+    }
+
+    console.log('Saved quiz answer successfully');
+  } catch (error) {
+    console.error('Error in saveQuizAnswer:', error);
+    throw error;
+  }
+};
+
+export const completeQuizResponse = async (responseId: number): Promise<void> => {
+  try {
+    console.log('Completing quiz response:', responseId);
+    
+    const { error } = await supabase
+      .from('quiz_responses')
+      .update({ status: 'completed' })
+      .eq('id', responseId);
+
+    if (error) {
+      console.error('Error completing quiz response:', error);
+      throw error;
+    }
+
+    console.log('Completed quiz response successfully');
+  } catch (error) {
+    console.error('Error in completeQuizResponse:', error);
     throw error;
   }
 };

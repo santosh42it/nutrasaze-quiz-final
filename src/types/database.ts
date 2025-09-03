@@ -4,6 +4,7 @@ export interface QuizResponse {
   email: string;
   contact: string;
   age: number;
+  status: 'partial' | 'completed';
   created_at?: string;
   updated_at?: string;
 }
