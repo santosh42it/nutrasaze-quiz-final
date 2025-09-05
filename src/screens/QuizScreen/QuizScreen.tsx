@@ -165,12 +165,12 @@ export const QuizScreen = (): JSX.Element => {
       // Save email immediately when entered (question type email)
       if (currentQuestionData.type === "email" && finalValue) {
         console.log('Progressive save: Saving email');
-        await handleEmailSave(finalValue);
+        await handleEmailSave(finalValue).catch(err => console.error('Email save error:', err));
       }
 
       // Save name, contact, and age using the new handleBasicInfoSave
       else if (["text", "tel", "number"].includes(currentQuestionData.type) && finalValue) {
-        await handleBasicInfoSave(currentQuestionData.id, finalValue);
+        await handleBasicInfoSave(currentQuestionData.id, finalValue).catch(err => console.error('Basic info save error:', err));
       }
 
       // Save all other answers (only after we have a response ID)
@@ -180,14 +180,14 @@ export const QuizScreen = (): JSX.Element => {
           currentQuestionData.id,
           answers[currentQuestionData.id] || finalValue,
           additionalInfo || undefined
-        );
+        ).catch(err => console.error('Answer save error:', err));
       } else if (saveData.responseId && currentQuestionData.type !== "select") {
         // Also save other types of answers if they are not basic info and have a responseId
         await handleAnswerSave(
           currentQuestionData.id,
           finalValue,
           additionalInfo || undefined
-        );
+        ).catch(err => console.error('Answer save error:', err));
       }
 
     } catch (error) {
@@ -236,7 +236,7 @@ export const QuizScreen = (): JSX.Element => {
     try {
       if (saveData.responseId) {
         console.log('Progressive save: Saving option selection for question', currentQuestionData.id);
-        await handleAnswerSave(currentQuestionData.id, option);
+        await handleAnswerSave(currentQuestionData.id, option).catch(err => console.error('Option save error:', err));
       }
     } catch (error) {
       console.error('Progressive save error for option:', error);
@@ -370,7 +370,6 @@ export const QuizScreen = (): JSX.Element => {
               handleOptionSelect={handleOptionSelect}
               handleKeyPress={handleKeyPress}
               handleFileChange={handleFileChange}
-              handleBasicInfoSave={handleBasicInfoSave} // Pass the new handler
             />
           </div>
         ) : (

@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
-import { useProgressiveSave } from '../../hooks/useProgressiveSave'; // Import the hook
+import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -1635,7 +1635,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         fill="currentColor" 
                         viewBox="0 0 256 256"
                       >
-                        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.49,99.51a12,12,0,0,1,0,17l-32,32a12,12,0,0,1-17,0l-16-16a12,12,0,1,1,17-17L132,123l23.51-23.52A12,12,0,0,1,172.49,99.51Z" />
+                        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm44.49-116.49a12,12,0,0,1,0,17l-32,32a12,12,0,0,1-17,0l-16-16a12,12,0,1,1,17-17L132,123l23.51-23.52A12,12,0,0,1,172.49,99.51Z" />
                       </svg>
                     </div>
                     <div className="text-left">

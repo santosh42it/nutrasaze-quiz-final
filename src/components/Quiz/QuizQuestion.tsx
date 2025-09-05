@@ -29,37 +29,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
-
-    // Progressive save for email
-    if (question.type === 'email' && handleEmailSave && value.includes('@')) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(value)) {
-        handleEmailSave(value).catch(console.error);
-      }
-    }
-
-    // Progressive save for name and contact using basic info save
-    if (handleBasicInfoSave) {
-      if (question.type === 'text' && question.question?.toLowerCase().includes('name') && value.trim().length > 1) {
-        handleBasicInfoSave('name', value).catch(console.error);
-      } else if (question.type === 'tel' && value.length >= 8) { // Save earlier for contact
-        handleBasicInfoSave('contact', value).catch(console.error);
-      }
-    }
-
-    // Progressive save for name, contact, age using the existing method
-    if (handleUserInfoSave) {
-      if (question.type === 'text' && question.question?.toLowerCase().includes('name') && value.trim().length > 1) {
-        handleUserInfoSave(value).catch(console.error);
-      } else if (question.type === 'tel' && value.length === 10) {
-        handleUserInfoSave(undefined, value).catch(console.error);
-      } else if (question.type === 'number' && value.trim()) {
-        const age = parseInt(value);
-        if (!isNaN(age) && age > 0) {
-          handleUserInfoSave(undefined, undefined, age).catch(console.error);
-        }
-      }
-    }
+    setValidationError("");
   };
 
   return (
@@ -89,10 +59,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                   {question.options?.map((option) => (
                     <Button
                       key={option}
-                      onClick={() => {
-                        handleOptionSelect(option);
-                        handleInputChange(option); // Call handleInputChange for select options as well
-                      }}
+                      onClick={() => handleOptionSelect(option)}
                       className={`w-full h-auto min-h-[56px] md:min-h-[64px] py-4 md:py-5 px-5 md:px-6 rounded-2xl border-2 ${
                         answers[question.id] === option
                           ? "bg-[#913177] border-[#913177] text-white shadow-lg"
@@ -112,10 +79,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                           </label>
                           <textarea
                             value={additionalInfo}
-                            onChange={(e) => {
-                                setAdditionalInfo(e.target.value)
-                                handleInputChange(e.target.value) // Also trigger progressive save for textarea
-                            }}
+                            onChange={(e) => setAdditionalInfo(e.target.value)}
                             placeholder={question.textAreaPlaceholder || "Please provide details..."}
                             className="w-full h-32 md:h-36 px-5 py-4 rounded-2xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 resize-none focus:outline-none focus:border-[#913177] backdrop-blur-none text-base transition-all duration-200"
                             style={{ backdropFilter: 'none' }}
@@ -178,15 +142,13 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                           // For phone numbers: only allow digits, max 10 characters
                           const digitsOnly = e.target.value.replace(/\D/g, '');
                           const limitedValue = digitsOnly.slice(0, 10);
-                          handleInputChange(limitedValue); // Use handleInputChange
-                          setValidationError("");
+                          handleInputChange(limitedValue);
                           return;
                         }
 
                         const value = e.target.value;
-                        if ((question.id === "age" || question.id === "4") && !/^\d*$/.test(value)) return;
-                        handleInputChange(value); // Use handleInputChange
-                        setValidationError("");
+                        if ((question.id === "age" || question.id === "41") && !/^\d*$/.test(value)) return;
+                        handleInputChange(value);
                       }}
                       onKeyPress={handleKeyPress}
                       className={`w-full h-14 md:h-16 ${
