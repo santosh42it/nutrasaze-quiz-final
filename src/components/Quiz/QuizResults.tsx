@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
-import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook
+// import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook - removed due to incorrect usage
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -38,8 +38,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expectations, setExpectations] = useState<Expectation[]>([]);
 
-  // Use the progressive save hook
-  const { progressiveSaveData, handleQuizComplete } = useProgressiveSave(answers, userInfo);
+  // Use the progressive save hook - removed usage as it was incorrect
+  // const { progressiveSaveData, handleQuizComplete } = useProgressiveSave(answers, userInfo);
 
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {

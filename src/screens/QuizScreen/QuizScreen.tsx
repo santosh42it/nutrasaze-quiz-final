@@ -166,13 +166,9 @@ export const QuizScreen = (): JSX.Element => {
       // Start progressive save from name question (first question)
       if (currentQuestionData.id === "38" && currentQuestionData.type === "text" && finalValue) {
         console.log('Progressive save: Starting with name (first question)');
-        // Create a temporary response with placeholder email and save name
-        const placeholderEmail = `temp_${Date.now()}@placeholder.com`;
-        await handleEmailSave(placeholderEmail).catch(err => console.error('Placeholder email save error:', err));
-        // Then save the name
         await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue).catch(err => console.error('Name save error:', err));
       }
-      // Save email and update placeholder if needed
+      // Save email
       else if (currentQuestionData.type === "email" && finalValue) {
         console.log('Progressive save: Saving email');
         await handleEmailSave(finalValue).catch(err => console.error('Email save error:', err));
