@@ -30,7 +30,8 @@ export const QuizScreen = (): JSX.Element => {
     handleEmailSave,
     handleUserInfoSave,
     handleAnswerSave,
-    handleQuizComplete
+    handleQuizComplete,
+    handleBasicInfoSave
   } = useProgressiveSave();
 
   // Function to handle basic information saving (name, contact, age)
@@ -162,14 +163,22 @@ export const QuizScreen = (): JSX.Element => {
 
     // Progressive auto-save functionality
     try {
-      // Save email immediately when entered (question type email)
-      if (currentQuestionData.type === "email" && finalValue) {
+      // Start progressive save from name question (first question)
+      if (currentQuestionData.id === "38" && currentQuestionData.type === "text" && finalValue) {
+        console.log('Progressive save: Starting with name (first question)');
+        // Create a temporary response with placeholder email and save name
+        const placeholderEmail = `temp_${Date.now()}@placeholder.com`;
+        await handleEmailSave(placeholderEmail).catch(err => console.error('Placeholder email save error:', err));
+        // Then save the name
+        await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue).catch(err => console.error('Name save error:', err));
+      }
+      // Save email and update placeholder if needed
+      else if (currentQuestionData.type === "email" && finalValue) {
         console.log('Progressive save: Saving email');
         await handleEmailSave(finalValue).catch(err => console.error('Email save error:', err));
       }
-
-      // Save name, contact, and age using the new handleBasicInfoSaveLocal
-      else if (["text", "tel", "number"].includes(currentQuestionData.type) && finalValue) {
+      // Save other basic info (contact, age)
+      else if (["tel", "number"].includes(currentQuestionData.type) && finalValue) {
         await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue).catch(err => console.error('Basic info save error:', err));
       }
 
