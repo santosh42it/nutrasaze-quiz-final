@@ -70,14 +70,29 @@ export const useProgressiveSave = () => {
         setIsSaving(false);
       }
     } else if (saveData.responseId) {
-      // We have a response ID, just update the field
-      await handleUserInfoSave(
-        field === 'name' ? value : saveData.name,
-        field === 'contact' ? value : saveData.contact,
-        field === 'age' ? parseInt(value) : saveData.age
-      );
+      // We have a response ID, just update the field directly
+      try {
+        setIsSaving(true);
+        console.log('Progressive save: User info', { field, value });
+        
+        const updates: any = {};
+        updates[field] = field === 'age' ? parseInt(value) : value;
+        
+        await updatePartialResponse(saveData.responseId, updates);
+        setSaveData(prev => ({ 
+          ...prev, 
+          [field]: field === 'age' ? parseInt(value) : value
+        }));
+        
+        console.log('Progressive save: Updated user info');
+      } catch (error) {
+        console.error('Error saving user info:', error);
+        throw error;
+      } finally {
+        setIsSaving(false);
+      }
     }
-  }, [saveData, handleUserInfoSave]);
+  }, [saveData]);
 
   const handleUserInfoSave = useCallback(async (name?: string, contact?: string, age?: number) => {
     if (!saveData.responseId) {

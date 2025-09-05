@@ -34,19 +34,19 @@ export const QuizScreen = (): JSX.Element => {
   } = useProgressiveSave();
 
   // Function to handle basic information saving (name, contact, age)
-  const handleBasicInfoSave = async (questionId: string, value: string): Promise<void> => {
+  const handleBasicInfoSaveLocal = async (questionId: string, value: string): Promise<void> => {
     console.log(`Attempting to save basic info for question ${questionId} with value: ${value}`);
     try {
-      if (questionId === "38") { // Assuming '38' is the ID for the name question
+      if (questionId === "38") { // Name question
         console.log('Progressive save: Saving name');
-        await handleUserInfoSave(value);
-      } else if (questionId === "3") { // Assuming '3' is the ID for the contact question
+        await handleBasicInfoSave('name', value);
+      } else if (questionId === "3") { // Contact question
         console.log('Progressive save: Saving contact');
         const cleanContact = value.replace('+91', '');
-        await handleUserInfoSave(undefined, cleanContact);
-      } else if (questionId === "41") { // Assuming '41' is the ID for the age question
+        await handleBasicInfoSave('contact', cleanContact);
+      } else if (questionId === "41") { // Age question
         console.log('Progressive save: Saving age');
-        await handleUserInfoSave(undefined, undefined, parseInt(value, 10));
+        await handleBasicInfoSave('age', value);
       }
     } catch (error) {
       console.error(`Progressive save error for basic info (QID ${questionId}):`, error);
@@ -168,9 +168,9 @@ export const QuizScreen = (): JSX.Element => {
         await handleEmailSave(finalValue).catch(err => console.error('Email save error:', err));
       }
 
-      // Save name, contact, and age using the new handleBasicInfoSave
+      // Save name, contact, and age using the new handleBasicInfoSaveLocal
       else if (["text", "tel", "number"].includes(currentQuestionData.type) && finalValue) {
-        await handleBasicInfoSave(currentQuestionData.id, finalValue).catch(err => console.error('Basic info save error:', err));
+        await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue).catch(err => console.error('Basic info save error:', err));
       }
 
       // Save all other answers (only after we have a response ID)

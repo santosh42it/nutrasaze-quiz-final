@@ -1093,7 +1093,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               setRecommendedProducts([
                 { 
                   id: 999, 
-                  name: "Health Essentials Kit", 
+                  name: "Essential Wellness Kit", 
                   description: "Your personalized nutrition solution", 
                   mrp: 1299, 
                   srp: 999, 
@@ -1731,7 +1731,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                         fill="currentColor" 
                         viewBox="0 0 256 256"
                       >
-                        <path d="M232,128v40a16,16,0,0,1-16,16H200a16,16,0,0,1-16-16V136a8,8,0,0,0-8-8H128a8,8,0,0,1,0-16h48a24,24,0,0,1,24,24v32h16V128A80,80,0,0,0,56,128v40h16V136a24,24,0,0,1,24-24h48a8,8,0,0,1,0,16H96a8,8,0,0,0-8,8v32a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V128a96,96,0,0,1,192,0Z" />
+                        <path d="M232,128v40a16,16,0,0,1-16,16H200a16,16,0,0,1-16-16V136a8,8,0,0,0-8-8H128a8,8,0,0,1,0-16h48a24,24,0,0,1,24,24v32h16V128A80,80,0,0,0,56,128v40h16V136a24,24,0,0,1,24-24h48a8,8,0,0,1,0,16H96a8,8,0,0,1-8,8v32a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V128a96,96,0,0,1,192,0Z" />
                       </svg>
                     </div>
                     <div className="text-left flex-1">
