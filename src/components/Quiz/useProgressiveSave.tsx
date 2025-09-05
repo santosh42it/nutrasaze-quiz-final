@@ -17,6 +17,18 @@ export const useProgressiveSave = () => {
       setIsSaving(true);
       console.log('Progressive save: Email entered', email);
       
+      // If we already have a response with placeholder email, update it instead of creating new one
+      if (saveData.responseId && saveData.email && saveData.email.includes('placeholder.com')) {
+        console.log('Progressive save: Updating placeholder response with real email');
+        await updatePartialResponse(saveData.responseId, { email });
+        setSaveData(prev => ({ ...prev, email }));
+        return saveData.responseId;
+      } else if (saveData.responseId) {
+        // We already have a real response, just return the ID
+        console.log('Progressive save: Using existing response', saveData.responseId);
+        return saveData.responseId;
+      }
+      
       const responseId = await createPartialResponse(email);
       setSaveData(prev => ({ ...prev, responseId, email }));
       
@@ -28,7 +40,44 @@ export const useProgressiveSave = () => {
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [saveData]);
+
+  const handleBasicInfoSave = useCallback(async (field: string, value: string) => {
+    // If we don't have a response ID yet, try to create one with a placeholder email
+    if (!saveData.responseId && !saveData.email) {
+      try {
+        setIsSaving(true);
+        console.log('Progressive save: Basic info entered without email, creating placeholder response');
+        
+        // Create a temporary response with placeholder email
+        const placeholderEmail = `temp_${Date.now()}@placeholder.com`;
+        const responseId = await createPartialResponse(placeholderEmail);
+        setSaveData(prev => ({ ...prev, responseId, email: placeholderEmail }));
+        
+        console.log('Progressive save: Created placeholder response', responseId);
+        
+        // Now save the basic info
+        const updates: any = {};
+        updates[field] = value;
+        await updatePartialResponse(responseId, updates);
+        setSaveData(prev => ({ ...prev, [field]: value }));
+        
+        console.log('Progressive save: Saved basic info', field, value);
+      } catch (error) {
+        console.error('Error saving basic info:', error);
+        throw error;
+      } finally {
+        setIsSaving(false);
+      }
+    } else if (saveData.responseId) {
+      // We have a response ID, just update the field
+      await handleUserInfoSave(
+        field === 'name' ? value : saveData.name,
+        field === 'contact' ? value : saveData.contact,
+        field === 'age' ? parseInt(value) : saveData.age
+      );
+    }
+  }, [saveData, handleUserInfoSave]);
 
   const handleUserInfoSave = useCallback(async (name?: string, contact?: string, age?: number) => {
     if (!saveData.responseId) {
@@ -116,6 +165,7 @@ export const useProgressiveSave = () => {
     handleEmailSave,
     handleUserInfoSave,
     handleAnswerSave,
-    handleQuizComplete
+    handleQuizComplete,
+    handleBasicInfoSave
   };
 };

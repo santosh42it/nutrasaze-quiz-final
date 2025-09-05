@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -24,15 +23,50 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
   handleKeyPress,
   handleFileChange,
 }) => {
-  const showAdditionalInputs = (question.hasTextArea || question.hasFileUpload) && 
-                              answers[question.id] && 
+  const showAdditionalInputs = (question.hasTextArea || question.hasFileUpload) &&
+                              answers[question.id] &&
                               answers[question.id].toLowerCase().includes("yes");
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+
+    // Progressive save for email
+    if (question.type === 'email' && handleEmailSave && value.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(value)) {
+        handleEmailSave(value).catch(console.error);
+      }
+    }
+
+    // Progressive save for name and contact using basic info save
+    if (handleBasicInfoSave) {
+      if (question.type === 'text' && question.question?.toLowerCase().includes('name') && value.trim().length > 1) {
+        handleBasicInfoSave('name', value).catch(console.error);
+      } else if (question.type === 'tel' && value.length >= 8) { // Save earlier for contact
+        handleBasicInfoSave('contact', value).catch(console.error);
+      }
+    }
+
+    // Progressive save for name, contact, age using the existing method
+    if (handleUserInfoSave) {
+      if (question.type === 'text' && question.question?.toLowerCase().includes('name') && value.trim().length > 1) {
+        handleUserInfoSave(value).catch(console.error);
+      } else if (question.type === 'tel' && value.length === 10) {
+        handleUserInfoSave(undefined, value).catch(console.error);
+      } else if (question.type === 'number' && value.trim()) {
+        const age = parseInt(value);
+        if (!isNaN(age) && age > 0) {
+          handleUserInfoSave(undefined, undefined, age).catch(console.error);
+        }
+      }
+    }
+  };
 
   return (
     <section className="relative w-full min-h-screen bg-[#1d0917] flex flex-col">
-      <ProgressBar 
-        currentQuestion={currentQuestion} 
-        totalQuestions={totalQuestions} 
+      <ProgressBar
+        currentQuestion={currentQuestion}
+        totalQuestions={totalQuestions}
       />
 
       <div className="flex-1 flex items-center justify-center px-6 md:px-12 py-6 md:py-12">
@@ -55,7 +89,10 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                   {question.options?.map((option) => (
                     <Button
                       key={option}
-                      onClick={() => handleOptionSelect(option)}
+                      onClick={() => {
+                        handleOptionSelect(option);
+                        handleInputChange(option); // Call handleInputChange for select options as well
+                      }}
                       className={`w-full h-auto min-h-[56px] md:min-h-[64px] py-4 md:py-5 px-5 md:px-6 rounded-2xl border-2 ${
                         answers[question.id] === option
                           ? "bg-[#913177] border-[#913177] text-white shadow-lg"
@@ -65,7 +102,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       <span className="block w-full text-left">{option}</span>
                     </Button>
                   ))}
-                  
+
                   {showAdditionalInputs && (
                     <div className="space-y-6 mt-6 max-w-[500px] mx-auto">
                       {question.hasTextArea && (
@@ -75,7 +112,10 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                           </label>
                           <textarea
                             value={additionalInfo}
-                            onChange={(e) => setAdditionalInfo(e.target.value)}
+                            onChange={(e) => {
+                                setAdditionalInfo(e.target.value)
+                                handleInputChange(e.target.value) // Also trigger progressive save for textarea
+                            }}
                             placeholder={question.textAreaPlaceholder || "Please provide details..."}
                             className="w-full h-32 md:h-36 px-5 py-4 rounded-2xl border-2 border-white/30 bg-white/15 text-white placeholder:text-white/70 resize-none focus:outline-none focus:border-[#913177] backdrop-blur-none text-base transition-all duration-200"
                             style={{ backdropFilter: 'none' }}
@@ -138,14 +178,14 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                           // For phone numbers: only allow digits, max 10 characters
                           const digitsOnly = e.target.value.replace(/\D/g, '');
                           const limitedValue = digitsOnly.slice(0, 10);
-                          setInputValue(limitedValue);
+                          handleInputChange(limitedValue); // Use handleInputChange
                           setValidationError("");
                           return;
                         }
-                        
+
                         const value = e.target.value;
                         if ((question.id === "age" || question.id === "4") && !/^\d*$/.test(value)) return;
-                        setInputValue(value);
+                        handleInputChange(value); // Use handleInputChange
                         setValidationError("");
                       }}
                       onKeyPress={handleKeyPress}
@@ -177,7 +217,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                   >
                     Continue
                   </Button>
-                  
+
                   {/* Trust Indicator for Contact Information */}
                   {(question.id === "contact" || question.id === "3" || question.id === "email" || question.id === "1") && (
                     <div className="mt-4 p-4 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
@@ -192,7 +232,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       </div>
                     </div>
                   )}
-                  
+
                   {/* General Trust Indicator for Health Information */}
                   {(question.type === "select" && !["contact", "3", "email", "1", "name", "2", "age", "4"].includes(question.id)) && (
                     <div className="mt-4 p-3 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-400/20">
@@ -208,7 +248,7 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
           </div>
         </div>
       </div>
-      
+
       {/* Trust Footer */}
       <div className="px-6 md:px-12 pb-6">
         <div className="max-w-[600px] mx-auto">

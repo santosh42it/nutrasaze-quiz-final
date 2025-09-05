@@ -33,6 +33,27 @@ export const QuizScreen = (): JSX.Element => {
     handleQuizComplete
   } = useProgressiveSave();
 
+  // Function to handle basic information saving (name, contact, age)
+  const handleBasicInfoSave = async (questionId: string, value: string): Promise<void> => {
+    console.log(`Attempting to save basic info for question ${questionId} with value: ${value}`);
+    try {
+      if (questionId === "38") { // Assuming '38' is the ID for the name question
+        console.log('Progressive save: Saving name');
+        await handleUserInfoSave(value);
+      } else if (questionId === "3") { // Assuming '3' is the ID for the contact question
+        console.log('Progressive save: Saving contact');
+        const cleanContact = value.replace('+91', '');
+        await handleUserInfoSave(undefined, cleanContact);
+      } else if (questionId === "41") { // Assuming '41' is the ID for the age question
+        console.log('Progressive save: Saving age');
+        await handleUserInfoSave(undefined, undefined, parseInt(value, 10));
+      }
+    } catch (error) {
+      console.error(`Progressive save error for basic info (QID ${questionId}):`, error);
+    }
+  };
+
+
   // Load questions on component mount
   useEffect(() => {
     const loadQuestions = async () => {
@@ -46,7 +67,7 @@ export const QuizScreen = (): JSX.Element => {
         // Replace with your actual data fetching logic if not using Supabase
         // For demonstration, let's assume getQuizQuestions() fetches data correctly
         const loadedQuestions = await getQuizQuestions(); 
-        
+
         if (!loadedQuestions || loadedQuestions.length === 0) {
           setError('No questions found. Please contact support.');
           return;
@@ -89,7 +110,9 @@ export const QuizScreen = (): JSX.Element => {
   const handleNext = async () => {
     const currentQuestionData = questions[currentQuestion];
 
-    // For text input questions
+    if (!currentQuestionData) return; // Safety check
+
+    // Validation for text input questions
     if (currentQuestionData.type !== "select") {
       if (inputValue.trim() === "") {
         setValidationError("This field is required");
@@ -103,7 +126,7 @@ export const QuizScreen = (): JSX.Element => {
       }
     }
 
-    // For questions with additional inputs after selecting "yes"
+    // Validation for questions with additional inputs after selecting "yes"
     if (currentQuestionData.hasTextArea && 
         answers[currentQuestionData.id] && 
         answers[currentQuestionData.id].toLowerCase().includes("yes") && 
@@ -112,6 +135,7 @@ export const QuizScreen = (): JSX.Element => {
       return;
     }
 
+    // Validation for file uploads
     if (currentQuestionData.hasFileUpload && 
         answers[currentQuestionData.id] && 
         answers[currentQuestionData.id].toLowerCase().includes("yes") && 
@@ -143,26 +167,12 @@ export const QuizScreen = (): JSX.Element => {
         console.log('Progressive save: Saving email');
         await handleEmailSave(finalValue);
       }
-      
-      // Save name when entered (question type text and likely name question)
-      else if (currentQuestionData.type === "text" && finalValue) {
-        console.log('Progressive save: Saving name');
-        await handleUserInfoSave(finalValue);
+
+      // Save name, contact, and age using the new handleBasicInfoSave
+      else if (["text", "tel", "number"].includes(currentQuestionData.type) && finalValue) {
+        await handleBasicInfoSave(currentQuestionData.id, finalValue);
       }
-      
-      // Save contact when entered (question type tel)
-      else if (currentQuestionData.type === "tel" && finalValue) {
-        console.log('Progressive save: Saving contact');
-        const cleanContact = finalValue.replace('+91', '');
-        await handleUserInfoSave(undefined, cleanContact);
-      }
-      
-      // Save age when entered (question type number)  
-      else if (currentQuestionData.type === "number" && finalValue) {
-        console.log('Progressive save: Saving age');
-        await handleUserInfoSave(undefined, undefined, parseInt(finalValue));
-      }
-      
+
       // Save all other answers (only after we have a response ID)
       if (saveData.responseId && currentQuestionData.type === "select") {
         console.log('Progressive save: Saving answer for question', currentQuestionData.id);
@@ -171,7 +181,15 @@ export const QuizScreen = (): JSX.Element => {
           answers[currentQuestionData.id] || finalValue,
           additionalInfo || undefined
         );
+      } else if (saveData.responseId && currentQuestionData.type !== "select") {
+        // Also save other types of answers if they are not basic info and have a responseId
+        await handleAnswerSave(
+          currentQuestionData.id,
+          finalValue,
+          additionalInfo || undefined
+        );
       }
+
     } catch (error) {
       console.error('Progressive save error:', error);
       // Don't block user progress on save errors
@@ -179,7 +197,7 @@ export const QuizScreen = (): JSX.Element => {
 
     if (currentQuestion === questions.length - 1) {
       console.log('Quiz completed, showing results with answers:', newAnswers);
-      
+
       // Mark quiz as completed
       try {
         if (saveData.responseId) {
@@ -188,7 +206,7 @@ export const QuizScreen = (): JSX.Element => {
       } catch (error) {
         console.error('Error completing quiz:', error);
       }
-      
+
       setShowResults(true);
     } else {
       setCurrentQuestion(currentQuestion + 1);
@@ -201,9 +219,9 @@ export const QuizScreen = (): JSX.Element => {
 
   const handleOptionSelect = async (option: string) => {
     const currentQuestionData = questions[currentQuestion];
-    const newAnswers = { ...answers };
+    if (!currentQuestionData) return;
 
-    // Store the selected option using the question ID
+    const newAnswers = { ...answers };
     newAnswers[currentQuestionData.id] = option;
 
     // If the question has additional inputs and "yes" is selected, wait for those inputs
@@ -228,7 +246,7 @@ export const QuizScreen = (): JSX.Element => {
     setAnswers(newAnswers);
     if (currentQuestion === questions.length - 1) {
       console.log('Quiz completed via option select, showing results with answers:', newAnswers);
-      
+
       // Mark quiz as completed
       try {
         if (saveData.responseId) {
@@ -237,7 +255,7 @@ export const QuizScreen = (): JSX.Element => {
       } catch (error) {
         console.error('Error completing quiz:', error);
       }
-      
+
       setShowResults(true);
     } else {
       setCurrentQuestion(currentQuestion + 1);
@@ -352,6 +370,7 @@ export const QuizScreen = (): JSX.Element => {
               handleOptionSelect={handleOptionSelect}
               handleKeyPress={handleKeyPress}
               handleFileChange={handleFileChange}
+              handleBasicInfoSave={handleBasicInfoSave} // Pass the new handler
             />
           </div>
         ) : (

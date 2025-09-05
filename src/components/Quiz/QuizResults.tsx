@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
+import { useProgressiveSave } from '../../hooks/useProgressiveSave'; // Import the hook
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -36,6 +37,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expectations, setExpectations] = useState<Expectation[]>([]);
+
+  // Use the progressive save hook
+  const { progressiveSaveData, handleQuizComplete } = useProgressiveSave(answers, userInfo);
 
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {
@@ -214,7 +218,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         }
 
         questionsToUse = fetchedQuestions || [];
-        setQuestions(questionsToUse);
+        setQuestions(fetchedQuestions || []); // Ensure questions are set in state
         console.log('Loaded questions:', questionsToUse.length);
       }
 
@@ -666,7 +670,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         throw new Error('Please enter a valid email address');
       }
 
-      const phoneRegex = /^[0-9]{10}$/;
       // Use the existing contactForValidation variable from above
       if (!phoneRegex.test(contactForValidation)) {
         throw new Error('Please enter a valid 10-digit phone number');
@@ -1758,7 +1761,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                       {expectations.map((expectation, index) => {
                         const backgroundColors = ['#F1ECD7', '#F3F6E3', '#F1ECD7'];
                         const backgroundColor = backgroundColors[index % backgroundColors.length];
-                        
+
                         return (
                           <div key={expectation.id} className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg group">
                             <div 
@@ -1798,7 +1801,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                           {expectations.map((expectation, index) => {
                             const backgroundColors = ['#F1ECD7', '#F3F6E3', '#F1ECD7'];
                             const backgroundColor = backgroundColors[index % backgroundColors.length];
-                            
+
                             return (
                               <div key={expectation.id} className="flex-shrink-0 w-[calc(70vw)] rounded-xl overflow-hidden" style={{ backgroundColor }}>
                                 <div className="relative h-48 overflow-hidden">
