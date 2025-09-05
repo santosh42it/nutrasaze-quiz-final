@@ -670,6 +670,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         throw new Error('Please enter a valid email address');
       }
 
+      const phoneRegex = /^[6-9]\d{9}$/;
       // Use the existing contactForValidation variable from above
       if (!phoneRegex.test(contactForValidation)) {
         throw new Error('Please enter a valid 10-digit phone number');
