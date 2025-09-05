@@ -138,36 +138,37 @@ export const QuizScreen = (): JSX.Element => {
 
     // Progressive auto-save functionality
     try {
-      // Save email immediately when entered
+      // Save email immediately when entered (question type email)
       if (currentQuestionData.type === "email" && finalValue) {
         console.log('Progressive save: Saving email');
         await handleEmailSave(finalValue);
       }
       
-      // Save name when entered  
-      if (currentQuestionData.type === "text" && currentQuestionData.id.includes("name") && finalValue) {
+      // Save name when entered (question type text and likely name question)
+      else if (currentQuestionData.type === "text" && finalValue) {
         console.log('Progressive save: Saving name');
         await handleUserInfoSave(finalValue);
       }
       
-      // Save contact when entered
-      if (currentQuestionData.type === "tel" && finalValue) {
+      // Save contact when entered (question type tel)
+      else if (currentQuestionData.type === "tel" && finalValue) {
         console.log('Progressive save: Saving contact');
-        await handleUserInfoSave('', finalValue.replace('+91', ''));
+        const cleanContact = finalValue.replace('+91', '');
+        await handleUserInfoSave(undefined, cleanContact);
       }
       
-      // Save age when entered
-      if (currentQuestionData.type === "number" && finalValue) {
+      // Save age when entered (question type number)  
+      else if (currentQuestionData.type === "number" && finalValue) {
         console.log('Progressive save: Saving age');
-        await handleUserInfoSave('', '', parseInt(finalValue));
+        await handleUserInfoSave(undefined, undefined, parseInt(finalValue));
       }
       
-      // Save all other answers
-      if (saveData.responseId) {
+      // Save all other answers (only after we have a response ID)
+      if (saveData.responseId && currentQuestionData.type === "select") {
         console.log('Progressive save: Saving answer for question', currentQuestionData.id);
         await handleAnswerSave(
           currentQuestionData.id,
-          currentQuestionData.type !== "select" ? finalValue : answers[currentQuestionData.id],
+          answers[currentQuestionData.id] || finalValue,
           additionalInfo || undefined
         );
       }

@@ -30,7 +30,7 @@ export const useProgressiveSave = () => {
     }
   }, []);
 
-  const handleUserInfoSave = useCallback(async (name: string, contact?: string, age?: number) => {
+  const handleUserInfoSave = useCallback(async (name?: string, contact?: string, age?: number) => {
     if (!saveData.responseId) {
       console.error('No response ID available for saving user info');
       return;
@@ -46,7 +46,12 @@ export const useProgressiveSave = () => {
       if (age) updates.age = age;
       
       await updatePartialResponse(saveData.responseId, updates);
-      setSaveData(prev => ({ ...prev, name, contact, age }));
+      setSaveData(prev => ({ 
+        ...prev, 
+        ...(name && { name }), 
+        ...(contact && { contact }), 
+        ...(age && { age }) 
+      }));
       
       console.log('Progressive save: Updated user info');
     } catch (error) {

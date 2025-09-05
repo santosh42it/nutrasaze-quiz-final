@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -28,6 +27,7 @@ export const ResponsesReport: React.FC = () => {
   const [ageFilter, setAgeFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'age'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('all'); // Add status filter
 
   useEffect(() => {
     fetchData();
@@ -62,16 +62,25 @@ export const ResponsesReport: React.FC = () => {
     try {
       setLoading(true);
       console.log('Fetching quiz responses...');
-      
+
+      // Fetch responses with status
       const { data: basicResponses, error: basicError } = await supabase
         .from('quiz_responses')
-        .select('*')
+        .select('*') // Select all columns, including the new 'status' column
         .order('created_at', { ascending: false });
 
       console.log('Basic responses:', basicResponses, 'Error:', basicError);
 
       if (basicError) {
         console.error('Error fetching basic responses:', basicError);
+        // Handle error, maybe show a message to the user
+        setResponses([]);
+        setReport({
+          totalResponses: 0,
+          ageDistribution: { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 },
+          questionStats: {}
+        });
+        setLoading(false);
         return;
       }
 
@@ -83,11 +92,12 @@ export const ResponsesReport: React.FC = () => {
           ageDistribution: { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 },
           questionStats: {}
         });
+        setLoading(false);
         return;
       }
 
       const responsesWithAnswers: DetailedResponse[] = [];
-      
+
       for (const response of basicResponses) {
         try {
           const { data: answers, error: answersError } = await supabase
@@ -142,7 +152,7 @@ export const ResponsesReport: React.FC = () => {
             questionText.toLowerCase().includes('contact') ||
             questionText.toLowerCase().includes('phone')
           );
-          
+
           if (questionText && !isPersonalInfo) {
             if (!questionStats[questionText]) {
               questionStats[questionText] = {};
@@ -189,8 +199,11 @@ export const ResponsesReport: React.FC = () => {
         (ageFilter === '26-35' && response.age >= 26 && response.age <= 35) ||
         (ageFilter === '36-45' && response.age >= 36 && response.age <= 45) ||
         (ageFilter === '46+' && response.age >= 46);
+        
+      // Filter by status
+      const matchesStatus = statusFilter === 'all' || response.status === statusFilter;
 
-      return matchesSearch && matchesDateRange && matchesAge;
+      return matchesSearch && matchesDateRange && matchesAge && matchesStatus;
     });
 
     // Sort the filtered results
@@ -212,7 +225,7 @@ export const ResponsesReport: React.FC = () => {
     });
 
     return filtered;
-  }, [responses, searchTerm, dateRange, ageFilter, sortBy, sortOrder]);
+  }, [responses, searchTerm, dateRange, ageFilter, sortBy, sortOrder, statusFilter]); // Added statusFilter dependency
 
   const paginatedResponses = filteredAndSortedResponses.slice(
     (currentPage - 1) * itemsPerPage,
@@ -223,14 +236,15 @@ export const ResponsesReport: React.FC = () => {
 
   // Export to CSV function
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Age', 'Submission Date'];
+    const headers = ['Name', 'Email', 'Phone', 'Age', 'Status', 'Submission Date']; // Added Status header
     const csvContent = [
       headers.join(','),
       ...filteredAndSortedResponses.map(response => [
-        `"${response.name}"`,
-        `"${response.email}"`,
-        `"${response.contact}"`,
-        response.age,
+        `"${response.name || '-'}"`, // Handle potential nulls/undefined
+        `"${response.email || '-'}"`,
+        `"${response.contact || '-'}"`,
+        response.age || '-',
+        response.status || 'completed', // Include status
         `"${formatDate(response.created_at || '')}"`
       ].join(','))
     ].join('\n');
@@ -252,6 +266,7 @@ export const ResponsesReport: React.FC = () => {
     setAgeFilter('');
     setSortBy('date');
     setSortOrder('desc');
+    setStatusFilter('all'); // Reset status filter
     setCurrentPage(1);
   };
 
@@ -327,7 +342,7 @@ export const ResponsesReport: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-none shadow-lg bg-gradient-to-br from-[#4ade80] to-[#22c55e] text-white overflow-hidden relative">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <CardContent className="p-6 relative z-10">
@@ -419,7 +434,7 @@ export const ResponsesReport: React.FC = () => {
                 </div>
                 <div className="text-sm text-[#4ade80]">{advancedStats?.peakDay.count || 0} responses</div>
               </div>
-              
+
               <div className="bg-white rounded-lg p-4 border-l-4 border-[#f59e0b]">
                 <div className="text-sm text-[#6d6d6e]">Average Questions Answered</div>
                 <div className="font-bold text-[#1d0917]">{advancedStats?.avgResponseTime || 0}</div>
@@ -581,30 +596,36 @@ export const ResponsesReport: React.FC = () => {
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Email</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Phone</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Age</th>
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Status</th> {/* Added Status Header */}
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Date</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Answers</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedResponses.map((response, index) => (
-                  <tr key={response.id} className={`border-b border-[#f0f0f0] hover:bg-gradient-to-r hover:from-[#fff4fc] hover:to-white transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'}`}>
+                  <tr key={response.id} className={`border-b border-[#f0f0f0] hover:bg-gradient-to-r hover:from-[#fff4fc] hover:to-white transition-all duration-200 ${response.status === 'partial' ? 'bg-yellow-50' : (index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white')}`}>
                     <td className="py-4 px-6">
-                      <div className="font-semibold text-[#1d0917]">{response.name}</div>
+                      <div className="font-semibold text-[#1d0917]">{response.name || '-'}</div> {/* Handle empty fields */}
                     </td>
-                    <td className="py-4 px-6 text-[#3d3d3d]">{response.email}</td>
-                    <td className="py-4 px-6 text-[#3d3d3d]">{response.contact}</td>
+                    <td className="py-4 px-6 text-[#3d3d3d]">{response.email || '-'}</td> {/* Handle empty fields */}
+                    <td className="py-4 px-6 text-[#3d3d3d]">{response.contact || '-'}</td> {/* Handle empty fields */}
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#913177]/10 text-[#913177]">
-                        {response.age}
+                        {response.age || '-'} {/* Handle empty fields */}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6"> {/* Status Cell */}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        response.status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : response.status === 'partial' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-gray-100 text-gray-800' // Default or unknown status
+                      }`}>
+                        {response.status === 'partial' ? 'Partial' : response.status === 'completed' ? 'Completed' : 'Unknown'}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-[#3d3d3d] text-sm">{formatDate(response.created_at || '')}</td>
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4ade80]/10 text-[#22c55e]">
-                        {response.answers?.length || 0} answers
-                      </span>
-                    </td>
                     <td className="py-4 px-6">
                       <Button
                         onClick={() => setSelectedResponse(response)}
@@ -620,10 +641,10 @@ export const ResponsesReport: React.FC = () => {
                     <td colSpan={7} className="py-12 px-6 text-center">
                       <div className="text-6xl mb-4">📋</div>
                       <div className="text-lg text-[#6d6d6e] mb-2">
-                        {searchTerm || dateRange.from || dateRange.to || ageFilter ? 'No responses found matching your filters.' : 'No quiz responses found yet.'}
+                        {searchTerm || dateRange.from || dateRange.to || ageFilter || statusFilter !== 'all' ? 'No responses found matching your filters.' : 'No quiz responses found yet.'}
                       </div>
                       <div className="text-sm text-[#6d6d6e]">
-                        {searchTerm || dateRange.from || dateRange.to || ageFilter ? 'Try adjusting your filters.' : 'Responses will appear here once users complete the quiz.'}
+                        {searchTerm || dateRange.from || dateRange.to || ageFilter || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Responses will appear here once users complete the quiz.'}
                       </div>
                     </td>
                   </tr>
@@ -762,7 +783,7 @@ export const ResponsesReport: React.FC = () => {
                 ✕ Close
               </Button>
             </div>
-            
+
             <CardContent className="p-8">
               {/* Contact Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -773,11 +794,11 @@ export const ResponsesReport: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <span className="font-semibold text-[#6d6d6e] w-16">Email:</span>
-                      <span className="text-[#3d3d3d] ml-2">{selectedResponse.email}</span>
+                      <span className="text-[#3d3d3d] ml-2">{selectedResponse.email || '-'}</span>
                     </div>
                     <div className="flex items-center">
                       <span className="font-semibold text-[#6d6d6e] w-16">Phone:</span>
-                      <span className="text-[#3d3d3d] ml-2">{selectedResponse.contact}</span>
+                      <span className="text-[#3d3d3d] ml-2">{selectedResponse.contact || '-'}</span>
                     </div>
                     <div className="flex items-center">
                       <span className="font-semibold text-[#6d6d6e] w-16">Gender:</span>
@@ -792,7 +813,7 @@ export const ResponsesReport: React.FC = () => {
                     <div className="flex items-center">
                       <span className="font-semibold text-[#6d6d6e] w-16">Age:</span>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-[#913177]/10 text-[#913177] ml-2">
-                        {selectedResponse.age} years
+                        {selectedResponse.age || '-'}
                       </span>
                     </div>
                   </div>
@@ -827,7 +848,7 @@ export const ResponsesReport: React.FC = () => {
                     ({selectedResponse.answers?.length || 0} responses)
                   </span>
                 </h4>
-                
+
                 {selectedResponse.answers && selectedResponse.answers.length > 0 ? (
                   <div className="grid gap-6">
                     {selectedResponse.answers.filter((answer) => {
@@ -850,12 +871,12 @@ export const ResponsesReport: React.FC = () => {
                           </span>
                           {answer.questions?.question_text || `Question ID: ${answer.question_id}`}
                         </div>
-                        
+
                         <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
                           <div className="font-semibold text-[#1d0917] mb-2 flex items-center">
                             <span className="mr-2">💡</span>Answer:
                           </div>
-                          <div className="text-[#3d3d3d] text-lg">{answer.answer_text}</div>
+                          <div className="text-[#3d3d3d] text-lg">{answer.answer_text || '-'}</div> {/* Handle empty fields */}
                         </div>
 
                         {answer.additional_info && (
@@ -882,7 +903,7 @@ export const ResponsesReport: React.FC = () => {
                               <span>{answer.file_url.split('/').pop()}</span>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15,3 21,3 21,9"/>
+                                <polyline points="15 3 21 3 21 9"/>
                                 <line x1="10" y1="14" x2="21" y2="3"/>
                               </svg>
                             </a>
