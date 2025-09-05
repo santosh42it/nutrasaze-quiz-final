@@ -3,7 +3,7 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { supabase } from '../../lib/supabase';
-import type { QuizReport, QuizResponse, QuizAnswer } from '../../types/database';
+import type { QuizResponse, QuizAnswer } from '../../types/database';
 
 interface DetailedResponse extends QuizResponse {
   answers: (QuizAnswer & { questions: { question_text: string } })[];
@@ -15,7 +15,6 @@ interface DateRange {
 }
 
 export const ResponsesReport: React.FC = () => {
-  const [report, setReport] = useState<QuizReport | null>(null);
   const [responses, setResponses] = useState<DetailedResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -23,15 +22,29 @@ export const ResponsesReport: React.FC = () => {
   const [selectedResponse, setSelectedResponse] = useState<DetailedResponse | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [dateRange, setDateRange] = useState<DateRange>({ from: '', to: '' });
+  const [dateRange, setDateRange] = useState<DateRange>({ 
+    from: getDateWeekAgo(), 
+    to: getCurrentDate() 
+  });
   const [ageFilter, setAgeFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'age'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('all'); // Add status filter
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('all');
+
+  // Helper functions for default date range
+  function getCurrentDate() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function getDateWeekAgo() {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return date.toISOString().split('T')[0];
+  }
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchResponses();
+  }, [dateRange, statusFilter]);
 
   // ESC key listener for modal
   useEffect(() => {
@@ -54,32 +67,41 @@ export const ResponsesReport: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await fetchResponses();
     setRefreshing(false);
   };
 
-  const fetchData = async () => {
+  const fetchResponses = async () => {
     try {
       setLoading(true);
-      console.log('Fetching quiz responses...');
+      console.log('Fetching quiz responses with date filter...');
 
-      // Fetch responses with status
-      const { data: basicResponses, error: basicError } = await supabase
+      // Build query with date filtering
+      let query = supabase
         .from('quiz_responses')
-        .select('*') // Select all columns, including the new 'status' column
+        .select('*')
         .order('created_at', { ascending: false });
+
+      // Apply date range filter
+      if (dateRange.from) {
+        query = query.gte('created_at', dateRange.from + 'T00:00:00');
+      }
+      if (dateRange.to) {
+        query = query.lte('created_at', dateRange.to + 'T23:59:59');
+      }
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data: basicResponses, error: basicError } = await query;
 
       console.log('Basic responses:', basicResponses, 'Error:', basicError);
 
       if (basicError) {
         console.error('Error fetching basic responses:', basicError);
-        // Handle error, maybe show a message to the user
         setResponses([]);
-        setReport({
-          totalResponses: 0,
-          ageDistribution: { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 },
-          questionStats: {}
-        });
         setLoading(false);
         return;
       }
@@ -87,11 +109,6 @@ export const ResponsesReport: React.FC = () => {
       if (!basicResponses || basicResponses.length === 0) {
         console.log('No responses found');
         setResponses([]);
-        setReport({
-          totalResponses: 0,
-          ageDistribution: { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 },
-          questionStats: {}
-        });
         setLoading(false);
         return;
       }
@@ -127,58 +144,9 @@ export const ResponsesReport: React.FC = () => {
 
       setResponses(responsesWithAnswers);
 
-      // Calculate enhanced analytics
-      const ageDistribution = {
-        '18-25': 0,
-        '26-35': 0,
-        '36-45': 0,
-        '46+': 0
-      };
-
-      basicResponses.forEach((response: QuizResponse) => {
-        if (response.age <= 25) ageDistribution['18-25']++;
-        else if (response.age <= 35) ageDistribution['26-35']++;
-        else if (response.age <= 45) ageDistribution['36-45']++;
-        else ageDistribution['46+']++;
-      });
-
-      const questionStats: QuizReport['questionStats'] = {};
-      responsesWithAnswers.forEach((response: DetailedResponse) => {
-        response.answers?.forEach((answer: any) => {
-          const questionText = answer.questions?.question_text;
-          const isPersonalInfo = questionText && (
-            questionText.toLowerCase().includes('name') ||
-            questionText.toLowerCase().includes('email') ||
-            questionText.toLowerCase().includes('contact') ||
-            questionText.toLowerCase().includes('phone')
-          );
-
-          if (questionText && !isPersonalInfo) {
-            if (!questionStats[questionText]) {
-              questionStats[questionText] = {};
-            }
-            if (!questionStats[questionText][answer.answer_text]) {
-              questionStats[questionText][answer.answer_text] = 0;
-            }
-            questionStats[questionText][answer.answer_text]++;
-          }
-        });
-      });
-
-      setReport({
-        totalResponses: basicResponses.length,
-        ageDistribution,
-        questionStats
-      });
-
     } catch (error) {
-      console.error('Error in fetchData:', error);
+      console.error('Error in fetchResponses:', error);
       setResponses([]);
-      setReport({
-        totalResponses: 0,
-        ageDistribution: { '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 },
-        questionStats: {}
-      });
     } finally {
       setLoading(false);
     }
@@ -187,23 +155,17 @@ export const ResponsesReport: React.FC = () => {
   // Enhanced filtering and sorting
   const filteredAndSortedResponses = React.useMemo(() => {
     let filtered = responses.filter(response => {
-      const matchesSearch = response.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        response.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        response.contact.includes(searchTerm);
-
-      const matchesDateRange = (!dateRange.from || new Date(response.created_at || '') >= new Date(dateRange.from)) &&
-        (!dateRange.to || new Date(response.created_at || '') <= new Date(dateRange.to + 'T23:59:59'));
+      const matchesSearch = (response.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (response.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (response.contact || '').includes(searchTerm);
 
       const matchesAge = !ageFilter || 
         (ageFilter === '18-25' && response.age >= 18 && response.age <= 25) ||
         (ageFilter === '26-35' && response.age >= 26 && response.age <= 35) ||
         (ageFilter === '36-45' && response.age >= 36 && response.age <= 45) ||
         (ageFilter === '46+' && response.age >= 46);
-        
-      // Filter by status
-      const matchesStatus = statusFilter === 'all' || response.status === statusFilter;
 
-      return matchesSearch && matchesDateRange && matchesAge && matchesStatus;
+      return matchesSearch && matchesAge;
     });
 
     // Sort the filtered results
@@ -211,10 +173,10 @@ export const ResponsesReport: React.FC = () => {
       let comparison = 0;
       switch (sortBy) {
         case 'name':
-          comparison = a.name.localeCompare(b.name);
+          comparison = (a.name || '').localeCompare(b.name || '');
           break;
         case 'age':
-          comparison = a.age - b.age;
+          comparison = (a.age || 0) - (b.age || 0);
           break;
         case 'date':
         default:
@@ -225,7 +187,7 @@ export const ResponsesReport: React.FC = () => {
     });
 
     return filtered;
-  }, [responses, searchTerm, dateRange, ageFilter, sortBy, sortOrder, statusFilter]); // Added statusFilter dependency
+  }, [responses, searchTerm, ageFilter, sortBy, sortOrder]);
 
   const paginatedResponses = filteredAndSortedResponses.slice(
     (currentPage - 1) * itemsPerPage,
@@ -236,15 +198,15 @@ export const ResponsesReport: React.FC = () => {
 
   // Export to CSV function
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Age', 'Status', 'Submission Date']; // Added Status header
+    const headers = ['Name', 'Email', 'Phone', 'Age', 'Status', 'Submission Date'];
     const csvContent = [
       headers.join(','),
       ...filteredAndSortedResponses.map(response => [
-        `"${response.name || '-'}"`, // Handle potential nulls/undefined
+        `"${response.name || '-'}"`,
         `"${response.email || '-'}"`,
         `"${response.contact || '-'}"`,
         response.age || '-',
-        response.status || 'completed', // Include status
+        response.status || 'completed',
         `"${formatDate(response.created_at || '')}"`
       ].join(','))
     ].join('\n');
@@ -262,11 +224,11 @@ export const ResponsesReport: React.FC = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setDateRange({ from: '', to: '' });
+    setDateRange({ from: getDateWeekAgo(), to: getCurrentDate() });
     setAgeFilter('');
     setSortBy('date');
     setSortOrder('desc');
-    setStatusFilter('all'); // Reset status filter
+    setStatusFilter('all');
     setCurrentPage(1);
   };
 
@@ -280,35 +242,6 @@ export const ResponsesReport: React.FC = () => {
     });
   };
 
-  // Calculate advanced statistics
-  const advancedStats = React.useMemo(() => {
-    if (!responses.length) return null;
-
-    const avgAge = Math.round(responses.reduce((sum, r) => sum + r.age, 0) / responses.length);
-    const avgResponseTime = responses.reduce((sum, r) => {
-      const responseTime = r.answers?.length || 0;
-      return sum + responseTime;
-    }, 0) / responses.length;
-
-    const last30Days = responses.filter(r => {
-      const responseDate = new Date(r.created_at || '');
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return responseDate >= thirtyDaysAgo;
-    }).length;
-
-    const responsesByDay = responses.reduce((acc: Record<string, number>, response) => {
-      const date = new Date(response.created_at || '').toDateString();
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {});
-
-    const peakDay = Object.entries(responsesByDay).reduce((max, [date, count]) => 
-      count > max.count ? { date, count } : max, { date: '', count: 0 });
-
-    return { avgAge, avgResponseTime: Math.round(avgResponseTime), last30Days, peakDay };
-  }, [responses]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -318,25 +251,17 @@ export const ResponsesReport: React.FC = () => {
     );
   }
 
-  if (!report) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-[#1d0917]">Error loading data. Please try refreshing.</div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
-      {/* Enhanced Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Quick Stats Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-none shadow-lg bg-gradient-to-br from-[#913177] to-[#b8439a] text-white overflow-hidden relative">
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
           <CardContent className="p-6 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold mb-2">{report.totalResponses}</div>
-                <div className="text-white/90 text-sm font-medium">Total Responses</div>
+                <div className="text-3xl font-bold mb-2">{responses.length}</div>
+                <div className="text-white/90 text-sm font-medium">Filtered Responses</div>
               </div>
               <div className="text-4xl opacity-50">📊</div>
             </div>
@@ -349,15 +274,11 @@ export const ResponsesReport: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-3xl font-bold mb-2">
-                  {responses.filter(r => {
-                    const today = new Date();
-                    const responseDate = new Date(r.created_at || '');
-                    return responseDate.toDateString() === today.toDateString();
-                  }).length}
+                  {responses.filter(r => r.status === 'completed').length}
                 </div>
-                <div className="text-white/90 text-sm font-medium">Today's Responses</div>
+                <div className="text-white/90 text-sm font-medium">Completed</div>
               </div>
-              <div className="text-4xl opacity-50">📅</div>
+              <div className="text-4xl opacity-50">✅</div>
             </div>
           </CardContent>
         </Card>
@@ -367,10 +288,12 @@ export const ResponsesReport: React.FC = () => {
           <CardContent className="p-6 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold mb-2">{advancedStats?.avgAge || 0}</div>
-                <div className="text-white/90 text-sm font-medium">Average Age</div>
+                <div className="text-3xl font-bold mb-2">
+                  {responses.filter(r => r.status === 'partial').length}
+                </div>
+                <div className="text-white/90 text-sm font-medium">Partial</div>
               </div>
-              <div className="text-4xl opacity-50">👥</div>
+              <div className="text-4xl opacity-50">⏳</div>
             </div>
           </CardContent>
         </Card>
@@ -380,74 +303,16 @@ export const ResponsesReport: React.FC = () => {
           <CardContent className="p-6 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold mb-2">{advancedStats?.last30Days || 0}</div>
-                <div className="text-white/90 text-sm font-medium">Last 30 Days</div>
-              </div>
-              <div className="text-4xl opacity-50">📈</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Advanced Statistics Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Age Distribution */}
-        <Card className="border-none shadow-lg bg-white">
-          <CardContent className="p-8">
-            <h3 className="text-2xl font-bold text-[#1d0917] mb-6 flex items-center">
-              <span className="mr-3">📊</span>Age Distribution
-            </h3>
-            <div className="space-y-4">
-              {Object.entries(report.ageDistribution).map(([range, count]) => {
-                const percentage = report.totalResponses > 0 ? (count / report.totalResponses) * 100 : 0;
-                return (
-                  <div key={range} className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-semibold text-[#1d0917]">{range} years</span>
-                      <span className="text-2xl font-bold text-[#913177]">{count}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-                      <div 
-                        className="bg-gradient-to-r from-[#913177] to-[#b8439a] h-3 rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-sm text-[#6d6d6e] text-right">{percentage.toFixed(1)}%</div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Insights Card */}
-        <Card className="border-none shadow-lg bg-gradient-to-br from-[#f0f9ff] to-[#e0f2fe]">
-          <CardContent className="p-8">
-            <h3 className="text-2xl font-bold text-[#1d0917] mb-6 flex items-center">
-              <span className="mr-3">💡</span>Quick Insights
-            </h3>
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4 border-l-4 border-[#4ade80]">
-                <div className="text-sm text-[#6d6d6e]">Peak Response Day</div>
-                <div className="font-bold text-[#1d0917]">
-                  {advancedStats?.peakDay.date ? new Date(advancedStats.peakDay.date).toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' }) : 'N/A'}
+                <div className="text-3xl font-bold mb-2">
+                  {responses.filter(r => {
+                    const today = new Date();
+                    const responseDate = new Date(r.created_at || '');
+                    return responseDate.toDateString() === today.toDateString();
+                  }).length}
                 </div>
-                <div className="text-sm text-[#4ade80]">{advancedStats?.peakDay.count || 0} responses</div>
+                <div className="text-white/90 text-sm font-medium">Today</div>
               </div>
-
-              <div className="bg-white rounded-lg p-4 border-l-4 border-[#f59e0b]">
-                <div className="text-sm text-[#6d6d6e]">Average Questions Answered</div>
-                <div className="font-bold text-[#1d0917]">{advancedStats?.avgResponseTime || 0}</div>
-                <div className="text-sm text-[#f59e0b]">per response</div>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 border-l-4 border-[#8b5cf6]">
-                <div className="text-sm text-[#6d6d6e]">Response Rate Trend</div>
-                <div className="font-bold text-[#1d0917]">
-                  {responses.length > 1 ? '+' : ''}{Math.round(((advancedStats?.last30Days || 0) / 30) * 100) / 100} per day
-                </div>
-                <div className="text-sm text-[#8b5cf6]">last 30 days</div>
-              </div>
+              <div className="text-4xl opacity-50">📅</div>
             </div>
           </CardContent>
         </Card>
@@ -458,7 +323,7 @@ export const ResponsesReport: React.FC = () => {
         <CardContent className="p-4 sm:p-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
             <h3 className="text-lg sm:text-2xl font-bold text-[#1d0917] flex items-center">
-              <span className="mr-2 sm:mr-3">🗂️</span>Detailed Responses
+              <span className="mr-2 sm:mr-3">🗂️</span>Quiz Responses
             </h3>
             <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
               <Button
@@ -477,8 +342,8 @@ export const ResponsesReport: React.FC = () => {
             </div>
           </div>
 
-          {/* Advanced Filter Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
+          {/* Date Range and Status Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
             <div>
               <label className="block text-sm font-semibold text-[#1d0917] mb-2">Search</label>
               <Input
@@ -507,6 +372,19 @@ export const ResponsesReport: React.FC = () => {
                 onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
                 className="border-[#e9d6e4] focus:border-[#913177]"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#1d0917] mb-2">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'completed' | 'partial')}
+                className="w-full p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
+              >
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="partial">Partial</option>
+              </select>
             </div>
 
             <div>
@@ -596,7 +474,7 @@ export const ResponsesReport: React.FC = () => {
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Email</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Phone</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Age</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Status</th> {/* Added Status Header */}
+                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Status</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Date</th>
                   <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Actions</th>
                 </tr>
@@ -605,22 +483,22 @@ export const ResponsesReport: React.FC = () => {
                 {paginatedResponses.map((response, index) => (
                   <tr key={response.id} className={`border-b border-[#f0f0f0] hover:bg-gradient-to-r hover:from-[#fff4fc] hover:to-white transition-all duration-200 ${response.status === 'partial' ? 'bg-yellow-50' : (index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white')}`}>
                     <td className="py-4 px-6">
-                      <div className="font-semibold text-[#1d0917]">{response.name || '-'}</div> {/* Handle empty fields */}
+                      <div className="font-semibold text-[#1d0917]">{response.name || '-'}</div>
                     </td>
-                    <td className="py-4 px-6 text-[#3d3d3d]">{response.email || '-'}</td> {/* Handle empty fields */}
-                    <td className="py-4 px-6 text-[#3d3d3d]">{response.contact || '-'}</td> {/* Handle empty fields */}
+                    <td className="py-4 px-6 text-[#3d3d3d]">{response.email || '-'}</td>
+                    <td className="py-4 px-6 text-[#3d3d3d]">{response.contact || '-'}</td>
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#913177]/10 text-[#913177]">
-                        {response.age || '-'} {/* Handle empty fields */}
+                        {response.age || '-'}
                       </span>
                     </td>
-                    <td className="py-4 px-6"> {/* Status Cell */}
+                    <td className="py-4 px-6">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         response.status === 'completed' 
                           ? 'bg-green-100 text-green-800' 
                           : response.status === 'partial' 
                           ? 'bg-yellow-100 text-yellow-800' 
-                          : 'bg-gray-100 text-gray-800' // Default or unknown status
+                          : 'bg-gray-100 text-gray-800'
                       }`}>
                         {response.status === 'partial' ? 'Partial' : response.status === 'completed' ? 'Completed' : 'Unknown'}
                       </span>
@@ -701,53 +579,6 @@ export const ResponsesReport: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Enhanced Question Statistics */}
-      {Object.keys(report.questionStats).length > 0 && (
-        <Card className="border-none shadow-lg bg-white">
-          <CardContent className="p-8">
-            <h3 className="text-2xl font-bold text-[#1d0917] mb-8 flex items-center">
-              <span className="mr-3">📈</span>Question Analytics
-            </h3>
-            <div className="grid gap-8">
-              {Object.entries(report.questionStats).map(([question, answers], index) => (
-                <div key={question} className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md">
-                  <h4 className="font-bold text-[#1d0917] mb-4 text-lg">
-                    Q{index + 1}: {question}
-                  </h4>
-                  <div className="space-y-3">
-                    {Object.entries(answers).map(([answer, count]) => {
-                      const total = Object.values(answers).reduce((sum, val) => sum + val, 0);
-                      const percentage = total > 0 ? (count / total) * 100 : 0;
-                      return (
-                        <div key={answer} className="bg-white rounded-lg p-4 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[#3d3d3d] font-medium flex-1 mr-4">{answer}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="font-bold text-[#913177] text-lg">
-                                {count}
-                              </span>
-                              <span className="text-sm text-[#6d6d6e] min-w-[50px]">
-                                ({percentage.toFixed(1)}%)
-                              </span>
-                            </div>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div 
-                              className="bg-gradient-to-r from-[#913177] to-[#b8439a] h-3 rounded-full transition-all duration-700 ease-out"
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Enhanced Response Detail Modal */}
       {selectedResponse && (
         <div 
@@ -769,7 +600,7 @@ export const ResponsesReport: React.FC = () => {
             <div className="sticky top-0 bg-gradient-to-r from-[#913177] to-[#b8439a] text-white z-10 p-6 flex justify-between items-center">
               <div>
                 <h3 className="text-2xl font-bold">
-                  👤 {selectedResponse.name}'s Response
+                  👤 {selectedResponse.name || 'Unknown'}'s Response
                 </h3>
                 <p className="text-white/90 text-sm mt-1">
                   Submitted on {formatDate(selectedResponse.created_at || '')}
@@ -801,19 +632,21 @@ export const ResponsesReport: React.FC = () => {
                       <span className="text-[#3d3d3d] ml-2">{selectedResponse.contact || '-'}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-16">Gender:</span>
-                      <span className="text-[#3d3d3d] ml-2">
-                        {selectedResponse.answers?.find(a => 
-                          a.questions?.question_text?.toLowerCase().includes('gender') || 
-                          a.questions?.question_text?.toLowerCase().includes('male') ||
-                          a.questions?.question_text?.toLowerCase().includes('female')
-                        )?.answer_text || 'Not specified'}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
                       <span className="font-semibold text-[#6d6d6e] w-16">Age:</span>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-[#913177]/10 text-[#913177] ml-2">
                         {selectedResponse.age || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-semibold text-[#6d6d6e] w-16">Status:</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ml-2 ${
+                        selectedResponse.status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : selectedResponse.status === 'partial' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedResponse.status === 'partial' ? 'Partial' : selectedResponse.status === 'completed' ? 'Completed' : 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -876,7 +709,7 @@ export const ResponsesReport: React.FC = () => {
                           <div className="font-semibold text-[#1d0917] mb-2 flex items-center">
                             <span className="mr-2">💡</span>Answer:
                           </div>
-                          <div className="text-[#3d3d3d] text-lg">{answer.answer_text || '-'}</div> {/* Handle empty fields */}
+                          <div className="text-[#3d3d3d] text-lg">{answer.answer_text || '-'}</div>
                         </div>
 
                         {answer.additional_info && (
@@ -909,17 +742,6 @@ export const ResponsesReport: React.FC = () => {
                             </a>
                             <div className="text-sm text-green-600 mt-2">
                               Click to view or download the uploaded document
-                            </div>
-                          </div>
-                        )}
-
-                        {!answer.file_url && (answer.questions?.question_text?.toLowerCase().includes('blood test') || answer.questions?.question_text?.toLowerCase().includes('upload')) && answer.answer_text.toLowerCase().includes('yes') && (
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                            <div className="text-red-700 font-semibold flex items-center">
-                              <span className="mr-2">⚠️</span>Missing File Upload
-                            </div>
-                            <div className="text-red-600 text-sm mt-1">
-                              User indicated they have a file to upload but no file was uploaded
                             </div>
                           </div>
                         )}
