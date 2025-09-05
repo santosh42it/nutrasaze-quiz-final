@@ -38,7 +38,7 @@ export const AnalyticsReport: React.FC = () => {
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, [dateRange]);
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -183,6 +183,10 @@ export const AnalyticsReport: React.FC = () => {
     setDateRange({ from: getDateWeekAgo(), to: getCurrentDate() });
   };
 
+  const applyFilters = async () => {
+    await fetchAnalyticsData();
+  };
+
   // Calculate advanced statistics
   const advancedStats = React.useMemo(() => {
     if (!responses.length) return null;
@@ -270,7 +274,13 @@ export const AnalyticsReport: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-end">
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={applyFilters}
+                className="bg-[#913177] text-white hover:bg-[#913177]/90 w-full"
+              >
+                ✅ Apply Filters
+              </Button>
               <Button
                 onClick={clearFilters}
                 variant="outline"

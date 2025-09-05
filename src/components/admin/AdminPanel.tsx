@@ -86,7 +86,7 @@ export const AdminPanel: React.FC = () => {
             <nav className="flex space-x-2 sm:space-x-8 px-3 sm:px-6 overflow-x-auto">
               {[
                 { key: 'responses', label: '🗂️ Responses', alwaysVisible: true },
-                { key: 'analytics', label: '📊 Analytics', icon: '📊' },
+                { key: 'analytics', label: '📊 Analytics', alwaysVisible: true },
                 { key: 'questions', label: 'Quiz Questions', alwaysVisible: false },
                 { key: 'tags', label: 'Tags', alwaysVisible: false },
                 { key: 'products', label: 'Products', alwaysVisible: false },
@@ -143,7 +143,7 @@ export const AdminPanel: React.FC = () => {
             })()}
 
             {/* Show access denied message for edit tabs when super admin is disabled */}
-            {(activeTab !== 'responses' && activeTab !== 'analytics' && activeTab !== 'banners' && activeTab !== 'expectations' && !superAdminEnabled) && (
+            {(activeTab !== 'responses' && activeTab !== 'analytics' && !superAdminEnabled) && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🔒</div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">Access Restricted</h3>
