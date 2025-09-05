@@ -222,7 +222,7 @@ export const ResponsesReport: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const clearFilters = () => {
+  const clearFilters = async () => {
     setSearchTerm('');
     setDateRange({ from: getDateWeekAgo(), to: getCurrentDate() });
     setAgeFilter('');
@@ -230,6 +230,7 @@ export const ResponsesReport: React.FC = () => {
     setSortOrder('desc');
     setStatusFilter('all');
     setCurrentPage(1);
+    await fetchResponses();
   };
 
   const formatDate = (dateString: string) => {
@@ -385,8 +386,9 @@ export const ResponsesReport: React.FC = () => {
               onClick={clearFilters}
               variant="outline"
               className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
+              disabled={loading}
             >
-              🗑️ Clear All Filters
+              {loading ? '🔄 Clearing...' : '🗑️ Clear All Filters'}
             </Button>
           </div>
 

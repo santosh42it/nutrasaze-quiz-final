@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -20,9 +19,9 @@ export const AnalyticsReport: React.FC = () => {
   const [responses, setResponses] = useState<DetailedResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({ 
-    from: getDateWeekAgo(), 
-    to: getCurrentDate() 
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: getDateWeekAgo(),
+    to: getCurrentDate()
   });
 
   // Helper functions for default date range
@@ -179,8 +178,9 @@ export const AnalyticsReport: React.FC = () => {
     }
   };
 
-  const clearFilters = () => {
+  const clearFilters = async () => {
     setDateRange({ from: getDateWeekAgo(), to: getCurrentDate() });
+    await fetchAnalyticsData();
   };
 
   const applyFilters = async () => {
@@ -210,7 +210,7 @@ export const AnalyticsReport: React.FC = () => {
       return acc;
     }, {});
 
-    const peakDay = Object.entries(responsesByDay).reduce((max, [date, count]) => 
+    const peakDay = Object.entries(responsesByDay).reduce((max, [date, count]) =>
       count > max.count ? { date, count } : max, { date: '', count: 0 });
 
     return { avgAge, avgResponseTime: Math.round(avgResponseTime), last30Days, peakDay };
@@ -372,7 +372,7 @@ export const AnalyticsReport: React.FC = () => {
                       <span className="text-2xl font-bold text-[#913177]">{count}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-[#913177] to-[#b8439a] h-3 rounded-full transition-all duration-700 ease-out"
                         style={{ width: `${percentage}%` }}
                       ></div>
@@ -457,7 +457,7 @@ export const AnalyticsReport: React.FC = () => {
                             </div>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div 
+                            <div
                               className="bg-gradient-to-r from-[#913177] to-[#b8439a] h-3 rounded-full transition-all duration-700 ease-out"
                               style={{ width: `${percentage}%` }}
                             ></div>
