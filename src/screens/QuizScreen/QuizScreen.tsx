@@ -4,9 +4,8 @@ import { Footer } from "../../components/ui/footer";
 import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
 import { getQuizQuestions } from "../../services/quizService";
-import type { Question } from "../../components/Quiz/types";
-// Assuming supabase client is imported and configured elsewhere, e.g.:
-// import { supabase } from '../../utils/supabaseClient'; 
+import { useProgressiveSave } from "../../components/Quiz/useProgressiveSave";
+import type { Question } from "../../components/Quiz/types"; 
 
 interface QuizAnswers {
   [key: string]: string;
@@ -23,6 +22,16 @@ export const QuizScreen = (): JSX.Element => {
   const [additionalInfo, setAdditionalInfo] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string>("");
+
+  // Progressive auto-save functionality
+  const {
+    saveData,
+    isSaving,
+    handleEmailSave,
+    handleUserInfoSave,
+    handleAnswerSave,
+    handleQuizComplete
+  } = useProgressiveSave();
 
   // Load questions on component mount
   useEffect(() => {
@@ -77,7 +86,7 @@ export const QuizScreen = (): JSX.Element => {
     return "";
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const currentQuestionData = questions[currentQuestion];
 
     // For text input questions
@@ -127,8 +136,58 @@ export const QuizScreen = (): JSX.Element => {
     console.log(`Setting answer for question ${currentQuestionData.id}: ${finalValue}`);
     setAnswers(newAnswers);
 
+    // Progressive auto-save functionality
+    try {
+      // Save email immediately when entered
+      if (currentQuestionData.type === "email" && finalValue) {
+        console.log('Progressive save: Saving email');
+        await handleEmailSave(finalValue);
+      }
+      
+      // Save name when entered  
+      if (currentQuestionData.type === "text" && currentQuestionData.id.includes("name") && finalValue) {
+        console.log('Progressive save: Saving name');
+        await handleUserInfoSave(finalValue);
+      }
+      
+      // Save contact when entered
+      if (currentQuestionData.type === "tel" && finalValue) {
+        console.log('Progressive save: Saving contact');
+        await handleUserInfoSave('', finalValue.replace('+91', ''));
+      }
+      
+      // Save age when entered
+      if (currentQuestionData.type === "number" && finalValue) {
+        console.log('Progressive save: Saving age');
+        await handleUserInfoSave('', '', parseInt(finalValue));
+      }
+      
+      // Save all other answers
+      if (saveData.responseId) {
+        console.log('Progressive save: Saving answer for question', currentQuestionData.id);
+        await handleAnswerSave(
+          currentQuestionData.id,
+          currentQuestionData.type !== "select" ? finalValue : answers[currentQuestionData.id],
+          additionalInfo || undefined
+        );
+      }
+    } catch (error) {
+      console.error('Progressive save error:', error);
+      // Don't block user progress on save errors
+    }
+
     if (currentQuestion === questions.length - 1) {
       console.log('Quiz completed, showing results with answers:', newAnswers);
+      
+      // Mark quiz as completed
+      try {
+        if (saveData.responseId) {
+          await handleQuizComplete();
+        }
+      } catch (error) {
+        console.error('Error completing quiz:', error);
+      }
+      
       setShowResults(true);
     } else {
       setCurrentQuestion(currentQuestion + 1);
@@ -139,7 +198,7 @@ export const QuizScreen = (): JSX.Element => {
     }
   };
 
-  const handleOptionSelect = (option: string) => {
+  const handleOptionSelect = async (option: string) => {
     const currentQuestionData = questions[currentQuestion];
     const newAnswers = { ...answers };
 
@@ -154,10 +213,30 @@ export const QuizScreen = (): JSX.Element => {
       return; // Don't proceed to next question yet
     }
 
+    // Progressive auto-save for select options
+    try {
+      if (saveData.responseId) {
+        console.log('Progressive save: Saving option selection for question', currentQuestionData.id);
+        await handleAnswerSave(currentQuestionData.id, option);
+      }
+    } catch (error) {
+      console.error('Progressive save error for option:', error);
+    }
+
     // If "no" is selected or no additional inputs are needed, proceed to next question
     setAnswers(newAnswers);
     if (currentQuestion === questions.length - 1) {
       console.log('Quiz completed via option select, showing results with answers:', newAnswers);
+      
+      // Mark quiz as completed
+      try {
+        if (saveData.responseId) {
+          await handleQuizComplete();
+        }
+      } catch (error) {
+        console.error('Error completing quiz:', error);
+      }
+      
       setShowResults(true);
     } else {
       setCurrentQuestion(currentQuestion + 1);
