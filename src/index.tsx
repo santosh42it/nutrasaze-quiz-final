@@ -1,4 +1,3 @@
-
 import React, { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
@@ -11,18 +10,19 @@ import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { createAdminUser } from "./lib/supabase";
 import { ResultsPage } from "./components/Quiz/ResultsPage";
 import { pageview } from "./lib/analytics";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
-  
+
   // Check if it's a Supabase related error
   if (event.reason && typeof event.reason === 'object') {
     if (event.reason.message && event.reason.message.includes('supabase')) {
       console.error('Supabase connection issue detected');
     }
   }
-  
+
   event.preventDefault(); // Prevent the error from appearing in console
 });
 
@@ -84,6 +84,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             </ProtectedRoute>
           }
         />
+        {/* Catch-all route - redirect unknown paths to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

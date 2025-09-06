@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { supabase } from '../../lib/supabase';
 import type { QuizResponse, QuizAnswer } from '../../types/database';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface DetailedResponse extends QuizResponse {
   answers: (QuizAnswer & { questions: { question_text: string } })[];
@@ -30,6 +31,9 @@ export const ResponsesReport: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'age'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [responseToDelete, setResponseToDelete] = useState<DetailedResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Helper functions for default date range
   function getCurrentDate() {
@@ -231,6 +235,62 @@ export const ResponsesReport: React.FC = () => {
     setStatusFilter('all');
     setCurrentPage(1);
     await fetchResponses();
+  };
+
+  const handleDeleteClick = (response: DetailedResponse) => {
+    setResponseToDelete(response);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!responseToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete quiz answers first (due to foreign key constraint)
+      const { error: answersError } = await supabase
+        .from('quiz_answers')
+        .delete()
+        .eq('response_id', responseToDelete.id);
+
+      if (answersError) {
+        console.error('Error deleting quiz answers:', answersError);
+        alert(`Error deleting quiz answers: ${answersError.message}`);
+        return;
+      }
+
+      // Delete quiz response
+      const { error: responseError } = await supabase
+        .from('quiz_responses')
+        .delete()
+        .eq('id', responseToDelete.id);
+
+      if (responseError) {
+        console.error('Error deleting quiz response:', responseError);
+        alert(`Error deleting quiz response: ${responseError.message}`);
+        return;
+      }
+
+      // Refresh the responses list
+      await fetchResponses();
+      
+      // Close dialogs
+      setDeleteDialogOpen(false);
+      setResponseToDelete(null);
+      setSelectedResponse(null);
+
+      console.log('Response deleted successfully:', responseToDelete.id);
+    } catch (error) {
+      console.error('Error in delete operation:', error);
+      alert('An unexpected error occurred while deleting the response');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setResponseToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -442,12 +502,21 @@ export const ResponsesReport: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 text-[#3d3d3d] text-sm">{formatDate(response.created_at || '')}</td>
                     <td className="py-4 px-6">
-                      <Button
-                        onClick={() => setSelectedResponse(response)}
-                        className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white hover:from-[#7a2463] hover:to-[#9a3687] text-sm px-4 py-2 shadow-md"
-                      >
-                        👁️ View Details
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => setSelectedResponse(response)}
+                          className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white hover:from-[#7a2463] hover:to-[#9a3687] text-sm px-3 py-2 shadow-md"
+                        >
+                          👁️ View
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteClick(response)}
+                          variant="outline"
+                          className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 text-sm px-3 py-2"
+                        >
+                          🗑️ Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -543,13 +612,22 @@ export const ResponsesReport: React.FC = () => {
                   Submitted on {formatDate(selectedResponse.created_at || '')}
                 </p>
               </div>
-              <Button
-                onClick={() => setSelectedResponse(null)}
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 shrink-0"
-              >
-                ✕ Close
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  onClick={() => handleDeleteClick(selectedResponse)}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300"
+                >
+                  🗑️ Delete
+                </Button>
+                <Button
+                  onClick={() => setSelectedResponse(null)}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                >
+                  ✕ Close
+                </Button>
+              </div>
             </div>
 
             <CardContent className="p-8">
@@ -697,6 +775,20 @@ export const ResponsesReport: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+        title="Delete Quiz Response"
+        message={
+          responseToDelete
+            ? `Are you sure you want to delete the response from ${responseToDelete.name || 'Unknown'}? This action cannot be undone and will also delete all associated quiz answers.`
+            : ''
+        }
+      />
     </div>
   );
 };
