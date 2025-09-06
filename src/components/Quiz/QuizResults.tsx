@@ -171,7 +171,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         // Contact detection (Indian mobile numbers with or without +91)
         else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
           console.log('Detected contact by pattern:', cleanValue);
-          extracted.contact = cleanValue.replace(/^\+91/, ''); // Remove +91 for validation
+          // Keep the original format but ensure consistent cleaning for validation
+          extracted.contact = cleanValue.trim();
         }
         // Age detection
         else if ((!extracted.age || extracted.age === '0') && /^\d{1,3}$/.test(cleanValue)) {
@@ -636,8 +637,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         missingFields.push('email');
         console.error('Email validation failed:', extractedUserInfo?.email);
       }
-      const contactForValidation = extractedUserInfo?.contact?.replace(/^\+91/, '') || '';
-      if (!contactForValidation.trim() || contactForValidation.length !== 10) {
+      const contactForValidation = extractedUserInfo?.contact?.replace(/^\+91/, '').replace(/\s+/g, '') || '';
+      if (!contactForValidation.trim() || !/^[6-9]\d{9}$/.test(contactForValidation)) {
         missingFields.push('contact');
         console.error('Contact validation failed:', extractedUserInfo?.contact, 'cleaned:', contactForValidation);
       }
@@ -670,9 +671,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         throw new Error('Please enter a valid email address');
       }
 
+      // Clean the contact number for validation - remove +91 prefix and any spaces
+      const cleanedContact = extractedUserInfo.contact.replace(/^\+91/, '').replace(/\s+/g, '');
       const phoneRegex = /^[6-9]\d{9}$/;
-      // Use the existing contactForValidation variable from above
-      if (!phoneRegex.test(contactForValidation)) {
+      if (!phoneRegex.test(cleanedContact)) {
         throw new Error('Please enter a valid 10-digit phone number');
       }
 
