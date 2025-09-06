@@ -1,3 +1,4 @@
+
 import React, { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -15,16 +16,20 @@ import ErrorBoundary from "./components/ErrorBoundary";
 // Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
-
-  // Check if it's a Supabase related error
+  
+  // Check if it's a critical error that should be handled
   if (event.reason && typeof event.reason === 'object') {
-    if (event.reason.message && event.reason.message.includes('supabase')) {
-      console.error('Supabase connection issue detected');
+    const error = event.reason as any;
+    if (error.message && (
+      error.message.includes('Failed to fetch') || 
+      error.message.includes('supabase') ||
+      error.message.includes('Network')
+    )) {
+      console.warn('Network/Supabase connection issue detected, but continuing...');
+      // Don't prevent default for network errors - let them be handled gracefully
+      return;
     }
   }
-
-  // Don't prevent the error - let it be handled naturally
-  // event.preventDefault();
 });
 
 // Handle other errors
@@ -42,29 +47,14 @@ const PageTracker: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    pageview(location.pathname + location.search);
+    try {
+      pageview(location.pathname + location.search);
+    } catch (error) {
+      console.warn('Analytics tracking failed:', error);
+    }
   }, [location]);
 
   return null;
-};
-
-const AppContent: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = React.useState<'content' | 'quiz'>('quiz');
-
-  const navigateToQuiz = () => {
-    setCurrentScreen('quiz');
-  };
-
-  const navigateToContent = () => {
-    setCurrentScreen('content');
-  };
-
-  return (
-    <>
-      {currentScreen === 'content' && <ContentScreen onNavigateToQuiz={navigateToQuiz} />}
-      {currentScreen === 'quiz' && <QuizScreen onNavigateToContent={navigateToContent} />}
-    </>
-  );
 };
 
 createRoot(document.getElementById("app") as HTMLElement).render(

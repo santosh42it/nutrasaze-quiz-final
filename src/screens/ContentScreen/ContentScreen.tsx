@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Header } from "../../components/ui/header";
 import { Footer } from "../../components/ui/footer";
@@ -7,7 +8,11 @@ import { LifestyleSection } from "./sections/Lifestyle/LifestyleSection";
 import { Reviews } from "./sections/Reviews/Reviews";
 import { FaqByAnima } from "./sections/FaqByAnima/FaqByAnima";
 
-export const ContentScreen = (): JSX.Element => {
+interface ContentScreenProps {
+  onNavigateToQuiz: () => void;
+}
+
+export const ContentScreen: React.FC<ContentScreenProps> = ({ onNavigateToQuiz }) => {
   return (
     <div className="flex flex-col min-h-screen bg-[#1d0917] overflow-x-hidden">
       <Header />
