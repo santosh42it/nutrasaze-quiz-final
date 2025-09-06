@@ -6,7 +6,6 @@ import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
 import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook for duplicate prevention
-import { runCleanupWithNotification } from '../../utils/cleanupDuplicates';
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -45,48 +44,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Use a ref to track if we've already initiated a save to prevent multiple calls
   const hasInitiatedSave = React.useRef(false);
   const savePromiseRef = React.useRef<Promise<void> | null>(null);
-
-  // Function to clean up duplicate responses
-  const cleanupDuplicateResponses = async () => {
-    try {
-      console.log('Running duplicate cleanup...');
-      
-      // Get the user's email for cleanup
-      const userEmail = extractedUserInfo?.email?.trim();
-      if (!userEmail) return;
-
-      // Find and delete duplicate responses for this user, keeping only the latest
-      const { data: duplicates, error: findError } = await supabase
-        .from('quiz_responses')
-        .select('id, created_at')
-        .eq('email', userEmail)
-        .order('created_at', { ascending: false });
-
-      if (findError) {
-        console.error('Error finding duplicates:', findError);
-        return;
-      }
-
-      if (duplicates && duplicates.length > 1) {
-        // Keep the latest response (first in the ordered list) and delete the rest
-        const toDelete = duplicates.slice(1).map(d => d.id);
-        console.log(`Found ${duplicates.length} responses for ${userEmail}, deleting ${toDelete.length} duplicates`);
-
-        const { error: deleteError } = await supabase
-          .from('quiz_responses')
-          .delete()
-          .in('id', toDelete);
-
-        if (deleteError) {
-          console.error('Error deleting duplicates:', deleteError);
-        } else {
-          console.log('Successfully cleaned up duplicate responses');
-        }
-      }
-    } catch (error) {
-      console.error('Error in cleanup:', error);
-    }
-  };
 
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {
@@ -1053,30 +1010,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       savePromiseExists: !!savePromiseRef.current
     });
 
-    // If we're viewing existing results, just load data and clean up duplicates
-    if (isViewingExistingResults) {
-      if (!hasInitiatedSave.current) {
-        hasInitiatedSave.current = true;
-        // Clean up duplicates for existing results
-        cleanupDuplicateResponses().catch(console.error);
-      }
-      return;
-    }
-
-    // If already submitted, don't do anything
-    if (isSubmitted) {
-      return;
-    }
-
     // If progressive save already created a response, just load the products and mark as submitted
-    if (hasProgressiveResponse && !savePromiseRef.current && !hasInitiatedSave.current) {
+    if (hasProgressiveResponse && !isSubmitted && !savePromiseRef.current) {
       console.log('Progressive save response found, skipping duplicate save and loading products...');
       hasInitiatedSave.current = true;
 
       savePromiseRef.current = (async () => {
         try {
-          // Clean up any duplicates first
-          await cleanupDuplicateResponses();
           await getRecommendedProducts();
           await fetchActiveBanner();
           await fetchExpectations();
@@ -1091,17 +1031,24 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         }
       })();
 
-      return; // Exit early to prevent any other logic from running
+      savePromiseRef.current.catch(error => {
+        console.error('Error in loadProductsOnly:', error);
+        savePromiseRef.current = null;
+        setFallbackProducts().then(() => setIsSubmitted(true));
+      });
     }
-
-    // Only create a new save if:
-    // 1. No progressive response exists
-    // 2. Not currently submitting
-    // 3. Haven't initiated save before
-    // 4. No save promise is currently running
-    if (!hasProgressiveResponse && 
+    // Only save if:
+    // 1. Not viewing existing results
+    // 2. Haven't submitted yet
+    // 3. Not currently submitting
+    // 4. Haven't initiated save before
+    // 5. Progressive save hasn't already created a response
+    // 6. No save promise is currently running
+    else if (!isViewingExistingResults && 
+        !isSubmitted && 
         !isSubmitting && 
         !hasInitiatedSave.current && 
+        !hasProgressiveResponse &&
         !savePromiseRef.current) {
 
       hasInitiatedSave.current = true;
@@ -1110,8 +1057,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Create and store the save promise to prevent duplicate calls
       savePromiseRef.current = (async () => {
         try {
-          // Clean up any existing duplicates before saving
-          await cleanupDuplicateResponses();
           await saveResponses();
           console.log('Quiz save completed successfully');
         } catch (error) {
@@ -1122,7 +1067,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           // Set fallback products if save fails but we still want to show results
           try {
             await setFallbackProducts();
-            setIsSubmitted(true);
           } catch (fallbackError) {
             console.error('Error setting fallback products:', fallbackError);
           }
@@ -1130,6 +1074,19 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           savePromiseRef.current = null; // Clear the promise reference
         }
       })();
+
+      // Handle the promise properly
+      savePromiseRef.current.catch((error) => {
+        console.error('Unhandled error in save promise:', error);
+        setIsSubmitting(false);
+        hasInitiatedSave.current = false;
+        savePromiseRef.current = null;
+
+        // Try to set fallback products
+        setFallbackProducts().catch(fallbackError => {
+          console.error('Error setting fallback products after save failure:', fallbackError);
+        });
+      });
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting, saveData?.responseId]); // Added progressive save dependency
 
@@ -1979,17 +1936,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call{' '}
               <span className="text-[#913177] font-semibold">+91 7093619881</span>
             </p>
-            {/* Debug cleanup button - remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4">
-                <Button 
-                  onClick={() => runCleanupWithNotification(extractedUserInfo?.email)}
-                  className="bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded text-xs"
-                >
-                  🧹 Clean Duplicates (Debug)
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
