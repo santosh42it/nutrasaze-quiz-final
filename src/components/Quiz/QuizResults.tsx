@@ -5,7 +5,7 @@ import { supabase } from "../../lib/supabase";
 import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
-// import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook - removed due to incorrect usage
+import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook for duplicate prevention
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -986,14 +986,39 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     }
   };
 
+  // Progressive save integration
+  const { saveData } = useProgressiveSave();
+
   // Use a ref to track if we've already initiated a save to prevent multiple calls
   const hasInitiatedSave = React.useRef(false);
 
   useEffect(() => {
-    // Only save if it's not an existing result view and we haven't initiated save
-    if (!isViewingExistingResults && !isSubmitted && !isSubmitting && !hasInitiatedSave.current) {
+    // Check if progressive save already created a response
+    const hasProgressiveResponse = saveData?.responseId && saveData.responseId > 0;
+    
+    console.log('Quiz save check:', {
+      isViewingExistingResults,
+      isSubmitted,
+      isSubmitting,
+      hasInitiatedSave: hasInitiatedSave.current,
+      hasProgressiveResponse,
+      progressiveResponseId: saveData?.responseId
+    });
+
+    // Only save if:
+    // 1. Not viewing existing results
+    // 2. Haven't submitted yet
+    // 3. Not currently submitting
+    // 4. Haven't initiated save before
+    // 5. Progressive save hasn't already created a response
+    if (!isViewingExistingResults && 
+        !isSubmitted && 
+        !isSubmitting && 
+        !hasInitiatedSave.current && 
+        !hasProgressiveResponse) {
+      
       hasInitiatedSave.current = true;
-      console.log('Initiating quiz save...');
+      console.log('Initiating quiz save (no progressive response found)...');
 
       // Use async function with proper error handling
       const initiateSave = async () => {
@@ -1025,8 +1050,31 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           console.error('Error setting fallback products after save failure:', fallbackError);
         });
       });
+    } else if (hasProgressiveResponse && !isSubmitted) {
+      // If progressive save already created a response, just load the products and mark as submitted
+      console.log('Progressive save response found, skipping duplicate save and loading products...');
+      hasInitiatedSave.current = true;
+      
+      const loadProductsOnly = async () => {
+        try {
+          await getRecommendedProducts();
+          await fetchActiveBanner();
+          await fetchExpectations();
+          setIsSubmitted(true);
+          console.log('Products loaded successfully for progressive save response');
+        } catch (error) {
+          console.error('Error loading products for progressive save response:', error);
+          await setFallbackProducts();
+          setIsSubmitted(true);
+        }
+      };
+
+      loadProductsOnly().catch(error => {
+        console.error('Error in loadProductsOnly:', error);
+        setFallbackProducts().then(() => setIsSubmitted(true));
+      });
     }
-  }, [isViewingExistingResults, isSubmitted, isSubmitting]); // Added dependencies
+  }, [isViewingExistingResults, isSubmitted, isSubmitting, saveData?.responseId]); // Added progressive save dependency
 
   // Scroll to top when component loads
   useEffect(() => {
