@@ -281,13 +281,6 @@ export const AnalyticsReport: React.FC = () => {
               >
                 ✅ Apply Filters
               </Button>
-              <Button
-                onClick={clearFilters}
-                variant="outline"
-                className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc] w-full"
-              >
-                🗑️ Reset to Current Week
-              </Button>
             </div>
           </div>
         </CardContent>
