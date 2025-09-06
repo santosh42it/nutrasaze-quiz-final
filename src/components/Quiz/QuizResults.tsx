@@ -171,8 +171,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         // Contact detection (Indian mobile numbers with or without +91)
         else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
           console.log('Detected contact by pattern:', cleanValue);
-          // Keep the original format but ensure consistent cleaning for validation
-          extracted.contact = cleanValue.trim();
+          // Remove +91 prefix and clean for consistent storage
+          extracted.contact = cleanValue.replace(/^\+91/, '').replace(/\s+/g, '').trim();
         }
         // Age detection
         else if ((!extracted.age || extracted.age === '0') && /^\d{1,3}$/.test(cleanValue)) {
@@ -727,7 +727,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       console.log('Quiz response saved successfully:', responseData);
 
-      // Generate unique result ID and URL
+      // Generate unique result id and URL
       const uniqueResultId = `${responseData.id}-${Date.now()}`;
       setResultId(uniqueResultId);
 
@@ -997,7 +997,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   useEffect(() => {
     // Check if progressive save already created a response
     const hasProgressiveResponse = saveData?.responseId && saveData.responseId > 0;
-    
+
     console.log('Quiz save check:', {
       isViewingExistingResults,
       isSubmitted,
@@ -1018,7 +1018,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         !isSubmitting && 
         !hasInitiatedSave.current && 
         !hasProgressiveResponse) {
-      
+
       hasInitiatedSave.current = true;
       console.log('Initiating quiz save (no progressive response found)...');
 
@@ -1056,7 +1056,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // If progressive save already created a response, just load the products and mark as submitted
       console.log('Progressive save response found, skipping duplicate save and loading products...');
       hasInitiatedSave.current = true;
-      
+
       const loadProductsOnly = async () => {
         try {
           await getRecommendedProducts();
