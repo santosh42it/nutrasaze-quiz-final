@@ -1,6 +1,6 @@
 import React, { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import "./index.css";
 import { ContentScreen } from "./screens/ContentScreen";
 import { QuizScreen } from "./screens/QuizScreen";
@@ -23,7 +23,8 @@ window.addEventListener('unhandledrejection', (event) => {
     }
   }
 
-  event.preventDefault(); // Prevent the error from appearing in console
+  // Don't prevent the error - let it be handled naturally
+  // event.preventDefault();
 });
 
 // Handle other errors
@@ -68,25 +69,27 @@ const AppContent: React.FC = () => {
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
-    <BrowserRouter>
-      <PageTracker />
-      <Routes>
-        <Route path="/" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
-        <Route path="/content" element={<ContentScreen onNavigateToQuiz={() => window.location.href = '/'} />} />
-        <Route path="/quiz" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
-        <Route path="/results/:resultId" element={<ResultsPage />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
-        {/* Catch-all route - redirect unknown paths to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <PageTracker />
+        <Routes>
+          <Route path="/" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
+          <Route path="/content" element={<ContentScreen onNavigateToQuiz={() => window.location.href = '/'} />} />
+          <Route path="/quiz" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
+          <Route path="/results/:resultId" element={<ResultsPage />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+          {/* Catch-all route - redirect unknown paths to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>
 );
