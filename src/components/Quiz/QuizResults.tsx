@@ -1010,8 +1010,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       savePromiseExists: !!savePromiseRef.current
     });
 
+    // If we're viewing existing results or already submitted, don't do anything
+    if (isViewingExistingResults || isSubmitted) {
+      return;
+    }
+
     // If progressive save already created a response, just load the products and mark as submitted
-    if (hasProgressiveResponse && !isSubmitted && !savePromiseRef.current) {
+    if (hasProgressiveResponse && !savePromiseRef.current && !hasInitiatedSave.current) {
       console.log('Progressive save response found, skipping duplicate save and loading products...');
       hasInitiatedSave.current = true;
 
@@ -1031,24 +1036,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         }
       })();
 
-      savePromiseRef.current.catch(error => {
-        console.error('Error in loadProductsOnly:', error);
-        savePromiseRef.current = null;
-        setFallbackProducts().then(() => setIsSubmitted(true));
-      });
+      return; // Exit early to prevent any other logic from running
     }
-    // Only save if:
-    // 1. Not viewing existing results
-    // 2. Haven't submitted yet
-    // 3. Not currently submitting
-    // 4. Haven't initiated save before
-    // 5. Progressive save hasn't already created a response
-    // 6. No save promise is currently running
-    else if (!isViewingExistingResults && 
-        !isSubmitted && 
+
+    // Only create a new save if:
+    // 1. No progressive response exists
+    // 2. Not currently submitting
+    // 3. Haven't initiated save before
+    // 4. No save promise is currently running
+    if (!hasProgressiveResponse && 
         !isSubmitting && 
         !hasInitiatedSave.current && 
-        !hasProgressiveResponse &&
         !savePromiseRef.current) {
 
       hasInitiatedSave.current = true;
@@ -1067,6 +1065,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           // Set fallback products if save fails but we still want to show results
           try {
             await setFallbackProducts();
+            setIsSubmitted(true);
           } catch (fallbackError) {
             console.error('Error setting fallback products:', fallbackError);
           }
@@ -1074,19 +1073,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           savePromiseRef.current = null; // Clear the promise reference
         }
       })();
-
-      // Handle the promise properly
-      savePromiseRef.current.catch((error) => {
-        console.error('Unhandled error in save promise:', error);
-        setIsSubmitting(false);
-        hasInitiatedSave.current = false;
-        savePromiseRef.current = null;
-
-        // Try to set fallback products
-        setFallbackProducts().catch(fallbackError => {
-          console.error('Error setting fallback products after save failure:', fallbackError);
-        });
-      });
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting, saveData?.responseId]); // Added progressive save dependency
 
