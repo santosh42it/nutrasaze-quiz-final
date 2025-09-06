@@ -6,6 +6,7 @@ import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
 import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook for duplicate prevention
+import { runCleanupWithNotification } from '../../utils/cleanupDuplicates';
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -27,6 +28,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [questions, setQuestions] = useState<Array<{ id: number; question_text: string }>>([]);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [matchedTags, setMatchedTags] = useState<Tag[]>([]); // State to store matched tags
@@ -37,13 +39,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expectations, setExpectations] = useState<Expectation[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Progressive save integration
   const { saveData } = useProgressiveSave();
 
   // Use a ref to track if we've already initiated a save to prevent multiple calls
   const hasInitiatedSave = React.useRef(false);
-  const savePromiseRef = React.useRef<Promise<void> | null>(null);
 
   // Function to truncate HTML content and show first 5 lines
   const truncateDescription = (html: string, maxLines: number = 5): string => {
@@ -608,12 +610,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
   const saveResponses = async () => {
     // Prevent multiple submissions with more robust checking
-    if (isSubmitting || isSubmitted || savePromiseRef.current) {
-      console.log('Submission already in progress or completed, skipping...', {
-        isSubmitting,
-        isSubmitted,
-        hasActivePromise: !!savePromiseRef.current
-      });
+    if (isSubmitting || isSubmitted) {
+      console.log('Submission already in progress or completed, skipping...');
       return;
     }
 
@@ -625,12 +623,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       console.log('Answers Keys:', Object.keys(answers));
       console.log('Answers Count:', Object.keys(answers).length);
       console.log('Extracted User Info:', extractedUserInfo);
-      console.log('Detailed answers breakdown:');
-      Object.entries(answers).forEach(([key, value]) => {
-        console.log(`  Key: "${key}" -> Value: "${value}" (Type: ${typeof value})`);
-      });
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not found');
-      console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Not found');
 
       // Validate required fields with better error messages
       const missingFields = [];
@@ -657,19 +649,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
       if (missingFields.length > 0) {
         console.error('Missing required fields:', missingFields);
-        console.error('Field validation details:', {
-          name: extractedUserInfo?.name || 'MISSING',
-          email: extractedUserInfo?.email || 'MISSING',
-          contact: extractedUserInfo?.contact || 'MISSING',
-          age: extractedUserInfo?.age || 'MISSING'
-        });
-
-        // Debug: Show all available answers
-        console.log('All available answers for debugging:');
-        Object.entries(answers).forEach(([key, value]) => {
-          console.log(`  ${key}: "${value}"`);
-        });
-
         throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
       }
 
@@ -691,13 +670,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         throw new Error('Please enter a valid age between 1 and 120');
       }
 
-      // Test current user session
-      console.log('Checking current session...');
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log('Session user:', sessionData?.session?.user?.id || 'No user');
-      console.log('Session role:', sessionData?.session?.user?.role || 'anon');
-      console.log('Session error:', sessionError);
-
       // Insert quiz response
       console.log('Inserting quiz response...');
       const insertData = {
@@ -706,8 +678,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         contact: extractedUserInfo.contact.trim(),
         age: parseInt(extractedUserInfo.age.toString()) || 0
       };
-      console.log('Data being inserted:', insertData);
-      console.log('Current timestamp:', new Date().toISOString());
 
       const { data: responseData, error: responseError } = await supabase
         .from('quiz_responses')
@@ -716,20 +686,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         .single();
 
       if (responseError) {
-        console.error('Error saving quiz response:', {
-          error: responseError,
-          message: responseError.message,
-          details: responseError.details,
-          hint: responseError.hint,
-          code: responseError.code,
-          insertData,
-          userAgent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
-          supabaseConfig: {
-            url: import.meta.env.VITE_SUPABASE_URL,
-            hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
-          }
-        });
+        console.error('Error saving quiz response:', responseError);
         throw new Error(`Failed to save quiz response: ${responseError.message}`);
       }
 
@@ -751,502 +708,254 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Update browser URL without page reload
       window.history.replaceState(null, '', shareableUrl);
 
-      // Filter and prepare answers for insertion
+      // Save quiz answers
       const validAnswers = Object.entries(answers)
         .filter(([key, value]) => {
-          // Skip detail keys and empty values
           if (key.includes('_details') || !value || value.trim() === '') {
             return false;
           }
           return true;
         });
 
-      console.log('Valid answers to save:', validAnswers);
-      console.log('Selected file for upload:', selectedFile ? selectedFile.name : 'No file');
+      if (validAnswers.length > 0) {
+        // Fetch questions from the database to map answers correctly
+        const { data: fetchedQuestions, error: questionsError } = await supabase
+          .from('questions')
+          .select('id, question_text')
+          .eq('status', 'active')
+          .order('order_index');
 
-      if (validAnswers.length === 0) {
-        console.log('No valid answers to save, skipping answers insertion');
-        setIsSubmitted(true);
-        return;
-      }
+        if (!questionsError && fetchedQuestions) {
+          setQuestions(fetchedQuestions);
 
-      // Fetch questions from the database to map answers correctly
-      console.log('Fetching questions from database...');
-      const { data: fetchedQuestions, error: questionsError } = await supabase
-        .from('questions')
-        .select('id, question_text')
-        .eq('status', 'active')
-        .order('order_index');
+          const answersToInsert = [];
 
-      if (questionsError) {
-        console.error('Error fetching questions:', questionsError);
-        // Continue without saving answers if we can't get question IDs
-        setIsSubmitted(true);
-        return;
-      }
-      setQuestions(fetchedQuestions || []); // Store questions for answer mapping
+          // Handle file upload if there's a selected file
+          let uploadedFileUrl = null;
+          if (selectedFile) {
+            try {
+              const fileExt = selectedFile.name.split('.').pop();
+              const fileName = `${responseData.id}_${Date.now()}.${fileExt}`;
 
-      console.log('Questions from database:', fetchedQuestions);
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('quiz-files')
+                .upload(fileName, selectedFile);
 
-      // Create a mapping from question text/type to database ID
-      const questionIdMap: { [key: string]: number } = {};
-
-      // Map based on question content patterns
-      fetchedQuestions?.forEach(q => {
-        const text = q.question_text.toLowerCase();
-        if (text.includes('name')) questionIdMap['name'] = q.id;
-        else if (text.includes('contact') || text.includes('phone')) questionIdMap['contact'] = q.id;
-        else if (text.includes('email')) questionIdMap['email'] = q.id;
-        else if (text.includes('age')) questionIdMap['age'] = q.id;
-        else if (text.includes('gender')) questionIdMap['gender'] = q.id;
-        else if (text.includes('stress') || text.includes('anxious')) questionIdMap['mental_stress'] = q.id;
-        else if (text.includes('energy')) questionIdMap['energy_levels'] = q.id;
-        else if (text.includes('joint') || text.includes('pain')) questionIdMap['joint_pain'] = q.id;
-        else if (text.includes('skin')) questionIdMap['skin_condition'] = q.id;
-        else if (text.includes('sleep')) questionIdMap['sleep_quality'] = q.id;
-        else if (text.includes('digestive') || text.includes('bloating')) questionIdMap['digestive_issues'] = q.id;
-        else if (text.includes('active') || text.includes('exercise')) questionIdMap['physical_activity'] = q.id;
-        else if (text.includes('supplement')) questionIdMap['supplements'] = q.id;
-        else if (text.includes('health condition') || text.includes('allergies')) questionIdMap['health_conditions'] = q.id;
-        else if (text.includes('blood test')) questionIdMap['blood_test'] = q.id;
-      });
-
-      console.log('All questions from DB:', fetchedQuestions?.map(q => ({ id: q.id, text: q.question_text })));
-      console.log('Question ID mapping created:', questionIdMap);
-      console.log('User Info extracted:', extractedUserInfo);
-      console.log('All answers to process:', Object.entries(answers));
-
-      const answersToInsert = [];
-
-      // First, handle file upload if there's a selected file
-      let uploadedFileUrl = null;
-      if (selectedFile) {
-        try {
-          console.log('Processing file upload:', selectedFile.name, 'Size:', selectedFile.size);
-          const fileExt = selectedFile.name.split('.').pop();
-          const fileName = `${responseData.id}_${Date.now()}.${fileExt}`;
-
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('quiz-files')
-            .upload(fileName, selectedFile);
-
-          if (uploadError) {
-            console.error('Error uploading file:', uploadError);
-          } else {
-            const { data: { publicUrl } } = supabase.storage
-              .from('quiz-files')
-              .getPublicUrl(fileName);
-            uploadedFileUrl = publicUrl;
-            console.log('File uploaded successfully:', uploadedFileUrl);
-          }
-        } catch (error) {
-          console.error('Error in file upload process:', error);
-        }
-      }
-
-      // Save quiz answers for all questions - ensure correct question ID mapping
-      for (const [answerKey, answer] of Object.entries(answers)) {
-        // Skip detail keys and empty values
-        if (answerKey.includes('_details') || !answer || String(answer).trim() === '') {
-          continue;
-        }
-
-        let actualQuestionId = null;
-        let question = null;
-
-        // Direct mapping by question ID (most reliable)
-        const directQuestionId = parseInt(answerKey);
-        if (!isNaN(directQuestionId) && fetchedQuestions) {
-          question = fetchedQuestions.find(q => q.id === directQuestionId);
-          if (question) {
-            actualQuestionId = question.id;
-            console.log(`Direct mapping: key "${answerKey}" -> question ID ${actualQuestionId} (${question.question_text})`);
-          }
-        }
-
-        // If direct mapping failed, try legacy key mapping patterns
-        if (!actualQuestionId && fetchedQuestions) {
-          // Legacy key mapping based on question patterns and IDs from database
-          if (answerKey === '38' || answerKey === 'name') {
-            question = fetchedQuestions.find(q => q.id === 38 || q.question_text.toLowerCase().includes('name'));
-          } else if (answerKey === '39' || answerKey === 'email') {
-            question = fetchedQuestions.find(q => q.id === 39 || q.question_text.toLowerCase().includes('email'));
-          } else if (answerKey === '3' || answerKey === 'contact') {
-            question = fetchedQuestions.find(q => q.id === 3 || (q.question_text.toLowerCase().includes('contact') || q.question_text.toLowerCase().includes('phone')));
-          } else if (answerKey === '41' || answerKey === 'age') {
-            question = fetchedQuestions.find(q => q.id === 41 || q.question_text.toLowerCase().includes('age'));
-          } else if (answerKey === '6' || answerKey === 'gender') {
-            question = fetchedQuestions.find(q => q.id === 6 || q.question_text.toLowerCase().includes('gender'));
-          } else if (answerKey === '7' || answerKey === 'mental_stress') {
-            question = fetchedQuestions.find(q => q.id === 7 || (q.question_text.toLowerCase().includes('stress') || q.question_text.toLowerCase().includes('anxious')));
-          } else if (answerKey === '8' || answerKey === 'energy_levels') {
-            question = fetchedQuestions.find(q => q.id === 8 || q.question_text.toLowerCase().includes('energy'));
-          } else if (answerKey === '9' || answerKey === 'joint_pain') {
-            question = fetchedQuestions.find(q => q.id === 9 || (q.question_text.toLowerCase().includes('joint') || q.question_text.toLowerCase().includes('pain')));
-          } else if (answerKey === '10' || answerKey === 'skin_condition') {
-            question = fetchedQuestions.find(q => q.id === 10 || q.question_text.toLowerCase().includes('skin'));
-          } else if (answerKey === '11' || answerKey === 'sleep_quality') {
-            question = fetchedQuestions.find(q => q.id === 11 || q.question_text.toLowerCase().includes('sleep'));
-          } else if (answerKey === '12' || answerKey === 'digestive_issues') {
-            question = fetchedQuestions.find(q => q.id === 12 || (q.question_text.toLowerCase().includes('digestive') || q.question_text.toLowerCase().includes('bloating')));
-          } else if (answerKey === '13' || answerKey === 'physical_activity') {
-            question = fetchedQuestions.find(q => q.id === 13 || (q.question_text.toLowerCase().includes('active') || q.question_text.toLowerCase().includes('exercise')));
-          } else if (answerKey === '14' || answerKey === 'supplements') {
-            question = fetchedQuestions.find(q => q.id === 14 || q.question_text.toLowerCase().includes('supplement'));
-          } else if (answerKey === '15' || answerKey === 'health_conditions') {
-            question = fetchedQuestions.find(q => q.id === 15 || (q.question_text.toLowerCase().includes('health condition') || q.question_text.toLowerCase().includes('allergies')));
-          } else if (answerKey === '16' || answerKey === 'blood_test') {
-            question = fetchedQuestions.find(q => q.id === 16 || q.question_text.toLowerCase().includes('blood test'));
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from('quiz-files')
+                  .getPublicUrl(fileName);
+                uploadedFileUrl = publicUrl;
+              }
+            } catch (error) {
+              console.error('Error in file upload process:', error);
+            }
           }
 
-          if (question) {
-            actualQuestionId = question.id;
-            console.log(`Legacy mapping: key "${answerKey}" -> question ID ${actualQuestionId} (${question.question_text})`);
+          // Save quiz answers
+          for (const [answerKey, answer] of Object.entries(answers)) {
+            if (answerKey.includes('_details') || !answer || String(answer).trim() === '') {
+              continue;
+            }
+
+            let actualQuestionId = null;
+            const directQuestionId = parseInt(answerKey);
+
+            if (!isNaN(directQuestionId)) {
+              const question = fetchedQuestions.find(q => q.id === directQuestionId);
+              if (question) {
+                actualQuestionId = question.id;
+              }
+            }
+
+            if (!actualQuestionId) {
+              console.warn(`Could not map answer key "${answerKey}" to any question. Skipping.`);
+              continue;
+            }
+
+            const answerText = String(answer).trim();
+            let additionalInfo = null;
+            let fileUrl = null;
+
+            const detailsKey = `${answerKey}_details`;
+            if (answers[detailsKey]) {
+              additionalInfo = String(answers[detailsKey]).substring(0, 1000);
+            }
+
+            const question = fetchedQuestions.find(q => q.id === actualQuestionId);
+            if (question) {
+              const questionTextLower = question.question_text.toLowerCase();
+              const shouldAttachFile = answerKey === 'blood_test' || 
+                                     answerKey === '16' ||
+                                     questionTextLower.includes('blood test') ||
+                                     questionTextLower.includes('upload') ||
+                                     questionTextLower.includes('file');
+
+              if (shouldAttachFile && uploadedFileUrl) {
+                fileUrl = uploadedFileUrl;
+              }
+            }
+
+            answersToInsert.push({
+              response_id: responseData.id,
+              question_id: actualQuestionId,
+              answer_text: answerText.substring(0, 500),
+              additional_info: additionalInfo,
+              file_url: fileUrl
+            });
+          }
+
+          if (answersToInsert.length > 0) {
+            const { error: answersError } = await supabase
+              .from('quiz_answers')
+              .insert(answersToInsert);
+
+            if (answersError) {
+              console.error('Error saving quiz answers:', answersError);
+              throw new Error(`Failed to save quiz answers: ${answersError.message}`);
+            }
           }
         }
-
-        if (!actualQuestionId) {
-          console.warn(`Could not map answer key "${answerKey}" to any question. Skipping.`);
-          continue;
-        }
-        // Extract answer text (always treat as string for simplicity)
-        const answerText = String(answer).trim();
-        let additionalInfo = null;
-        let fileUrl = null;
-
-        // Get additional info if it exists
-        const detailsKey = `${answerKey}_details`;
-        if (answers[detailsKey]) {
-          additionalInfo = String(answers[detailsKey]).substring(0, 1000);
-        }
-
-        console.log(`Saving answer for question ID ${actualQuestionId} (key: "${answerKey}"): ${answerText}`);
-
-        // Check if this question should have the uploaded file attached
-        if (question) {
-          const questionTextLower = question.question_text.toLowerCase();
-          const shouldAttachFile = answerKey === 'blood_test' || 
-                                 answerKey === '16' ||
-                                 questionTextLower.includes('blood test') ||
-                                 questionTextLower.includes('upload') ||
-                                 questionTextLower.includes('file');
-
-          if (shouldAttachFile && uploadedFileUrl) {
-            fileUrl = uploadedFileUrl;
-            console.log(`Attaching file to question: ${question.question_text}`);
-          }
-        }
-
-        answersToInsert.push({
-          response_id: responseData.id,
-          question_id: actualQuestionId,
-          answer_text: answerText.substring(0, 500),
-          additional_info: additionalInfo,
-          file_url: fileUrl
-        });
       }
-
-      console.log('Answers to insert:', answersToInsert);
-
-      if (answersToInsert.length > 0) {
-        const { error: answersError } = await supabase
-          .from('quiz_answers')
-          .insert(answersToInsert);
-
-        if (answersError) {
-          console.error('Error saving quiz answers:', answersError.message, answersError);
-          throw new Error(`Failed to save quiz answers: ${answersError.message}`);
-        } else {
-          console.log('Quiz answers saved successfully');
-        }
-      }
-
-      // Get recommended products after successful save
-      await getRecommendedProducts();
-
-      // Fetch active banner
-      await fetchActiveBanner();
-
-      // Fetch expectations
-      await fetchExpectations();
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error('Error in saveResponses:', {
-        error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        extractedUserInfo,
-        answersDebug: Object.keys(answers).length > 0 ? answers : 'No answers found'
-      });
-
-      let errorMessage = 'Unknown error occurred';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error && typeof error === 'object' && 'message' in error) {
-        errorMessage = String(error.message);
-      }
-
-      // Show user-friendly error message
-      alert(`There was an error saving your quiz response: ${errorMessage}. Please check that all required fields are filled and try again.`);
+      console.error('Error in saveResponses:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error occurred');
+      alert(`There was an error saving your quiz response: ${error instanceof Error ? error.message : 'Unknown error'}. Please check that all required fields are filled and try again.`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Function to clean up duplicate responses
+  const cleanupDuplicateResponses = async () => {
+    try {
+      const userEmail = extractedUserInfo?.email?.trim();
+      if (!userEmail) return;
+
+      const { data: duplicates, error: findError } = await supabase
+        .from('quiz_responses')
+        .select('id, created_at')
+        .eq('email', userEmail)
+        .order('created_at', { ascending: false });
+
+      if (findError) {
+        console.error('Error finding duplicates:', findError);
+        return;
+      }
+
+      if (duplicates && duplicates.length > 1) {
+        const toDelete = duplicates.slice(1).map(d => d.id);
+
+        const { error: deleteError } = await supabase
+          .from('quiz_responses')
+          .delete()
+          .in('id', toDelete);
+
+        if (deleteError) {
+          console.error('Error deleting duplicates:', deleteError);
+        } else {
+          console.log('Successfully cleaned up duplicate responses');
+        }
+      }
+    } catch (error) {
+      console.error('Error in cleanup:', error);
+    }
+  };
+
+  // Main data loading effect
   useEffect(() => {
-    // Check if progressive save already created a response
-    const hasProgressiveResponse = saveData?.responseId && saveData.responseId > 0;
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-    console.log('Quiz save check:', {
-      isViewingExistingResults,
-      isSubmitted,
-      isSubmitting,
-      hasInitiatedSave: hasInitiatedSave.current,
-      hasProgressiveResponse,
-      progressiveResponseId: saveData?.responseId,
-      savePromiseExists: !!savePromiseRef.current
-    });
+        console.log('=== QUIZ RESULTS LOADING START ===');
+        console.log('Is viewing existing results:', isViewingExistingResults);
+        console.log('Progressive save data:', saveData);
 
-    // If progressive save already created a response, just load the products and mark as submitted
-    if (hasProgressiveResponse && !isSubmitted && !savePromiseRef.current) {
-      console.log('Progressive save response found, skipping duplicate save and loading products...');
-      hasInitiatedSave.current = true;
+        // If viewing existing results, just load the content
+        if (isViewingExistingResults) {
+          console.log('Loading data for existing results...');
 
-      savePromiseRef.current = (async () => {
-        try {
-          await getRecommendedProducts();
-          await fetchActiveBanner();
-          await fetchExpectations();
-          setIsSubmitted(true);
-          console.log('Products loaded successfully for progressive save response');
-        } catch (error) {
-          console.error('Error loading products for progressive save response:', error);
-          await setFallbackProducts();
-          setIsSubmitted(true);
-        } finally {
-          savePromiseRef.current = null;
-        }
-      })();
+          // Load questions first
+          const { data: fetchedQuestions, error: questionsError } = await supabase
+            .from('questions')
+            .select('id, question_text')
+            .eq('status', 'active')
+            .order('order_index');
 
-      savePromiseRef.current.catch(error => {
-        console.error('Error in loadProductsOnly:', error);
-        savePromiseRef.current = null;
-        setFallbackProducts().then(() => setIsSubmitted(true));
-      });
-    }
-    // Only save if:
-    // 1. Not viewing existing results
-    // 2. Haven't submitted yet
-    // 3. Not currently submitting
-    // 4. Haven't initiated save before
-    // 5. Progressive save hasn't already created a response
-    // 6. No save promise is currently running
-    else if (!isViewingExistingResults && 
-        !isSubmitted && 
-        !isSubmitting && 
-        !hasInitiatedSave.current && 
-        !hasProgressiveResponse &&
-        !savePromiseRef.current) {
-
-      hasInitiatedSave.current = true;
-      console.log('Initiating quiz save (no progressive response found)...');
-
-      // Create and store the save promise to prevent duplicate calls
-      savePromiseRef.current = (async () => {
-        try {
-          await saveResponses();
-          console.log('Quiz save completed successfully');
-        } catch (error) {
-          console.error('Error in saveResponses:', error);
-          setIsSubmitting(false);
-          hasInitiatedSave.current = false; // Allow retry on error
-
-          // Set fallback products if save fails but we still want to show results
-          try {
-            await setFallbackProducts();
-          } catch (fallbackError) {
-            console.error('Error setting fallback products:', fallbackError);
+          if (!questionsError && fetchedQuestions) {
+            setQuestions(fetchedQuestions);
           }
-        } finally {
-          savePromiseRef.current = null; // Clear the promise reference
+
+          // Load all data in parallel
+          await Promise.allSettled([
+            getRecommendedProducts(),
+            fetchActiveBanner(),
+            fetchExpectations(),
+            cleanupDuplicateResponses()
+          ]);
+
+          setIsSubmitted(true);
+          setIsLoading(false);
+          return;
         }
-      })();
 
-      // Handle the promise properly
-      savePromiseRef.current.catch((error) => {
-        console.error('Unhandled error in save promise:', error);
-        setIsSubmitting(false);
-        hasInitiatedSave.current = false;
-        savePromiseRef.current = null;
+        // For new quiz submissions
+        const hasProgressiveResponse = saveData?.responseId && saveData.responseId > 0;
 
-        // Try to set fallback products
-        setFallbackProducts().catch(fallbackError => {
-          console.error('Error setting fallback products after save failure:', fallbackError);
-        });
-      });
-    }
-  }, [isViewingExistingResults, isSubmitted, isSubmitting, saveData?.responseId]); // Added progressive save dependency
+        if (hasProgressiveResponse && !hasInitiatedSave.current) {
+          console.log('Progressive save response found, loading products...');
+          hasInitiatedSave.current = true;
+
+          await Promise.allSettled([
+            getRecommendedProducts(),
+            fetchActiveBanner(),
+            fetchExpectations(),
+            cleanupDuplicateResponses()
+          ]);
+
+          setIsSubmitted(true);
+        } else if (!hasProgressiveResponse && !hasInitiatedSave.current) {
+          console.log('No progressive response found, creating new submission...');
+          hasInitiatedSave.current = true;
+
+          await cleanupDuplicateResponses();
+          await saveResponses();
+
+          await Promise.allSettled([
+            getRecommendedProducts(),
+            fetchActiveBanner(),
+            fetchExpectations()
+          ]);
+        }
+
+      } catch (error) {
+        console.error('Error loading quiz results:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load results');
+
+        // Load fallback data
+        await Promise.allSettled([
+          setFallbackProducts(),
+          fetchActiveBanner(),
+          fetchExpectations()
+        ]);
+
+        setIsSubmitted(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [isViewingExistingResults, saveData?.responseId]);
 
   // Scroll to top when component loads
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
-
-  // Separate useEffect to load products when viewing existing results
-  useEffect(() => {
-    if (isViewingExistingResults && recommendedProducts.length === 0) {
-      console.log('Loading data for existing results view...');
-
-      const loadDataForExistingResults = async () => {
-        try {
-          console.log('=== EXISTING RESULTS DATA LOAD START ===');
-
-          // Load questions first if not already loaded
-          if (questions.length === 0) {
-            console.log('Loading questions for existing results...');
-
-            try {
-              const { data: fetchedQuestions, error: questionsError } = await supabase
-                .from('questions')
-                .select('id, question_text')
-                .eq('status', 'active')
-                .order('order_index');
-
-              if (questionsError) {
-                console.error('=== QUESTION LOADING ERROR ===');
-                console.error('Error loading questions:', questionsError);
-                console.error('Stack trace:', questionsError?.stack);
-                // Continue without questions - we'll use fallback products
-              } else if (fetchedQuestions && fetchedQuestions.length > 0) {
-                setQuestions(fetchedQuestions);
-                console.log('Questions loaded for existing results:', fetchedQuestions.length);
-              } else {
-                console.warn('No questions found in database');
-              }
-            } catch (questionError) {
-              console.error('=== EXCEPTION LOADING QUESTIONS ===');
-              console.error('Exception loading questions:', questionError);
-              // Continue without questions
-            }
-          }
-
-          // Load products
-          console.log('Loading recommended products...');
-          try {
-            await getRecommendedProducts();
-            console.log('Recommended products loaded successfully');
-          } catch (productError) {
-            console.error('=== PRODUCT LOADING ERROR ===');
-            console.error('Error getting recommended products:', productError);
-            console.error('Stack trace:', productError?.stack);
-
-            // Fallback to default products with error handling
-            console.log('Setting fallback products due to recommendation error');
-            try {
-              await setFallbackProducts();
-              console.log('Fallback products set successfully');
-            } catch (fallbackError) {
-              console.error('=== FALLBACK PRODUCTS ERROR ===');
-              console.error('Error setting fallback products:', fallbackError);
-
-              // Set hardcoded products manually
-              setRecommendedProducts([
-                { 
-                  id: 999, 
-                  name: "Essential Wellness Kit", 
-                  description: "Your personalized nutrition solution", 
-                  mrp: 1299, 
-                  srp: 999, 
-                  image_url: null, 
-                  is_active: true, 
-                  shopify_variant_id: null, 
-                  url: 'https://nutrasage.in' 
-                }
-              ]);
-            }
-          }
-
-          // Load active banner
-          console.log('Loading active banner...');
-          try {
-            await fetchActiveBanner();
-            console.log('Active banner loaded successfully');
-          } catch (bannerError) {
-            console.error('=== BANNER LOADING ERROR ===');
-            console.error('Error loading active banner:', bannerError);
-            console.error('Stack trace:', bannerError?.stack);
-            // Banner loading failure is not critical, continue without it
-          }
-
-          // Load expectations
-          console.log('Loading expectations...');
-          try {
-            await fetchExpectations();
-            console.log('Expectations loaded successfully');
-          } catch (expectationsError) {
-            console.error('=== EXPECTATIONS LOADING ERROR ===');
-            console.error('Error loading expectations:', expectationsError);
-            console.error('Stack trace:', expectationsError?.stack);
-            // Expectations loading failure is not critical, continue without them
-          }
-
-          console.log('=== EXISTING RESULTS DATA LOAD COMPLETE ===');
-        } catch (error) {
-          console.error('=== EXISTING RESULTS DATA LOAD ERROR ===');
-          console.error('Error loading data for existing results:', error);
-          console.error('Error details:', {
-            name: error instanceof Error ? error.name : 'Unknown',
-            message: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : 'No stack',
-            timestamp: new Date().toISOString()
-          });
-
-          // Set fallback products on error
-          try {
-            console.log('Setting fallback products after error...');
-            await setFallbackProducts();
-            console.log('Fallback products set successfully');
-          } catch (fallbackError) {
-            console.error('Critical error: Could not set fallback products:', fallbackError);
-            // At this point, we should show some error message to the user
-            // but we don't want to crash the entire component
-          }
-        }
-      };
-
-      // Properly handle the promise to prevent unhandled rejections
-      loadDataForExistingResults().catch(error => {
-        console.error('=== CRITICAL ERROR IN loadDataForExistingResults ===');
-        console.error('Unhandled error in loadDataForExistingResults:', error);
-        console.error('Error type:', typeof error);
-        console.error('Error constructor:', error?.constructor?.name);
-
-        // Last resort fallback
-        setFallbackProducts().catch(fallbackError => {
-          console.error('=== CRITICAL FALLBACK ERROR ===');
-          console.error('Error setting fallback products:', fallbackError);
-
-          // Set some minimal products manually to prevent blank screen
-          setRecommendedProducts([
-            { 
-              id: 999, 
-              name: "Essential Wellness Kit", 
-              description: "Your personalized supplement selection", 
-              mrp: 1299, 
-              srp: 999, 
-              image_url: null, 
-              is_active: true, 
-              shopify_variant_id: null, 
-              url: 'https://nutrasage.in' 
-            }
-          ]);
-        });
-      });
-    }
-  }, [isViewingExistingResults, recommendedProducts.length, questions.length]);
 
   // Calculate pricing based on answer key discount with fallback values
   const originalPrice = recommendedProducts.length > 0 ? 
@@ -1296,6 +1005,38 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     const text = tempDiv.textContent || tempDiv.innerText || '';
     return text.substring(0, 200) + (text.length > 200 ? '...' : '');
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#913177] mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-[#1d0917] mb-2">Analyzing Your Results</h2>
+          <p className="text-gray-600">Creating your personalized recommendations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-[#1d0917] mb-4">Something went wrong</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()}
+            className="bg-[#913177] text-white hover:bg-[#7d2b65]"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1368,7 +1109,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                 className="w-full h-auto rounded-lg shadow-sm"
                 onError={(e) => {
                   console.error('Banner image failed to load:', activeBanner.image_url);
-                  (e.target as HTMLImageElement).style.display = 'none'; // Hide broken image
+                  (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
             </div>
@@ -1661,8 +1402,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     </Button>
                   </div>
                 </div>
-
-
               </div>
             </CardContent>
           </Card>
@@ -1936,6 +1675,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call{' '}
               <span className="text-[#913177] font-semibold">+91 7093619881</span>
             </p>
+            {/* Debug cleanup button - remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4">
+                <Button 
+                  onClick={() => runCleanupWithNotification(extractedUserInfo?.email)}
+                  className="bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded text-xs"
+                >
+                  🧹 Clean Duplicates (Debug)
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
