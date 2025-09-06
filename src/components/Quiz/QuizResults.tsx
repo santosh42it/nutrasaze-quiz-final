@@ -1010,6 +1010,33 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       savePromiseExists: !!savePromiseRef.current
     });
 
+    // If progressive save already created a response, just load the products and mark as submitted
+    if (hasProgressiveResponse && !isSubmitted && !savePromiseRef.current) {
+      console.log('Progressive save response found, skipping duplicate save and loading products...');
+      hasInitiatedSave.current = true;
+
+      savePromiseRef.current = (async () => {
+        try {
+          await getRecommendedProducts();
+          await fetchActiveBanner();
+          await fetchExpectations();
+          setIsSubmitted(true);
+          console.log('Products loaded successfully for progressive save response');
+        } catch (error) {
+          console.error('Error loading products for progressive save response:', error);
+          await setFallbackProducts();
+          setIsSubmitted(true);
+        } finally {
+          savePromiseRef.current = null;
+        }
+      })();
+
+      savePromiseRef.current.catch(error => {
+        console.error('Error in loadProductsOnly:', error);
+        savePromiseRef.current = null;
+        setFallbackProducts().then(() => setIsSubmitted(true));
+      });
+    }
     // Only save if:
     // 1. Not viewing existing results
     // 2. Haven't submitted yet
@@ -1017,7 +1044,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     // 4. Haven't initiated save before
     // 5. Progressive save hasn't already created a response
     // 6. No save promise is currently running
-    if (!isViewingExistingResults && 
+    else if (!isViewingExistingResults && 
         !isSubmitted && 
         !isSubmitting && 
         !hasInitiatedSave.current && 
@@ -1059,32 +1086,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         setFallbackProducts().catch(fallbackError => {
           console.error('Error setting fallback products after save failure:', fallbackError);
         });
-      });
-    } else if (hasProgressiveResponse && !isSubmitted && !savePromiseRef.current) {
-      // If progressive save already created a response, just load the products and mark as submitted
-      console.log('Progressive save response found, skipping duplicate save and loading products...');
-      hasInitiatedSave.current = true;
-
-      savePromiseRef.current = (async () => {
-        try {
-          await getRecommendedProducts();
-          await fetchActiveBanner();
-          await fetchExpectations();
-          setIsSubmitted(true);
-          console.log('Products loaded successfully for progressive save response');
-        } catch (error) {
-          console.error('Error loading products for progressive save response:', error);
-          await setFallbackProducts();
-          setIsSubmitted(true);
-        } finally {
-          savePromiseRef.current = null;
-        }
-      })();
-
-      savePromiseRef.current.catch(error => {
-        console.error('Error in loadProductsOnly:', error);
-        savePromiseRef.current = null;
-        setFallbackProducts().then(() => setIsSubmitted(true));
       });
     }
   }, [isViewingExistingResults, isSubmitted, isSubmitting, saveData?.responseId]); // Added progressive save dependency
