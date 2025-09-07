@@ -339,8 +339,8 @@ export const ResponsesReport: React.FC = () => {
             </div>
           </div>
 
-          {/* Date Range and Status Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
+          {/* Date Range and Basic Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
             <div>
               <label className="block text-sm font-semibold text-[#1d0917] mb-2">Search</label>
               <Input
@@ -371,40 +371,6 @@ export const ResponsesReport: React.FC = () => {
               />
             </div>
 
-            {/* Status Filter */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3">Response Status</h3>
-              <div className="flex gap-2">
-                <Button
-                  variant={statusFilter === 'completed' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('completed')}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Completed ({responses.filter(r => r.status === 'completed').length})
-                </Button>
-                <Button
-                  variant={statusFilter === 'partial' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('partial')}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  Partial ({responses.filter(r => r.status === 'partial').length})
-                </Button>
-                <Button
-                  variant={statusFilter === 'all' ? 'default' : 'outline'}
-                  onClick={() => setStatusFilter('all')}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  All ({responses.length})
-                </Button>
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-semibold text-[#1d0917] mb-2">Age Group</label>
               <select
@@ -418,6 +384,40 @@ export const ResponsesReport: React.FC = () => {
                 <option value="36-45">36-45 years</option>
                 <option value="46+">46+ years</option>
               </select>
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-[#f8f9fa] to-white rounded-xl">
+            <h3 className="text-sm font-semibold text-[#1d0917] mb-3">Response Status</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('completed')}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                Completed ({responses.filter(r => r.status === 'completed').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'partial' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('partial')}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                Partial ({responses.filter(r => r.status === 'partial').length})
+              </Button>
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('all')}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                All ({responses.length})
+              </Button>
             </div>
           </div>
 
