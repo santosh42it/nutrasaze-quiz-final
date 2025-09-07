@@ -101,6 +101,22 @@ export const createPartialResponse = async (email: string): Promise<number> => {
   try {
     console.log('Creating partial response for email:', email);
     
+    // First check if there's an existing partial response for this email
+    const { data: existingResponse, error: findError } = await supabase
+      .from('quiz_responses')
+      .select('id, status')
+      .eq('email', email)
+      .eq('status', 'partial')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!findError && existingResponse) {
+      console.log('Found existing partial response, reusing ID:', existingResponse.id);
+      return existingResponse.id;
+    }
+
+    // Create new partial response only if none exists
     const { data, error } = await supabase
       .from('quiz_responses')
       .insert([
@@ -130,7 +146,7 @@ export const createPartialResponse = async (email: string): Promise<number> => {
 
 export const updatePartialResponse = async (
   responseId: number, 
-  updates: Partial<{ name: string; contact: string; age: number }>
+  updates: Partial<{ name: string; email: string; contact: string; age: number }>
 ): Promise<void> => {
   try {
     console.log('Updating partial response:', responseId, updates);

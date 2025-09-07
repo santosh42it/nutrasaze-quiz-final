@@ -30,7 +30,7 @@ export const ResponsesReport: React.FC = () => {
   const [ageFilter, setAgeFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'age'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('completed');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [responseToDelete, setResponseToDelete] = useState<DetailedResponse | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -232,7 +232,7 @@ export const ResponsesReport: React.FC = () => {
     setAgeFilter('');
     setSortBy('date');
     setSortOrder('desc');
-    setStatusFilter('all');
+    setStatusFilter('completed'); // Reset to default completed
     setCurrentPage(1);
     await fetchResponses();
   };
@@ -273,7 +273,7 @@ export const ResponsesReport: React.FC = () => {
 
       // Refresh the responses list
       await fetchResponses();
-      
+
       // Close dialogs
       setDeleteDialogOpen(false);
       setResponseToDelete(null);
@@ -294,6 +294,7 @@ export const ResponsesReport: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
@@ -370,17 +371,38 @@ export const ResponsesReport: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-[#1d0917] mb-2">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'completed' | 'partial')}
-                className="w-full p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="completed">Completed</option>
-                <option value="partial">Partial</option>
-              </select>
+            {/* Status Filter */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Response Status</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant={statusFilter === 'completed' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('completed')}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Completed ({responses.filter(r => r.status === 'completed').length})
+                </Button>
+                <Button
+                  variant={statusFilter === 'partial' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('partial')}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  Partial ({responses.filter(r => r.status === 'partial').length})
+                </Button>
+                <Button
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  onClick={() => setStatusFilter('all')}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  All ({responses.length})
+                </Button>
+              </div>
             </div>
 
             <div>
@@ -539,7 +561,7 @@ export const ResponsesReport: React.FC = () => {
 
           {/* Enhanced Pagination */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8 p-4 bg-[#f8f9fa] rounded-lg">
+            <div className="flex flex-col sm:flex-col justify-between items-center gap-4 mt-8 p-4 bg-[#f8f9fa] rounded-lg">
               <div className="text-sm text-[#6d6d6e]">
                 Page {currentPage} of {totalPages} • {filteredAndSortedResponses.length} total responses
               </div>

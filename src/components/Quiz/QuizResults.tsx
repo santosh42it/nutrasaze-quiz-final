@@ -670,27 +670,57 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         throw new Error('Please enter a valid age between 1 and 120');
       }
 
-      // Insert quiz response
-      console.log('Inserting quiz response...');
-      const insertData = {
-        name: extractedUserInfo.name.trim(),
-        email: extractedUserInfo.email.trim(),
-        contact: extractedUserInfo.contact.trim(),
-        age: parseInt(extractedUserInfo.age.toString()) || 0
-      };
+      // Check if we have a progressive save response to update
+      let responseData;
+      if (saveData?.responseId) {
+        console.log('Updating existing progressive response to completed...');
+        const updateData = {
+          name: extractedUserInfo.name.trim(),
+          email: extractedUserInfo.email.trim(),
+          contact: extractedUserInfo.contact.trim(),
+          age: parseInt(extractedUserInfo.age.toString()) || 0,
+          status: 'completed'
+        };
 
-      const { data: responseData, error: responseError } = await supabase
-        .from('quiz_responses')
-        .insert(insertData)
-        .select()
-        .single();
+        const { data: updatedResponse, error: updateError } = await supabase
+          .from('quiz_responses')
+          .update(updateData)
+          .eq('id', saveData.responseId)
+          .select()
+          .single();
 
-      if (responseError) {
-        console.error('Error saving quiz response:', responseError);
-        throw new Error(`Failed to save quiz response: ${responseError.message}`);
+        if (updateError) {
+          console.error('Error updating quiz response:', updateError);
+          throw new Error(`Failed to update quiz response: ${updateError.message}`);
+        }
+
+        responseData = updatedResponse;
+        console.log('Quiz response updated successfully:', responseData);
+      } else {
+        // Fallback: create new response if no progressive save exists
+        console.log('Creating new quiz response...');
+        const insertData = {
+          name: extractedUserInfo.name.trim(),
+          email: extractedUserInfo.email.trim(),
+          contact: extractedUserInfo.contact.trim(),
+          age: parseInt(extractedUserInfo.age.toString()) || 0,
+          status: 'completed'
+        };
+
+        const { data: newResponse, error: responseError } = await supabase
+          .from('quiz_responses')
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (responseError) {
+          console.error('Error saving quiz response:', responseError);
+          throw new Error(`Failed to save quiz response: ${responseError.message}`);
+        }
+
+        responseData = newResponse;
+        console.log('Quiz response created successfully:', responseData);
       }
-
-      console.log('Quiz response saved successfully:', responseData);
 
       // Generate unique result id and URL
       const uniqueResultId = `${responseData.id}-${Date.now()}`;

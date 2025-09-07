@@ -23,16 +23,22 @@ export const useProgressiveSave = () => {
         await updatePartialResponse(saveData.responseId, { email });
         setSaveData(prev => ({ ...prev, email }));
         return saveData.responseId;
-      } else if (saveData.responseId) {
-        // We already have a real response, just return the ID
-        console.log('Progressive save: Using existing response', saveData.responseId);
+      } else if (saveData.responseId && saveData.email === email) {
+        // We already have this exact email saved, just return the ID
+        console.log('Progressive save: Using existing response for same email', saveData.responseId);
+        return saveData.responseId;
+      } else if (saveData.responseId && saveData.email !== email) {
+        // Different email, update the existing response
+        console.log('Progressive save: Updating existing response with new email');
+        await updatePartialResponse(saveData.responseId, { email });
+        setSaveData(prev => ({ ...prev, email }));
         return saveData.responseId;
       }
       
       const responseId = await createPartialResponse(email);
       setSaveData(prev => ({ ...prev, responseId, email }));
       
-      console.log('Progressive save: Created partial response', responseId);
+      console.log('Progressive save: Created/reused partial response', responseId);
       return responseId;
     } catch (error) {
       console.error('Error saving email:', error);
