@@ -15,18 +15,18 @@ import ErrorBoundary from "./components/ErrorBoundary";
 
 // Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
+  console.warn('Unhandled promise rejection (handled):', event.reason);
   
-  // Check if it's a critical error that should be handled
+  // Prevent the default unhandled rejection behavior to stop console spam
+  event.preventDefault();
+  
+  // Check if it's a critical error that should crash the app
   if (event.reason && typeof event.reason === 'object') {
     const error = event.reason as any;
-    if (error.message && (
-      error.message.includes('Failed to fetch') || 
-      error.message.includes('supabase') ||
-      error.message.includes('Network')
-    )) {
-      console.warn('Network/Supabase connection issue detected, but continuing...');
-      // Don't prevent default for network errors - let them be handled gracefully
+    if (error.message && error.message.includes('ChunkLoadError')) {
+      // Critical chunk loading error - reload the page
+      console.error('Critical chunk load error detected, reloading...');
+      window.location.reload();
       return;
     }
   }
@@ -63,9 +63,9 @@ createRoot(document.getElementById("app") as HTMLElement).render(
       <BrowserRouter>
         <PageTracker />
         <Routes>
-          <Route path="/" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
+          <Route path="/" element={<QuizScreen />} />
           <Route path="/content" element={<ContentScreen onNavigateToQuiz={() => window.location.href = '/'} />} />
-          <Route path="/quiz" element={<QuizScreen onNavigateToContent={() => window.location.href = '/content'} />} />
+          <Route path="/quiz" element={<QuizScreen />} />
           <Route path="/results/:resultId" element={<ResultsPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route

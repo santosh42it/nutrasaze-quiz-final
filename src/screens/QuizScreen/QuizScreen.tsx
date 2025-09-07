@@ -11,7 +11,11 @@ interface QuizAnswers {
   [key: string]: string;
 }
 
-export const QuizScreen = (): JSX.Element => {
+interface QuizScreenProps {
+  onNavigateToContent?: () => void;
+}
+
+export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Element => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
