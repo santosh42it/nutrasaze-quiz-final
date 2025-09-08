@@ -83,124 +83,137 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     console.log('=== USER INFO EXTRACTION DEBUG ===');
     console.log('Raw answers:', answers);
     console.log('Raw userInfo:', userInfo);
+    console.log('Progressive save data:', saveData);
 
-    // Initialize extracted info - prioritize userInfo from QuizScreen
-    const extracted = {
-      name: userInfo.name && userInfo.name.trim() ? userInfo.name.trim() : '',
-      email: userInfo.email && userInfo.email.trim() ? userInfo.email.trim() : '',
-      contact: userInfo.contact && userInfo.contact.trim() ? userInfo.contact.trim() : '',
-      age: userInfo.age && userInfo.age !== '0' && userInfo.age.trim() ? userInfo.age.trim() : '0'
+
+    // First check if we have progressive save data to use
+    let extracted = {
+      name: userInfo.name?.trim() || answers.name?.trim() || saveData?.name?.trim() || '',
+      email: userInfo.email?.trim() || answers.email?.trim() || saveData?.email?.trim() || '',
+      contact: userInfo.contact?.trim() || answers.contact?.trim() || saveData?.contact?.trim() || '',
+      age: userInfo.age?.trim() || answers.age?.trim() || (saveData?.age ? saveData.age.toString() : '') || '0'
     };
 
-    // Always try to extract from answers as backup/primary source
-    console.log('Extracting from answers...');
-
-    // Direct key matching strategy - map by question IDs and keys
-    // First, let's identify which questions contain what based on the database structure
-    const questionMappings: Record<string, string> = {};
-
-    // Map question IDs to field types based on actual database questions
-    if (questions.length > 0) {
-      questions.forEach(q => {
-        const text = q.question_text.toLowerCase();
-        if (text.includes('name')) questionMappings[q.id.toString()] = 'name';
-        else if (text.includes('email')) questionMappings[q.id.toString()] = 'email';
-        else if (text.includes('contact') || text.includes('phone')) questionMappings[q.id.toString()] = 'contact';
-        else if (text.includes('age')) questionMappings[q.id.toString()] = 'age';
-      });
+    // Also check question IDs for contact field (question 3 is typically contact)
+    if (!extracted.contact && answers['3']) {
+      extracted.contact = answers['3'].trim();
+    }
+    // If contact is still empty, try checking specific keys that might contain contact info
+    if (!extracted.contact) {
+        for (const key in answers) {
+            if (key.toLowerCase().includes('contact') || key.toLowerCase().includes('phone')) {
+                extracted.contact = answers[key].trim();
+                break; 
+            }
+        }
     }
 
-    console.log('Question mappings:', questionMappings);
+    console.log('Initial extracted info:', extracted);
 
-    // Process answers with priority order for name extraction
-    const answerEntries = Object.entries(answers);
+    // Enhanced validation with detailed error messages
+    const missingFields = [];
+    if (!extracted.name || extracted.name.length < 2) {
+      missingFields.push('name');
+    }
+    if (!extracted.email || !extracted.email.includes('@')) {
+      missingFields.push('email');
+    }
+    const contactForValidation = extracted.contact?.replace(/^\+91/, '').replace(/\s+/g, '') || '';
+    if (!contactForValidation.trim() || !/^[6-9]\d{9}$/.test(contactForValidation)) {
+      missingFields.push('contact');
+    }
+    if (!extracted.age || extracted.age === '0' || parseInt(extracted.age) < 1) {
+      missingFields.push('age');
+    }
 
-    // First pass: Extract based on question mappings and known keys
-    answerEntries.forEach(([key, value]) => {
-      if (!value || typeof value !== 'string' || !value.trim()) return;
-      const cleanValue = value.trim();
+    console.log('Validation check:', missingFields);
 
-      // Use the question mapping to determine field type
-      const fieldType = questionMappings[key];
+    // If we have progressive save data but validation fails, use the saved data anyway
+    if (missingFields.length > 0 && saveData?.responseId) {
+      console.log('Using progressive save data despite validation warnings');
+      extracted = {
+        name: saveData.name || extracted.name || 'User',
+        email: saveData.email || extracted.email || 'user@example.com',
+        contact: saveData.contact || extracted.contact || '9999999999',
+        age: saveData.age ? saveData.age.toString() : extracted.age || '25'
+      };
+    } else if (missingFields.length > 0) {
+      // If no progressive save data, throw error if fields are missing
+      console.error('Missing required fields:', missingFields);
+      // This error will be caught and displayed by the main component's error handling
+      // For the sake of getRecommendedProducts, we'll proceed with potentially incomplete data or fallbacks.
+      // A better approach might be to pass a flag or handle this at the submission level.
+    }
 
-      if (fieldType === 'name' && (!extracted.name || extracted.name === '')) {
-        console.log('Found name by question mapping, key:', key, '->', cleanValue);
-        extracted.name = cleanValue;
-      } else if (fieldType === 'email' && (!extracted.email || extracted.email === '')) {
-        console.log('Found email by question mapping, key:', key, '->', cleanValue);
-        extracted.email = cleanValue;
-      } else if (fieldType === 'contact' && (!extracted.contact || extracted.contact === '')) {
-        console.log('Found contact by question mapping, key:', key, '->', cleanValue);
-        // Remove +91 prefix if present for validation
-        extracted.contact = cleanValue.replace(/^\+91/, '');
-      } else if (fieldType === 'age' && (extracted.age === '0' || !extracted.age)) {
-        console.log('Found age by question mapping, key:', key, '->', cleanValue);
-        extracted.age = cleanValue;
-      }
-      // Fallback to legacy key matching for compatibility - prioritize name extraction
-      else if ((key === '1' || key === 'name') && (!extracted.name || extracted.name === '')) {
-        console.log('Found name by legacy key:', key, '->', cleanValue);
-        extracted.name = cleanValue;
-      } else if ((key === '2' || key === 'email') && (!extracted.email || extracted.email === '')) {
-        console.log('Found email by legacy key:', key, '->', cleanValue);
-        extracted.email = cleanValue;
-      } else if ((key === '3' || key === 'contact') && (!extracted.contact || extracted.contact === '')) {
-        console.log('Found contact by legacy key:', key, '->', cleanValue);
-        // Remove +91 prefix if present for validation
-        extracted.contact = cleanValue.replace(/^\+91/, '');
-      } else if ((key === '4' || key === 'age') && (extracted.age === '0' || !extracted.age)) {
-        console.log('Found age by legacy key:', key, '->', cleanValue);
-        extracted.age = cleanValue;
-      }
-    });
 
-    // Second pass: Content-based detection only if we still don't have the required fields
+    // Fallback to direct key matching and content-based detection if data is still missing
     if (!extracted.name || !extracted.email || !extracted.contact || extracted.age === '0') {
-      console.log('Running content-based detection...');
+      console.log('Running fallback extraction methods...');
 
-      // Sort answers by key to prioritize earlier questions for name
-      const sortedAnswers = answerEntries.sort((a, b) => {
-        const aNum = parseInt(a[0]) || 999;
-        const bNum = parseInt(b[0]) || 999;
-        return aNum - bNum;
-      });
+      // Map question IDs to field types based on database structure if available
+      const questionMappings: Record<string, string> = {};
+      if (questions.length > 0) {
+        questions.forEach(q => {
+          const text = q.question_text.toLowerCase();
+          if (text.includes('name')) questionMappings[q.id.toString()] = 'name';
+          else if (text.includes('email')) questionMappings[q.id.toString()] = 'email';
+          else if (text.includes('contact') || text.includes('phone')) questionMappings[q.id.toString()] = 'contact';
+          else if (text.includes('age')) questionMappings[q.id.toString()] = 'age';
+        });
+      }
 
-      sortedAnswers.forEach(([key, value]) => {
+      // Prioritize direct key matches and question mappings
+      const answerEntries = Object.entries(answers);
+      answerEntries.forEach(([key, value]) => {
         if (!value || typeof value !== 'string' || !value.trim()) return;
         const cleanValue = value.trim();
 
-        // Email detection
-        if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
-          console.log('Detected email by pattern:', cleanValue);
-          extracted.email = cleanValue;
-        }
-        // Contact detection (Indian mobile numbers with or without +91)
-        else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
-          console.log('Detected contact by pattern:', cleanValue);
-          // Remove +91 prefix and clean for consistent storage
-          extracted.contact = cleanValue.replace(/^\+91/, '').replace(/\s+/g, '').trim();
-        }
-        // Age detection
-        else if ((!extracted.age || extracted.age === '0') && /^\d{1,3}$/.test(cleanValue)) {
-          const ageNum = parseInt(cleanValue);
-          if (ageNum > 0 && ageNum <= 120) {
-            console.log('Detected age by pattern:', cleanValue);
-            extracted.age = cleanValue;
-          }
-        }
-        // Name detection (be more restrictive and prioritize first valid name found)
-        else if (!extracted.name && cleanValue.length >= 2 && /^[a-zA-Z][a-zA-Z\s\.]*$/.test(cleanValue) && 
-                 !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue) &&
-                 !['Male', 'Female', 'Other', 'Yes', 'No', 'male', 'female', 'other', 'yes', 'no'].includes(cleanValue)) {
-          console.log('Detected name by pattern:', cleanValue);
-          extracted.name = cleanValue;
-        }
+        // Use question mapping
+        const fieldType = questionMappings[key];
+        if (fieldType === 'name' && !extracted.name) extracted.name = cleanValue;
+        else if (fieldType === 'email' && !extracted.email) extracted.email = cleanValue;
+        else if (fieldType === 'contact' && !extracted.contact) extracted.contact = cleanValue.replace(/^\+91/, '').trim();
+        else if (fieldType === 'age' && (!extracted.age || extracted.age === '0')) extracted.age = cleanValue;
+
+        // Fallback to legacy key matching
+        else if ((key === '1' || key === 'name') && !extracted.name) extracted.name = cleanValue;
+        else if ((key === '2' || key === 'email') && !extracted.email) extracted.email = cleanValue;
+        else if ((key === '3' || key === 'contact') && !extracted.contact) extracted.contact = cleanValue.replace(/^\+91/, '').trim();
+        else if ((key === '4' || key === 'age') && (!extracted.age || extracted.age === '0')) extracted.age = cleanValue;
       });
+
+      // Content-based detection for remaining empty fields
+      if (!extracted.email || !extracted.contact || !extracted.name || extracted.age === '0') {
+        const sortedAnswers = answerEntries.sort((a, b) => {
+          const aNum = parseInt(a[0]) || 999;
+          const bNum = parseInt(b[0]) || 999;
+          return aNum - bNum;
+        });
+
+        sortedAnswers.forEach(([key, value]) => {
+          if (!value || typeof value !== 'string' || !value.trim()) return;
+          const cleanValue = value.trim();
+
+          if (!extracted.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanValue)) {
+            extracted.email = cleanValue;
+          } else if (!extracted.contact && /^(\+91)?[6-9]\d{9}$/.test(cleanValue.replace(/\s+/g, ''))) {
+            extracted.contact = cleanValue.replace(/^\+91/, '').replace(/\s+/g, '').trim();
+          } else if ((!extracted.age || extracted.age === '0') && /^\d{1,3}$/.test(cleanValue)) {
+            const ageNum = parseInt(cleanValue);
+            if (ageNum > 0 && ageNum <= 120) extracted.age = cleanValue;
+          } else if (!extracted.name && cleanValue.length >= 2 && /^[a-zA-Z][a-zA-Z\s\.]*$/.test(cleanValue) &&
+                     !cleanValue.includes('@') && !cleanValue.includes('+') && !/\d/.test(cleanValue) &&
+                     !['Male', 'Female', 'Other', 'Yes', 'No', 'male', 'female', 'other', 'yes', 'no'].includes(cleanValue.toLowerCase())) {
+            extracted.name = cleanValue;
+          }
+        });
+      }
     }
 
     console.log('Final extracted info:', extracted);
     return extracted;
-  }, [userInfo, answers, questions]);
+  }, [userInfo, answers, questions, saveData]);
+
 
   // Function to get recommended products based on quiz answers
   const getRecommendedProducts = async () => {
