@@ -7,17 +7,17 @@ export default defineConfig({
   base: './',
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5000,
     strictPort: true,
     hmr: {
-      port: 5173,
+      port: 5000,
       host: '0.0.0.0'
     },
-    allowedHosts: ['localhost', '.replit.dev', '.repl.co']
+    allowedHosts: true
   },
   preview: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 5000,
     strictPort: true
   },
   css: {
