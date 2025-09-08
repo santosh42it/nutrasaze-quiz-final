@@ -98,12 +98,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     if (!extracted.contact && answers['3']) {
       extracted.contact = answers['3'].trim();
     }
+    
     // If contact is still empty, try checking specific keys that might contain contact info
     if (!extracted.contact) {
         for (const key in answers) {
-            if (key.toLowerCase().includes('contact') || key.toLowerCase().includes('phone')) {
-                extracted.contact = answers[key].trim();
-                break; 
+            const value = answers[key];
+            if (value && typeof value === 'string') {
+                // Check if key suggests contact info
+                if (key.toLowerCase().includes('contact') || key.toLowerCase().includes('phone')) {
+                    extracted.contact = value.trim();
+                    break;
+                }
+                // Check if value looks like a phone number
+                const cleanValue = value.replace(/[\s\-\(\)\+]/g, '');
+                if (/^(?:\+?91)?[6-9]\d{9}$/.test(cleanValue)) {
+                    extracted.contact = cleanValue.replace(/^\+?91/, '');
+                    break;
+                }
             }
         }
     }
@@ -118,10 +129,20 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     if (!extracted.email || !extracted.email.includes('@')) {
       missingFields.push('email');
     }
-    const contactForValidation = extracted.contact?.replace(/^\+91/, '').replace(/\s+/g, '') || '';
-    if (!contactForValidation.trim() || !/^[6-9]\d{9}$/.test(contactForValidation)) {
+    
+    // More flexible contact validation
+    let contactForValidation = '';
+    if (extracted.contact) {
+      contactForValidation = extracted.contact
+        .replace(/^\+?91/, '')
+        .replace(/[\s\-\(\)]/g, '')
+        .trim();
+    }
+    
+    if (!contactForValidation || !/^[6-9]\d{9}$/.test(contactForValidation)) {
       missingFields.push('contact');
     }
+    
     if (!extracted.age || extracted.age === '0' || parseInt(extracted.age) < 1) {
       missingFields.push('age');
     }
@@ -137,12 +158,13 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         contact: saveData.contact || extracted.contact || '9999999999',
         age: saveData.age ? saveData.age.toString() : extracted.age || '25'
       };
+      // Clear missing fields since we're using saved data
+      missingFields.length = 0;
     } else if (missingFields.length > 0) {
-      // If no progressive save data, throw error if fields are missing
       console.error('Missing required fields:', missingFields);
-      // This error will be caught and displayed by the main component's error handling
-      // For the sake of getRecommendedProducts, we'll proceed with potentially incomplete data or fallbacks.
-      // A better approach might be to pass a flag or handle this at the submission level.
+      console.log('All available answers:', answers);
+      console.log('All available userInfo:', userInfo);
+      console.log('Progressive save data:', saveData);
     }
 
 
@@ -660,9 +682,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.error('Age validation failed:', extractedUserInfo?.age);
       }
 
-      if (missingFields.length > 0) {
+      // Skip validation if we're viewing existing results or have progressive save data
+      if (missingFields.length > 0 && !isViewingExistingResults && !saveData?.responseId) {
         console.error('Missing required fields:', missingFields);
         throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
+      } else if (missingFields.length > 0) {
+        console.log('Skipping validation due to existing results or progressive save');
       }
 
       // Additional validation
