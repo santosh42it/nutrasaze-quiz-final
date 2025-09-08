@@ -690,6 +690,28 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.log('Skipping validation due to existing results or progressive save');
       }
 
+      // If we have progressive save data, don't create a new response
+      if (saveData?.responseId) {
+        console.log('Progressive save response exists, skipping new response creation');
+        const uniqueResultId = `${saveData.responseId}-${Date.now()}`;
+        setResultId(uniqueResultId);
+
+        // Create shareable result URL
+        const baseUrl = window.location.origin;
+        const shareableUrl = `${baseUrl}/results/${uniqueResultId}`;
+        setResultUrl(shareableUrl);
+
+        // Store result URL in localStorage for future reference
+        localStorage.setItem('nutrasage_last_result_url', shareableUrl);
+        localStorage.setItem('nutrasage_last_result_id', uniqueResultId);
+
+        // Update browser URL without page reload
+        window.history.replaceState(null, '', shareableUrl);
+
+        setIsSubmitted(true);
+        return; // Exit early, no need to save again
+      }
+
       // Additional validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(extractedUserInfo.email)) {
@@ -975,8 +997,30 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         const hasProgressiveResponse = saveData?.responseId && saveData.responseId > 0;
 
         if (hasProgressiveResponse && !hasInitiatedSave.current) {
-          console.log('Progressive save response found, loading products...');
+          console.log('Progressive save response found, checking if already completed...');
           hasInitiatedSave.current = true;
+
+          // Check if the progressive response is already completed
+          const { data: responseStatus, error: statusError } = await supabase
+            .from('quiz_responses')
+            .select('status')
+            .eq('id', saveData.responseId)
+            .single();
+
+          if (!statusError && responseStatus?.status === 'completed') {
+            console.log('Progressive response already completed, skipping save...');
+          } else {
+            console.log('Progressive response not completed, updating status...');
+            // Update the status to completed if it's still partial
+            const { error: updateError } = await supabase
+              .from('quiz_responses')
+              .update({ status: 'completed' })
+              .eq('id', saveData.responseId);
+
+            if (updateError) {
+              console.error('Error updating response status:', updateError);
+            }
+          }
 
           await Promise.allSettled([
             getRecommendedProducts(),
