@@ -60,21 +60,18 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
         status: question?.status || 'draft'
       });
       
-      if (options && options.length > 0) {
-        console.log('Loading existing options with tags for question:', question?.id);
-        console.log('Available options:', options);
-        console.log('Available option tags:', optionTags);
+      if (question && options && options.length > 0) {
+        // Filter options for this specific question first
+        const questionOptions = options.filter(option => option.question_id === question.id);
         
-        const optionsWithTags = options.map(option => {
+        const optionsWithTags = questionOptions.map(option => {
           const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-          console.log(`Option "${option.option_text}" (ID: ${option.id}) has tags:`, optionTagsForOption);
           return {
             option: option.option_text,
             tags: optionTagsForOption.map(ot => ot.tag_id)
           };
         });
         
-        console.log('Final options with tags:', optionsWithTags);
         setQuestionOptions(optionsWithTags);
       } else {
         setQuestionOptions([]);
