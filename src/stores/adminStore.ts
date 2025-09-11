@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Question, QuestionOption, Tag, Product, AnswerKey, Banner, Expectation } from '../types/database';
+import type { Question, QuestionOption, Tag, Product, AnswerKey, Expectation, OptionTag } from '../types/database';
 
 interface AdminStore {
   // State
@@ -9,6 +9,7 @@ interface AdminStore {
   tags: Tag[];
   products: Product[];
   optionTags: OptionTag[];
+  questionTags: any[]; // Added for question tag management
   answerKeys: AnswerKey[]; // Added for answer key management
   loading: boolean;
   error: string | null;
@@ -70,11 +71,11 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   tags: [],
   products: [],
   optionTags: [],
+  questionTags: [], // Initialize questionTags state
   answerKeys: [], // Initialize answerKeys state
   loading: false,
   error: null,
   expectations: [],
-  setExpectations: (expectations) => set({ expectations }),
 
   fetchQuestions: async () => {
     set({ loading: true });
@@ -213,10 +214,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         options: [...state.options, data]
       }));
 
-      return { data };
+      return { data, error: null };
     } catch (error) {
       console.error('Error adding option:', error);
-      throw error;
+      return { data: null, error: error as Error };
     }
   },
 
@@ -237,9 +238,27 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         )
       }));
 
-      return { data };
+      return { data, error: null };
     } catch (error) {
       console.error('Error updating option:', error);
+      return { data: null, error: error as Error };
+    }
+  },
+
+  deleteOption: async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('question_options')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set(state => ({
+        options: state.options.filter(option => option.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting option:', error);
       throw error;
     }
   },
@@ -298,6 +317,24 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         tags: get().tags.map(tag => tag.id === id ? { ...tag, name, icon_url, title } : tag)
       });
     } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  deleteTag: async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set(state => ({
+        tags: state.tags.filter(tag => tag.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting tag:', error);
       set({ error: (error as Error).message });
     }
   },
