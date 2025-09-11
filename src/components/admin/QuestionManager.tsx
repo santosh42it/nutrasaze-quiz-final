@@ -765,7 +765,6 @@ export const QuestionManager: React.FC = () => {
         });
         
         if (newQuestion) {
-          questionId = newQuestion.id;
           
           // Add options with tags if it's a select question
           if (questionData.question_type === 'select' && questionOptions) {
