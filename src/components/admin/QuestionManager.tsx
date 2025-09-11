@@ -138,6 +138,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    alert('🔄 Update Question button clicked! Check console for details.');
     console.log('🔄 Update Question button clicked!');
     console.log('Form data:', formData);
     console.log('Question options:', questionOptions);
