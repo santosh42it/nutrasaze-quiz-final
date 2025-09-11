@@ -27,7 +27,7 @@ interface QuestionModalProps {
 }
 
 const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options, tags, onSave, onClose }) => {
-  const { optionTags, fetchOptionTags } = useAdminStore();
+  const { optionTags } = useAdminStore();
   
   const [formData, setFormData] = useState<Partial<Question>>({
     question_text: question?.question_text || '',
@@ -48,54 +48,42 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    const loadModalData = async () => {
-      if (isOpen) {
-        // Ensure optionTags are loaded before setting up the form
-        if (optionTags.length === 0) {
-          console.log('Loading option tags for modal...');
-          await fetchOptionTags();
-        }
-
-        setFormData({
-          question_text: question?.question_text || '',
-          question_type: question?.question_type || 'text',
-          placeholder: question?.placeholder || '',
-          description: question?.description || '',
-          has_text_area: question?.has_text_area || false,
-          has_file_upload: question?.has_file_upload || false,
-          text_area_placeholder: question?.text_area_placeholder || '',
-          accepted_file_types: question?.accepted_file_types || '',
-          status: question?.status || 'draft'
+    if (isOpen) {
+      setFormData({
+        question_text: question?.question_text || '',
+        question_type: question?.question_type || 'text',
+        placeholder: question?.placeholder || '',
+        description: question?.description || '',
+        has_text_area: question?.has_text_area || false,
+        has_file_upload: question?.has_file_upload || false,
+        text_area_placeholder: question?.text_area_placeholder || '',
+        accepted_file_types: question?.accepted_file_types || '',
+        status: question?.status || 'draft'
+      });
+      
+      if (question && options && options.length > 0) {
+        // Filter options for this specific question first
+        const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
+        
+        const optionsWithTags = questionOptionsForThisQuestion.map(option => {
+          const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+          
+          return {
+            id: option.id, // Include the database ID
+            option: option.option_text,
+            tags: optionTagsForOption.map(ot => ot.tag_id)
+          };
         });
         
-        if (question && options && options.length > 0) {
-          // Filter options for this specific question first
-          const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
-          
-          const optionsWithTags = questionOptionsForThisQuestion.map(option => {
-            const optionTagsForOption = optionTags.filter(ot => Number(ot.option_id) === Number(option.id));
-            
-            console.log(`Option ${option.option_text} (ID: ${option.id}) has tags:`, optionTagsForOption);
-            
-            return {
-              id: option.id, // Include the database ID
-              option: option.option_text,
-              tags: optionTagsForOption.map(ot => Number(ot.tag_id))
-            };
-          });
-          
-          setQuestionOptions(optionsWithTags);
-        } else {
-          setQuestionOptions([]);
-        }
-        
-        setNewOption('');
-        setEditingOptionIndex(null);
-        setEditingOptionText('');
+        setQuestionOptions(optionsWithTags);
+      } else {
+        setQuestionOptions([]);
       }
-    };
-
-    loadModalData();
+      
+      setNewOption('');
+      setEditingOptionIndex(null);
+      setEditingOptionText('');
+    }
   }, [isOpen, question, options, optionTags]);
 
   const isGenericQuestion = ['text', 'email', 'tel', 'number'].includes(formData.question_type || '');
@@ -134,15 +122,6 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
   const handleCancelOptionEdit = () => {
     setEditingOptionIndex(null);
     setEditingOptionText('');
-  };
-
-  const handleShuffleOptions = () => {
-    const shuffled = [...questionOptions];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    setQuestionOptions(shuffled);
   };
 
   const handleOptionTagToggle = (optionIndex: number, tagId: number) => {
@@ -377,7 +356,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                     value={newOption}
                     onChange={(e) => setNewOption(e.target.value)}
                     placeholder="Add new option..."
-                    className="border-[#e9d6e4] flex-1"
+                    className="border-[#e9d6e4]"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
                   />
                   <Button
@@ -388,16 +367,6 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                   >
                     Add Option
                   </Button>
-                  {questionOptions.length > 1 && (
-                    <Button
-                      type="button"
-                      onClick={handleShuffleOptions}
-                      className="bg-blue-600 text-white hover:bg-blue-700"
-                      title="Shuffle option order randomly"
-                    >
-                      🔀 Shuffle
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
@@ -597,9 +566,9 @@ const SortableQuestionCard: React.FC<SortableQuestionCardProps> = ({
             <div className="mt-3 pt-3 border-t border-gray-100">
               <div className="space-y-2">
                 {questionOptions.slice(0, 3).map((option) => {
-                  const optionTagsForOption = optionTags.filter(ot => Number(ot.option_id) === Number(option.id));
+                  const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
                   const tagNames = optionTagsForOption.map(ot => {
-                    const tag = tags.find(t => Number(t.id) === Number(ot.tag_id));
+                    const tag = tags.find(t => t.id === ot.tag_id);
                     return tag?.name;
                   }).filter(Boolean);
                   
@@ -644,7 +613,6 @@ export const QuestionManager: React.FC = () => {
     questions, 
     options, 
     tags,
-    optionTags,
     addQuestion, 
     updateQuestion, 
     deleteQuestion, 
@@ -732,13 +700,63 @@ export const QuestionManager: React.FC = () => {
       if (editingQuestion) {
         await updateQuestion(editingQuestion.id, questionData);
         
-        // Simply refresh the data after updating the question
-        await Promise.all([
-          fetchQuestions(),
-          fetchOptions(), 
-          fetchTags(),
-          fetchOptionTags()
-        ]);
+        // Update options if it's a select question
+        if (questionData.question_type === 'select' && questionOptions) {
+          const existingOptions = options.filter(o => o.question_id === editingQuestion.id);
+          
+          // Track which existing options to keep
+          const optionsToKeep = new Set<number>();
+          
+          // Process each option from the modal
+          for (let i = 0; i < questionOptions.length; i++) {
+            const optionData = questionOptions[i];
+            
+            if (optionData.id) {
+              // Existing option - update it
+              optionsToKeep.add(optionData.id);
+              
+              // Find the existing option to check what needs updating
+              const existingOption = existingOptions.find(opt => opt.id === optionData.id);
+              if (existingOption) {
+                // Update text if changed
+                if (existingOption.option_text !== optionData.option) {
+                  await updateOption(optionData.id, { option_text: optionData.option });
+                }
+                
+                // Update order if changed
+                if (existingOption.order_index !== i) {
+                  await updateOption(optionData.id, { order_index: i });
+                }
+                
+                // Update tags
+                await updateOptionTags(optionData.id, optionData.tags);
+              }
+            } else {
+              // New option - create it
+              const { data: newOption } = await addOption({
+                question_id: editingQuestion.id,
+                option_text: optionData.option,
+                order_index: i
+              });
+              
+              if (newOption) {
+                optionsToKeep.add(newOption.id);
+                
+                // Add tags if any
+                if (optionData.tags.length > 0) {
+                  await updateOptionTags(newOption.id, optionData.tags);
+                }
+              }
+            }
+          }
+          
+          // Remove options that are no longer needed
+          for (const existingOption of existingOptions) {
+            if (!optionsToKeep.has(existingOption.id)) {
+              await deleteOption(existingOption.id);
+            }
+          }
+        }
       } else {
         const { data: newQuestion } = await addQuestion({
           ...questionData as Question,

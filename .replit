@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
+modules = ["nodejs-20", "web"]
 run = "npm run dev"
 
 [nix]
@@ -12,7 +12,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 34411
+localPort = 45101
 externalPort = 3000
 
 [workflows]
