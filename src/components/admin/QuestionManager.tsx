@@ -124,6 +124,15 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
     setEditingOptionText('');
   };
 
+  const handleShuffleOptions = () => {
+    const shuffled = [...questionOptions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setQuestionOptions(shuffled);
+  };
+
   const handleOptionTagToggle = (optionIndex: number, tagId: number) => {
     setQuestionOptions(prev => prev.map((opt, index) => {
       if (index === optionIndex) {
@@ -356,7 +365,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                     value={newOption}
                     onChange={(e) => setNewOption(e.target.value)}
                     placeholder="Add new option..."
-                    className="border-[#e9d6e4]"
+                    className="border-[#e9d6e4] flex-1"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
                   />
                   <Button
@@ -367,6 +376,16 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                   >
                     Add Option
                   </Button>
+                  {questionOptions.length > 1 && (
+                    <Button
+                      type="button"
+                      onClick={handleShuffleOptions}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      title="Shuffle option order randomly"
+                    >
+                      🔀 Shuffle
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -613,6 +632,7 @@ export const QuestionManager: React.FC = () => {
     questions, 
     options, 
     tags,
+    optionTags,
     addQuestion, 
     updateQuestion, 
     deleteQuestion, 
