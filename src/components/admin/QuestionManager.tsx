@@ -280,8 +280,8 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
-      const oldIndex = questionOptions.findIndex((opt, index) => index === active.id);
-      const newIndex = questionOptions.findIndex((opt, index) => index === over.id);
+      const oldIndex = active.id as number;
+      const newIndex = over.id as number;
       
       const reordered = arrayMove(questionOptions, oldIndex, newIndex);
       setQuestionOptions(reordered);
