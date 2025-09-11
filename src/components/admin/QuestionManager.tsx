@@ -61,19 +61,32 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
       });
       
       if (question && options && options.length > 0) {
-        // Filter options for this specific question first
-        const questionOptions = options.filter(option => option.question_id === question.id);
+        console.log('🔍 DEBUGGING: Setting up question options for question ID:', question.id);
+        console.log('🔍 All available options:', options);
+        console.log('🔍 All available option tags:', optionTags);
         
-        const optionsWithTags = questionOptions.map(option => {
+        // Filter options for this specific question first
+        const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
+        console.log('🔍 Filtered options for this question:', questionOptionsForThisQuestion);
+        
+        const optionsWithTags = questionOptionsForThisQuestion.map(option => {
           const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-          return {
+          console.log(`🔍 Option "${option.option_text}" (ID: ${option.id}) has ${optionTagsForOption.length} tags:`, optionTagsForOption);
+          
+          const result = {
             option: option.option_text,
             tags: optionTagsForOption.map(ot => ot.tag_id)
           };
+          console.log('🔍 Final option structure:', result);
+          return result;
         });
         
+        console.log('🔍 Final options with tags to set:', optionsWithTags);
         setQuestionOptions(optionsWithTags);
       } else {
+        console.log('🔍 No question or options available - resetting to empty array');
+        console.log('🔍 Question:', question);
+        console.log('🔍 Options length:', options?.length || 0);
         setQuestionOptions([]);
       }
       
