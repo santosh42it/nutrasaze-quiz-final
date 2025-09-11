@@ -465,7 +465,6 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                 </Button>
               </div>
             </div>
-          </div>
           )}
 
           {/* Additional Features */}
