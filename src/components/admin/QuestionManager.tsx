@@ -138,11 +138,6 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert('🔄 Update Question button clicked! Check console for details.');
-    console.log('🔄 Update Question button clicked!');
-    console.log('Form data:', formData);
-    console.log('Question options:', questionOptions);
-    console.log('Is editing question:', !!question);
     onSave(formData, formData.question_type === 'select' ? questionOptions : undefined);
   };
 
@@ -674,18 +669,11 @@ export const QuestionManager: React.FC = () => {
   };
 
   const handleSaveQuestion = async (questionData: Partial<Question>, questionOptions?: OptionWithTags[]) => {
-    console.log('💾 handleSaveQuestion called');
-    console.log('Question data:', questionData);
-    console.log('Options:', questionOptions);
-    console.log('Editing question:', editingQuestion);
-    
     try {
       let questionId: number;
       
       if (editingQuestion) {
-        console.log('🔄 Updating existing question ID:', editingQuestion.id);
         const { data: updatedQuestion } = await updateQuestion(editingQuestion.id, questionData);
-        console.log('✅ Question update result:', updatedQuestion);
         questionId = editingQuestion.id;
         
         // Update options if it's a select question
@@ -769,12 +757,10 @@ export const QuestionManager: React.FC = () => {
         }
       }
       
-      console.log('🎉 Question saved successfully! Closing modal...');
       setShowModal(false);
       setEditingQuestion(null);
     } catch (error) {
-      console.error('❌ Error saving question:', error);
-      alert('Error saving question. Please check the console for details.');
+      console.error('Error saving question:', error);
     }
   };
 

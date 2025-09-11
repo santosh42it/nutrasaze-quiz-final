@@ -93,6 +93,69 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
 
+  addQuestion: async (question: Omit<Question, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .insert([question])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        questions: [...state.questions, data]
+      }));
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error adding question:', error);
+      return { data: null, error: error as Error };
+    }
+  },
+
+  updateQuestion: async (id: number, updates: Partial<Question>) => {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        questions: state.questions.map(question => 
+          question.id === id ? { ...question, ...data } : question
+        )
+      }));
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error updating question:', error);
+      return { data: null, error: error as Error };
+    }
+  },
+
+  deleteQuestion: async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set(state => ({
+        questions: state.questions.filter(question => question.id !== id)
+      }));
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      throw error;
+    }
+  },
+
   reorderQuestions: async (reorderedQuestions: Question[]) => {
     try {
       // Update local state immediately for smooth UI
