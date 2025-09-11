@@ -210,28 +210,37 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
         status: question?.status || 'draft'
       });
       
-      if (question && options && options.length > 0) {
-        // Filter options for this specific question first
-        const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
-        
-        const optionsWithTags = questionOptionsForThisQuestion.map(option => {
-          const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-          
-          return {
-            id: option.id, // Include the database ID
-            option: option.option_text,
-            tags: optionTagsForOption.map(ot => ot.tag_id)
-          };
-        });
-        
-        setQuestionOptions(optionsWithTags);
-      } else {
-        setQuestionOptions([]);
-      }
-      
       setNewOption('');
       setEditingOptionIndex(null);
       setEditingOptionText('');
+    }
+  }, [isOpen, question]);
+
+  // Separate effect for loading question options with tags to ensure data is fresh
+  useEffect(() => {
+    if (isOpen && question && options && optionTags) {
+      // Filter options for this specific question first
+      const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
+      
+      console.log('Loading options for question:', question.id);
+      console.log('Found options:', questionOptionsForThisQuestion.length);
+      console.log('Available optionTags:', optionTags.length);
+      
+      const optionsWithTags = questionOptionsForThisQuestion.map(option => {
+        const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+        console.log(`Option ${option.id} has ${optionTagsForOption.length} tags:`, optionTagsForOption);
+        
+        return {
+          id: option.id, // Include the database ID
+          option: option.option_text,
+          tags: optionTagsForOption.map(ot => ot.tag_id)
+        };
+      });
+      
+      console.log('Final optionsWithTags:', optionsWithTags);
+      setQuestionOptions(optionsWithTags);
+    } else if (isOpen && !question) {
+      setQuestionOptions([]);
     }
   }, [isOpen, question, options, optionTags]);
 
