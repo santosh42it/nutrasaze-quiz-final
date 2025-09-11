@@ -222,13 +222,8 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
       // Filter options for this specific question first
       const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
       
-      console.log('Loading options for question:', question.id);
-      console.log('Found options:', questionOptionsForThisQuestion.length);
-      console.log('Available optionTags:', optionTags.length);
-      
       const optionsWithTags = questionOptionsForThisQuestion.map(option => {
         const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
-        console.log(`Option ${option.id} has ${optionTagsForOption.length} tags:`, optionTagsForOption);
         
         return {
           id: option.id, // Include the database ID
@@ -236,8 +231,6 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
           tags: optionTagsForOption.map(ot => ot.tag_id)
         };
       });
-      
-      console.log('Final optionsWithTags:', optionsWithTags);
       setQuestionOptions(optionsWithTags);
     } else if (isOpen && !question) {
       setQuestionOptions([]);
@@ -453,25 +446,26 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
                   </div>
                 </SortableContext>
               </DndContext>
-                <div className="flex gap-2">
-                  <Input
-                    value={newOption}
-                    onChange={(e) => setNewOption(e.target.value)}
-                    placeholder="Add new option..."
-                    className="border-[#e9d6e4]"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddOption}
-                    className="bg-[#913177] text-white hover:bg-[#913177]/90"
-                    disabled={!newOption.trim()}
-                  >
-                    Add Option
-                  </Button>
-                </div>
+              
+              <div className="flex gap-2 mt-4">
+                <Input
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  placeholder="Add new option..."
+                  className="border-[#e9d6e4]"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="bg-[#913177] text-white hover:bg-[#913177]/90"
+                  disabled={!newOption.trim()}
+                >
+                  Add Option
+                </Button>
               </div>
             </div>
+          </div>
           )}
 
           {/* Additional Features */}
