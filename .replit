@@ -8,12 +8,16 @@ channel = "stable-24_05"
 run = ["sh", "-c", "npm run dev"]
 
 [[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
 localPort = 5173
 externalPort = 80
 
 [[ports]]
-localPort = 5000
-externalPort = 80
+localPort = 42907
+externalPort = 3000
 
 [workflows]
 runButton = "Project"
