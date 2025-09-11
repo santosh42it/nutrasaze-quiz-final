@@ -26,6 +26,155 @@ interface QuestionModalProps {
   onClose: () => void;
 }
 
+interface SortableOptionItemProps {
+  index: number;
+  optionWithTags: OptionWithTags;
+  editingOptionIndex: number | null;
+  editingOptionText: string;
+  setEditingOptionText: (text: string) => void;
+  handleSaveOptionEdit: () => void;
+  handleCancelOptionEdit: () => void;
+  handleEditOption: (index: number) => void;
+  handleRemoveOption: (index: number) => void;
+  handleOptionTagToggle: (optionIndex: number, tagId: number) => void;
+  isGenericQuestion: boolean;
+  tags: Tag[];
+}
+
+const SortableOptionItem: React.FC<SortableOptionItemProps> = ({
+  index,
+  optionWithTags,
+  editingOptionIndex,
+  editingOptionText,
+  setEditingOptionText,
+  handleSaveOptionEdit,
+  handleCancelOptionEdit,
+  handleEditOption,
+  handleRemoveOption,
+  handleOptionTagToggle,
+  isGenericQuestion,
+  tags,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: index });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="p-4 bg-[#fff4fc] rounded-md space-y-3 border border-[#e9d6e4]">
+      <div className="flex items-center gap-2">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="4" cy="4" r="1"/>
+            <circle cx="12" cy="4" r="1"/>
+            <circle cx="4" cy="8" r="1"/>
+            <circle cx="12" cy="8" r="1"/>
+            <circle cx="4" cy="12" r="1"/>
+            <circle cx="12" cy="12" r="1"/>
+          </svg>
+        </div>
+        {editingOptionIndex === index ? (
+          <div className="flex-1 flex gap-2">
+            <Input
+              value={editingOptionText}
+              onChange={(e) => setEditingOptionText(e.target.value)}
+              className="border-[#e9d6e4]"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveOptionEdit();
+                }
+                if (e.key === 'Escape') {
+                  handleCancelOptionEdit();
+                }
+              }}
+              autoFocus
+            />
+            <Button
+              type="button"
+              onClick={handleSaveOptionEdit}
+              size="sm"
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              Save
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCancelOptionEdit}
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:bg-gray-50"
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <>
+            <span className="flex-1 font-medium">{optionWithTags.option}</span>
+            <Button
+              type="button"
+              onClick={() => handleEditOption(index)}
+              variant="ghost"
+              size="sm"
+              className="text-[#913177] hover:bg-[#fff4fc]"
+            >
+              Edit
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Are you sure you want to remove this option: "${optionWithTags.option}"? This action cannot be undone.`)) {
+                  handleRemoveOption(index);
+                }
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:bg-red-50"
+            >
+              Remove
+            </Button>
+          </>
+        )}
+      </div>
+      
+      {!isGenericQuestion && tags.length > 0 && editingOptionIndex !== index && (
+        <div>
+          <p className="text-xs text-gray-600 mb-2">Tags for Product Recommendations:</p>
+          <div className="flex flex-wrap gap-2">
+            {tags.map(tag => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => handleOptionTagToggle(index, tag.id)}
+                className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                  optionWithTags.tags.includes(tag.id)
+                    ? 'bg-[#913177] text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {tag.name}
+              </button>
+            ))}
+          </div>
+          {optionWithTags.tags.length === 0 && (
+            <p className="text-xs text-gray-400 mt-1">No tags selected</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options, tags, onSave, onClose }) => {
   const { optionTags } = useAdminStore();
   
@@ -122,6 +271,19 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
   const handleCancelOptionEdit = () => {
     setEditingOptionIndex(null);
     setEditingOptionText('');
+  };
+
+  // Handle drag end for options
+  const handleOptionDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = questionOptions.findIndex((opt, index) => index === active.id);
+      const newIndex = questionOptions.findIndex((opt, index) => index === over.id);
+      
+      const reordered = arrayMove(questionOptions, oldIndex, newIndex);
+      setQuestionOptions(reordered);
+    }
   };
 
   const handleOptionTagToggle = (optionIndex: number, tagId: number) => {
@@ -256,101 +418,32 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
               <label className="block text-sm font-medium text-[#1d0917] mb-2">
                 Options with Tags
               </label>
-              <div className="space-y-4">
-                {questionOptions.map((optionWithTags, index) => (
-                  <div key={index} className="p-4 bg-[#fff4fc] rounded-md space-y-3 border border-[#e9d6e4]">
-                    <div className="flex items-center gap-2">
-                      {editingOptionIndex === index ? (
-                        <div className="flex-1 flex gap-2">
-                          <Input
-                            value={editingOptionText}
-                            onChange={(e) => setEditingOptionText(e.target.value)}
-                            className="border-[#e9d6e4]"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSaveOptionEdit();
-                              }
-                              if (e.key === 'Escape') {
-                                handleCancelOptionEdit();
-                              }
-                            }}
-                            autoFocus
-                          />
-                          <Button
-                            type="button"
-                            onClick={handleSaveOptionEdit}
-                            size="sm"
-                            className="bg-green-600 text-white hover:bg-green-700"
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={handleCancelOptionEdit}
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-600 hover:bg-gray-50"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="flex-1 font-medium">{optionWithTags.option}</span>
-                          <Button
-                            type="button"
-                            onClick={() => handleEditOption(index)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-[#913177] hover:bg-[#fff4fc]"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Are you sure you want to remove this option: "${optionWithTags.option}"? This action cannot be undone.`)) {
-                                handleRemoveOption(index);
-                              }
-                            }}
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            Remove
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    
-                    {!isGenericQuestion && tags.length > 0 && editingOptionIndex !== index && (
-                      <div>
-                        <p className="text-xs text-gray-600 mb-2">Tags for Product Recommendations:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {tags.map(tag => (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => handleOptionTagToggle(index, tag.id)}
-                              className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                                optionWithTags.tags.includes(tag.id)
-                                  ? 'bg-[#913177] text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
-                            >
-                              {tag.name}
-                            </button>
-                          ))}
-                        </div>
-                        {optionWithTags.tags.length === 0 && (
-                          <p className="text-xs text-gray-400 mt-1">No tags selected</p>
-                        )}
-                      </div>
-                    )}
+              <DndContext onDragEnd={handleOptionDragEnd}>
+                <SortableContext 
+                  items={questionOptions.map((_, index) => index)} 
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-4">
+                    {questionOptions.map((optionWithTags, index) => (
+                      <SortableOptionItem
+                        key={index}
+                        index={index}
+                        optionWithTags={optionWithTags}
+                        editingOptionIndex={editingOptionIndex}
+                        editingOptionText={editingOptionText}
+                        setEditingOptionText={setEditingOptionText}
+                        handleSaveOptionEdit={handleSaveOptionEdit}
+                        handleCancelOptionEdit={handleCancelOptionEdit}
+                        handleEditOption={handleEditOption}
+                        handleRemoveOption={handleRemoveOption}
+                        handleOptionTagToggle={handleOptionTagToggle}
+                        isGenericQuestion={isGenericQuestion}
+                        tags={tags}
+                      />
+                    ))}
                   </div>
-                ))}
-                
+                </SortableContext>
+              </DndContext>
                 <div className="flex gap-2">
                   <Input
                     value={newOption}
