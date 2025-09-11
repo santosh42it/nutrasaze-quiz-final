@@ -613,7 +613,6 @@ export const QuestionManager: React.FC = () => {
     questions, 
     options, 
     tags,
-    optionTags,
     addQuestion, 
     updateQuestion, 
     deleteQuestion, 
@@ -698,11 +697,8 @@ export const QuestionManager: React.FC = () => {
 
   const handleSaveQuestion = async (questionData: Partial<Question>, questionOptions?: OptionWithTags[]) => {
     try {
-      let questionId: number;
-      
       if (editingQuestion) {
-        const { data: updatedQuestion } = await updateQuestion(editingQuestion.id, questionData);
-        questionId = editingQuestion.id;
+        await updateQuestion(editingQuestion.id, questionData);
         
         // Update options if it's a select question
         if (questionData.question_type === 'select' && questionOptions) {
