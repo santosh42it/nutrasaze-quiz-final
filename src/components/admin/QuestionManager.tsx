@@ -12,6 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface OptionWithTags {
+  id?: number; // Track existing option ID for updates
   option: string;
   tags: number[];
 }
@@ -68,6 +69,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
           const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
           
           return {
+            id: option.id, // Include the database ID
             option: option.option_text,
             tags: optionTagsForOption.map(ot => ot.tag_id)
           };
@@ -90,7 +92,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
     if (newOption.trim()) {
       const existingOption = questionOptions.find(opt => opt.option === newOption.trim());
       if (!existingOption) {
-        setQuestionOptions([...questionOptions, { option: newOption.trim(), tags: [] }]);
+        setQuestionOptions([...questionOptions, { option: newOption.trim(), tags: [] }]); // No ID for new options
         setNewOption('');
       }
     }
@@ -139,10 +141,38 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
     onSave(formData, formData.question_type === 'select' ? questionOptions : undefined);
   };
 
+  // Handle ESC key press and outside click
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -678,32 +708,35 @@ export const QuestionManager: React.FC = () => {
         if (questionData.question_type === 'select' && questionOptions) {
           const existingOptions = options.filter(o => o.question_id === editingQuestion.id);
           
-          // Create a map of existing options by text for comparison
-          const existingOptionsMap = new Map(
-            existingOptions.map(opt => [opt.option_text, opt])
-          );
-          
           // Track which existing options to keep
           const optionsToKeep = new Set<number>();
           
-          // Process each new/updated option
+          // Process each option from the modal
           for (let i = 0; i < questionOptions.length; i++) {
             const optionData = questionOptions[i];
-            const existingOption = existingOptionsMap.get(optionData.option);
             
-            if (existingOption) {
-              // Option exists, just update tags and order
-              optionsToKeep.add(existingOption.id);
+            if (optionData.id) {
+              // Existing option - update it
+              optionsToKeep.add(optionData.id);
               
-              // Update order if changed
-              if (existingOption.order_index !== i) {
-                await updateOption(existingOption.id, { order_index: i });
+              // Find the existing option to check what needs updating
+              const existingOption = existingOptions.find(opt => opt.id === optionData.id);
+              if (existingOption) {
+                // Update text if changed
+                if (existingOption.option_text !== optionData.option) {
+                  await updateOption(optionData.id, { option_text: optionData.option });
+                }
+                
+                // Update order if changed
+                if (existingOption.order_index !== i) {
+                  await updateOption(optionData.id, { order_index: i });
+                }
+                
+                // Update tags
+                await updateOptionTags(optionData.id, optionData.tags);
               }
-              
-              // Update tags
-              await updateOptionTags(existingOption.id, optionData.tags);
             } else {
-              // New option, create it
+              // New option - create it
               const { data: newOption } = await addOption({
                 question_id: editingQuestion.id,
                 option_text: optionData.option,
