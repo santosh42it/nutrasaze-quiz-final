@@ -32,6 +32,13 @@ const ResponsesToolbar: React.FC = () => {
   const [localSearch, setLocalSearch] = useState(responsesFilters.search);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+    };
+  }, [searchTimeout]);
+
   // Debounced search
   const handleSearchChange = (value: string) => {
     setLocalSearch(value);
