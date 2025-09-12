@@ -405,54 +405,93 @@ const ResponseDetailModal: React.FC<{
             </div>
           </div>
 
-          {/* Quiz Answers */}
-          {response.answers && response.answers.length > 0 && (
-            <div className="bg-white rounded-xl border border-[#e9d6e4] overflow-hidden">
-              <div className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white p-4">
-                <h4 className="text-lg font-bold flex items-center">
-                  <span className="mr-2">💬</span>Quiz Answers ({response.answers.length})
-                </h4>
-              </div>
-              <div className="max-h-96 overflow-y-auto">
-                {response.answers.map((answer: any, index: number) => (
-                  <div key={index} className="p-4 border-b border-[#f0f0f0] last:border-b-0">
-                    <div className="mb-3">
-                      <span className="font-semibold text-[#1d0917] text-sm">
-                        Q{index + 1}: {answer.questions?.question_text || `Question ID ${answer.question_id}`}
-                      </span>
-                    </div>
-                    
-                    {/* Answer text */}
-                    <div className="text-[#3d3d3d] bg-[#f8f9fa] p-3 rounded-lg mb-3">
-                      {answer.answer_text || 'No answer provided'}
-                    </div>
-                    
-                    {/* File attachment if exists */}
-                    {answer.file_url && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-blue-600 font-medium text-sm">📎 Uploaded File:</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <a
-                            href={answer.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
-                          >
-                            📄 View File
-                          </a>
-                          <span className="text-gray-600 text-sm">
-                            {answer.file_url.split('/').pop()?.substring(0, 30) || 'Attachment'}
-                          </span>
+          {/* Quiz Answers - Filter out basic info questions */}
+          {(() => {
+            // Filter out basic info questions (name, email, contact, age) that are already shown above
+            const basicInfoQuestionIds = ['name', 'email', 'contact', 'age'];
+            const quizAnswers = response.answers
+              ?.filter((answer: any) => !basicInfoQuestionIds.includes(answer.question_id?.toString()))
+              ?.sort((a: any, b: any) => {
+                // Sort by question_id to maintain consistent order
+                const aId = parseInt(a.question_id?.toString() || '0');
+                const bId = parseInt(b.question_id?.toString() || '0');
+                return aId - bId;
+              }) || [];
+
+            return quizAnswers.length > 0 && (
+              <div className="bg-white rounded-xl border border-[#e9d6e4] overflow-hidden shadow-lg">
+                <div className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white p-5">
+                  <h4 className="text-xl font-bold flex items-center">
+                    <span className="mr-3">🎯</span>Health Assessment Answers ({quizAnswers.length})
+                  </h4>
+                  <p className="text-white/90 text-sm mt-1">Detailed responses to personalized health questions</p>
+                </div>
+                <div className="max-h-[500px] overflow-y-auto">
+                  {quizAnswers.map((answer: any, index: number) => (
+                    <div key={answer.question_id || index} className="p-6 border-b border-[#f0f0f0] last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                      <div className="mb-4">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-[#913177] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-[#1d0917] text-base leading-relaxed">
+                              {answer.questions?.question_text || `Question ID ${answer.question_id}`}
+                            </h5>
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      
+                      {/* Answer text */}
+                      <div className="ml-9">
+                        <div className="bg-gradient-to-r from-[#f8f9fa] to-white p-4 rounded-xl border border-gray-200 mb-4">
+                          <div className="text-[#2d3748] font-medium">
+                            {answer.answer_text || 'No answer provided'}
+                          </div>
+                        </div>
+                        
+                        {/* File attachment if exists */}
+                        {answer.file_url && (
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-blue-500 text-white rounded-full p-2">
+                                  📎
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-blue-900">Medical Document Uploaded</p>
+                                  <p className="text-blue-700 text-sm">
+                                    {answer.file_url.split('/').pop()?.substring(0, 40) || 'Attachment'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <a
+                                  href={answer.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
+                                >
+                                  👁️ View
+                                </a>
+                                <a
+                                  href={answer.file_url}
+                                  download
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md"
+                                >
+                                  📥 Download
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
@@ -554,20 +593,22 @@ export const ResponsesReport: React.FC<ResponsesReportProps> = ({ superAdminEnab
           <table className="w-full">
             <thead>
               <tr className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white">
-                <th className="text-left py-4 px-4 font-bold text-sm uppercase tracking-wider w-12">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        selectAllResponses();
-                      } else {
-                        clearResponseSelection();
-                      }
-                    }}
-                    className="h-4 w-4 text-[#913177] border-white rounded focus:ring-[#913177]"
-                  />
-                </th>
+                {superAdminEnabled && (
+                  <th className="text-left py-4 px-4 font-bold text-sm uppercase tracking-wider w-12">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          selectAllResponses();
+                        } else {
+                          clearResponseSelection();
+                        }
+                      }}
+                      className="h-4 w-4 text-[#913177] border-white rounded focus:ring-[#913177]"
+                    />
+                  </th>
+                )}
                 <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Name</th>
                 <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Email</th>
                 <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Phone</th>
@@ -585,14 +626,16 @@ export const ResponsesReport: React.FC<ResponsesReportProps> = ({ superAdminEnab
                     response.status === 'partial' ? 'bg-yellow-50' : (index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white')
                   } ${selectedResponses.has(response.id) ? 'bg-[#913177]/5' : ''}`}
                 >
-                  <td className="py-4 px-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedResponses.has(response.id)}
-                      onChange={() => toggleResponseSelection(response.id)}
-                      className="h-4 w-4 text-[#913177] border-gray-300 rounded focus:ring-[#913177]"
-                    />
-                  </td>
+                  {superAdminEnabled && (
+                    <td className="py-4 px-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedResponses.has(response.id)}
+                        onChange={() => toggleResponseSelection(response.id)}
+                        className="h-4 w-4 text-[#913177] border-gray-300 rounded focus:ring-[#913177]"
+                      />
+                    </td>
+                  )}
                   <td className="py-4 px-6">
                     <div className="font-semibold text-[#1d0917]">{response.name || '-'}</div>
                   </td>
@@ -650,8 +693,8 @@ export const ResponsesReport: React.FC<ResponsesReportProps> = ({ superAdminEnab
 
       <LoadMoreButton />
 
-      {/* Bulk actions bar */}
-      <BulkActionsBar superAdminEnabled={superAdminEnabled} />
+      {/* Bulk actions bar - only show in edit mode */}
+      {superAdminEnabled && <BulkActionsBar superAdminEnabled={superAdminEnabled} />}
 
       {/* Response detail modal */}
       {selectedResponse && (
