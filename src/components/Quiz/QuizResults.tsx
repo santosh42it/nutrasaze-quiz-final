@@ -96,11 +96,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       age: userInfo.age?.trim() || answers.age?.trim() || (saveData?.age ? saveData.age.toString() : '') || '0'
     };
 
-    // Enhanced contact field extraction with multiple fallback strategies
+    // ENHANCED CONTACT FIELD EXTRACTION - Better debugging and more strategies
     if (!extracted.contact) {
+      console.log('=== CONTACT FIELD EXTRACTION DEBUG ===');
+      console.log('All answers keys:', Object.keys(answers));
+      console.log('All answers values:', answers);
+      console.log('Looking for contact field...');
+      
       // Strategy 1: Check known question IDs (question 3 is typically contact)
       if (answers['3']) {
         extracted.contact = answers['3'].trim();
+        console.log('✅ Found contact via question ID 3:', extracted.contact);
       }
       
       // Strategy 2: Check for keys containing contact/phone keywords
@@ -108,8 +114,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         for (const key in answers) {
           const value = answers[key];
           if (value && typeof value === 'string' && value.trim()) {
-            if (key.toLowerCase().includes('contact') || key.toLowerCase().includes('phone') || key.toLowerCase().includes('mobile')) {
+            const keyLower = key.toLowerCase();
+            if (keyLower.includes('contact') || keyLower.includes('phone') || keyLower.includes('mobile')) {
               extracted.contact = value.trim();
+              console.log('✅ Found contact via keyword search, key:', key, 'value:', extracted.contact);
               break;
             }
           }
@@ -124,11 +132,27 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             const cleanValue = value.replace(/[\s\-\(\)\+]/g, '');
             if (/^(?:\+?91)?[6-9]\d{9}$/.test(cleanValue)) {
               extracted.contact = cleanValue.replace(/^\+?91/, '');
+              console.log('✅ Found contact via pattern matching, key:', key, 'value:', extracted.contact);
               break;
             }
           }
         }
       }
+      
+      // Strategy 4: Check specific field names that might contain contact
+      if (!extracted.contact) {
+        const possibleContactKeys = ['phone_number', 'phoneNumber', 'whatsapp', 'mobile_number', 'mobileNumber', 'contactNumber'];
+        for (const possibleKey of possibleContactKeys) {
+          if (answers[possibleKey]) {
+            extracted.contact = answers[possibleKey].trim();
+            console.log('✅ Found contact via possible key:', possibleKey, 'value:', extracted.contact);
+            break;
+          }
+        }
+      }
+      
+      console.log('Final extracted contact:', extracted.contact || 'NOT FOUND');
+      console.log('=== END CONTACT EXTRACTION DEBUG ===');
     }
 
     // Clean and normalize contact field
@@ -714,7 +738,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.error('Age validation failed:', finalUserInfo.age);
       }
 
-      // Skip validation if we're viewing existing results or have progressive save data
+      // ENHANCED VALIDATION BYPASS - Check if data already exists in database
       if (missingFields.length > 0 && !isViewingExistingResults && !saveData?.responseId) {
         console.error('Missing required fields:', missingFields);
         console.error('All available data sources:');
@@ -722,6 +746,35 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         console.error('- saveData:', saveData);
         console.error('- userInfo prop:', userInfo);
         console.error('- answers object:', answers);
+        
+        // CRITICAL FALLBACK: Check if user already has completed response
+        console.log('🔍 Checking if user already has completed response in database...');
+        try {
+          const email = finalUserInfo.email || extractedUserInfo.email;
+          if (email) {
+            const { data: existingCompleted, error: checkError } = await supabase
+              .from('quiz_responses')
+              .select('id, status, created_at')
+              .eq('email', email)
+              .eq('status', 'completed')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (!checkError && existingCompleted) {
+              console.log('✅ Found existing completed response! Bypassing validation and navigating to results...');
+              const resultId = `${existingCompleted.id}-${Date.now()}`;
+              const shareableUrl = `${window.location.origin}/results/${resultId}`;
+              localStorage.setItem('nutrasage_last_result_url', shareableUrl);
+              localStorage.setItem('nutrasage_last_result_id', resultId);
+              navigate(`/results/${resultId}`, { replace: true });
+              return; // Skip all validation and save logic
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Fallback check failed:', fallbackError);
+        }
+        
         throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
       } else if (missingFields.length > 0) {
         console.log('Skipping validation due to existing results or progressive save');
