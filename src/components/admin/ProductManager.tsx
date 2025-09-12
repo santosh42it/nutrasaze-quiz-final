@@ -224,7 +224,7 @@ export const ProductManager: React.FC = () => {
     };
 
     loadProducts();
-  }, [fetchProducts]);
+  }, []); // Empty dependency array - only run on mount
 
   const handleSave = async (productData: Partial<Product>) => {
     if (editingProduct) {

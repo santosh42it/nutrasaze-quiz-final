@@ -744,7 +744,7 @@ export const QuestionManager: React.FC = () => {
       }
     };
     loadData();
-  }, [fetchQuestions, fetchOptions, fetchTags, fetchOptionTags]);
+  }, []); // Empty dependency array - only run on mount
 
   useEffect(() => {
     if (showModal || editingQuestion) {
@@ -758,7 +758,7 @@ export const QuestionManager: React.FC = () => {
       };
       loadData();
     }
-  }, [showModal, editingQuestion, fetchOptionTags]);
+  }, [showModal, editingQuestion]); // Removed unstable fetchOptionTags dependency
 
   const sensors = useSensors(
     useSensor(MouseSensor, {

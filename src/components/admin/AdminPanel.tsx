@@ -27,7 +27,7 @@ export const AdminPanel: React.FC = () => {
     fetchQuestionTags();
     fetchOptionTags();
     fetchAnswerKeys();
-  }, [fetchQuestions, fetchOptions, fetchTags, fetchProducts, fetchQuestionTags, fetchOptionTags, fetchAnswerKeys]);
+  }, []); // Empty dependency array - only run on mount
 
   const handleSignOut = async () => {
     try {
