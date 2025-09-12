@@ -1,296 +1,486 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent } from '../ui/card';
+import { useAdminStore } from '../../stores/adminStore';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { supabase } from '../../lib/supabase';
-import type { QuizResponse, QuizAnswer } from '../../types/database';
-import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { Card, CardContent } from '../ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
-interface DetailedResponse extends QuizResponse {
-  answers: (QuizAnswer & { questions: { question_text: string } })[];
-}
+// Response status badge component
+const StatusBadge: React.FC<{ status: 'completed' | 'partial' }> = ({ status }) => (
+  <span className={`px-2 py-1 rounded text-xs font-medium ${
+    status === 'completed' 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-yellow-100 text-yellow-800'
+  }`}>
+    {status === 'completed' ? '✅ Completed' : '⏳ Partial'}
+  </span>
+);
 
-interface DateRange {
-  from: string;
-  to: string;
-}
+// Filter and action toolbar component
+const ResponsesToolbar: React.FC = () => {
+  const {
+    responsesFilters,
+    setResponsesFilters,
+    clearResponsesFilters,
+    refreshResponses,
+    exportResponsesCSV,
+    responsesLoading,
+    responsesPagination,
+    setResponsesPageSize
+  } = useAdminStore();
+
+  const [localSearch, setLocalSearch] = useState(responsesFilters.search);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Debounced search
+  const handleSearchChange = (value: string) => {
+    setLocalSearch(value);
+    if (searchTimeout) clearTimeout(searchTimeout);
+    const timeout = setTimeout(() => {
+      setResponsesFilters({ search: value });
+    }, 300);
+    setSearchTimeout(timeout);
+  };
+
+  const activeFiltersCount = [
+    responsesFilters.status !== 'all',
+    responsesFilters.search.trim().length > 0,
+    responsesFilters.dateFrom,
+    responsesFilters.dateTo
+  ].filter(Boolean).length;
+
+  return (
+    <Card className="border-none shadow-lg bg-white mb-6">
+      <CardContent className="p-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <h3 className="text-2xl font-bold text-[#1d0917] flex items-center">
+              🗂️ Quiz Responses
+            </h3>
+            {activeFiltersCount > 0 && (
+              <span className="bg-[#913177] text-white px-2 py-1 rounded-full text-xs font-medium">
+                {activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={refreshResponses}
+              disabled={responsesLoading}
+              variant="outline"
+              className="border-[#913177] text-[#913177] hover:bg-[#913177]/10"
+            >
+              {responsesLoading ? '🔄 Refreshing...' : '🔄 Refresh'}
+            </Button>
+            <Button
+              onClick={exportResponsesCSV}
+              disabled={responsesLoading}
+              className="bg-[#4ade80] text-white hover:bg-[#22c55e] shadow-md"
+            >
+              📥 Export CSV
+            </Button>
+          </div>
+        </div>
+
+        {/* Filters row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-semibold text-[#1d0917] mb-2">Search</label>
+            <Input
+              placeholder="Name, email, or phone..."
+              value={localSearch}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="border-[#e9d6e4] focus:border-[#913177]"
+            />
+          </div>
+
+          {/* Status filter */}
+          <div>
+            <label className="block text-sm font-semibold text-[#1d0917] mb-2">Status</label>
+            <select
+              value={responsesFilters.status}
+              onChange={(e) => setResponsesFilters({ status: e.target.value as any })}
+              className="w-full px-3 py-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
+            >
+              <option value="all">All Responses</option>
+              <option value="completed">Completed</option>
+              <option value="partial">Partial</option>
+            </select>
+          </div>
+
+          {/* Date from */}
+          <div>
+            <label className="block text-sm font-semibold text-[#1d0917] mb-2">Date From</label>
+            <Input
+              type="date"
+              value={responsesFilters.dateFrom || ''}
+              onChange={(e) => setResponsesFilters({ dateFrom: e.target.value || undefined })}
+              className="border-[#e9d6e4] focus:border-[#913177]"
+            />
+          </div>
+
+          {/* Date to */}
+          <div>
+            <label className="block text-sm font-semibold text-[#1d0917] mb-2">Date To</label>
+            <Input
+              type="date"
+              value={responsesFilters.dateTo || ''}
+              onChange={(e) => setResponsesFilters({ dateTo: e.target.value || undefined })}
+              className="border-[#e9d6e4] focus:border-[#913177]"
+            />
+          </div>
+
+          {/* Page size */}
+          <div>
+            <label className="block text-sm font-semibold text-[#1d0917] mb-2">Per Page</label>
+            <select
+              value={responsesPagination.pageSize}
+              onChange={(e) => setResponsesPageSize(Number(e.target.value))}
+              className="w-full px-3 py-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
+            >
+              <option value={25}>25 per page</option>
+              <option value={50}>50 per page</option>
+              <option value={100}>100 per page</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Clear filters */}
+        {activeFiltersCount > 0 && (
+          <div className="mt-4 flex justify-center">
+            <Button
+              onClick={clearResponsesFilters}
+              variant="outline"
+              className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
+              disabled={responsesLoading}
+            >
+              🗑️ Clear All Filters
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Bulk actions bar that appears when responses are selected
+const BulkActionsBar: React.FC<{ superAdminEnabled: boolean }> = ({ superAdminEnabled }) => {
+  const {
+    selectedResponses,
+    clearResponseSelection,
+    bulkDeleteResponses,
+    bulkActionLoading
+  } = useAdminStore();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  if (selectedResponses.size === 0) return null;
+
+  const handleBulkDelete = async () => {
+    if (!superAdminEnabled) return;
+    try {
+      await bulkDeleteResponses([...selectedResponses]);
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+      <Card className="shadow-2xl border-[#913177] bg-white">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-[#1d0917]">
+              {selectedResponses.size} response{selectedResponses.size > 1 ? 's' : ''} selected
+            </span>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={clearResponseSelection}
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </Button>
+              
+              {superAdminEnabled && (
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <Button
+                    onClick={() => setDeleteDialogOpen(true)}
+                    variant="destructive"
+                    size="sm"
+                    disabled={bulkActionLoading}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {bulkActionLoading ? '⏳ Deleting...' : `🗑️ Delete ${selectedResponses.size}`}
+                  </Button>
+                  
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {selectedResponses.size} Responses</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selectedResponses.size} response{selectedResponses.size > 1 ? 's' : ''}? 
+                        This action cannot be undone and will permanently remove all associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleBulkDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                        disabled={bulkActionLoading}
+                      >
+                        {bulkActionLoading ? 'Deleting...' : 'Delete All'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Load more button component
+const LoadMoreButton: React.FC = () => {
+  const { responsesPagination, responsesLoading, loadMoreResponses } = useAdminStore();
+
+  if (!responsesPagination.hasMore) return null;
+
+  return (
+    <div className="text-center py-6">
+      <Button
+        onClick={loadMoreResponses}
+        disabled={responsesLoading}
+        variant="outline"
+        className="border-[#913177] text-[#913177] hover:bg-[#913177]/10"
+      >
+        {responsesLoading ? '⏳ Loading...' : '📄 Load More'}
+      </Button>
+    </div>
+  );
+};
+
+// Response detail modal
+const ResponseDetailModal: React.FC<{ 
+  response: any; 
+  onClose: () => void; 
+  onDelete: (id: string) => void; 
+  superAdminEnabled: boolean 
+}> = ({ response, onClose, onDelete, superAdminEnabled }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <Card className="max-w-5xl w-full max-h-[90vh] overflow-y-auto border-none shadow-2xl bg-white relative animate-in slide-in-from-bottom-4 duration-300">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-[#913177] to-[#b8439a] text-white z-10 p-6 flex justify-between items-center">
+          <div>
+            <h3 className="text-2xl font-bold">
+              👤 {response.name || 'Unknown'}'s Response
+            </h3>
+            <p className="text-white/90 text-sm mt-1">
+              Submitted on {formatDate(response.created_at || '')}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {superAdminEnabled && (
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <Button
+                  onClick={() => setDeleteDialogOpen(true)}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300"
+                >
+                  🗑️ Delete
+                </Button>
+                
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Response</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {response.name}'s response? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        onDelete(response.id);
+                        setDeleteDialogOpen(false);
+                        onClose();
+                      }}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/10"
+            >
+              ✕ Close
+            </Button>
+          </div>
+        </div>
+
+        <CardContent className="p-8">
+          {/* Contact Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md">
+              <h4 className="text-lg font-bold text-[#1d0917] mb-4 flex items-center">
+                <span className="mr-2">📞</span>Contact Information
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-16">Email:</span>
+                  <span className="text-[#1d0917]">{response.email || 'N/A'}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-16">Phone:</span>
+                  <span className="text-[#1d0917]">{response.contact || 'N/A'}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-16">Age:</span>
+                  <span className="text-[#1d0917]">{response.age || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md">
+              <h4 className="text-lg font-bold text-[#1d0917] mb-4 flex items-center">
+                <span className="mr-2">📊</span>Submission Details
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-20">Status:</span>
+                  <StatusBadge status={response.status} />
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-20">Submitted:</span>
+                  <span className="text-[#1d0917]">{formatDate(response.created_at)}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-20">Updated:</span>
+                  <span className="text-[#1d0917]">{formatDate(response.updated_at)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quiz Answers */}
+          {response.answers && response.answers.length > 0 && (
+            <div className="bg-white rounded-xl border border-[#e9d6e4] overflow-hidden">
+              <div className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white p-4">
+                <h4 className="text-lg font-bold flex items-center">
+                  <span className="mr-2">💬</span>Quiz Answers ({response.answers.length})
+                </h4>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {response.answers.map((answer: any, index: number) => (
+                  <div key={index} className="p-4 border-b border-[#f0f0f0] last:border-b-0">
+                    <div className="mb-2">
+                      <span className="font-semibold text-[#1d0917] text-sm">
+                        Q{index + 1}: {answer.questions?.question_text || `Question ID ${answer.question_id}`}
+                      </span>
+                    </div>
+                    <div className="text-[#3d3d3d] bg-[#f8f9fa] p-3 rounded-lg">
+                      {answer.answer_text || 'No answer provided'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export const ResponsesReport: React.FC = () => {
-  const [responses, setResponses] = useState<DetailedResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedResponse, setSelectedResponse] = useState<DetailedResponse | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [dateRange, setDateRange] = useState<DateRange>({ 
-    from: getDateWeekAgo(), 
-    to: getCurrentDate() 
-  });
-  const [ageFilter, setAgeFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'date' | 'name' | 'age'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'partial'>('completed');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [responseToDelete, setResponseToDelete] = useState<DetailedResponse | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    responses,
+    responsesLoading,
+    responsesError,
+    responsesTotalCount,
+    selectedResponses,
+    fetchResponses,
+    toggleResponseSelection,
+    selectAllResponses,
+    clearResponseSelection,
+    deleteResponse,
+    getResponseDetails
+  } = useAdminStore();
+  
+  const [selectedResponse, setSelectedResponse] = useState<any>(null);
+  const [superAdminEnabled, setSuperAdminEnabled] = useState(false);
 
-  // Helper functions for default date range
-  function getCurrentDate() {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  function getDateWeekAgo() {
-    const date = new Date();
-    date.setDate(date.getDate() - 7);
-    return date.toISOString().split('T')[0];
-  }
-
+  // Initialize responses on mount
   useEffect(() => {
-    fetchResponses();
-  }, [dateRange, statusFilter]);
+    fetchResponses(true);
+  }, []);
 
-  // ESC key listener for modal
+  // Check super admin status from parent
   useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && selectedResponse) {
-        setSelectedResponse(null);
+    const checkSuperAdmin = () => {
+      // Get super admin status from AdminPanel component
+      const adminPanel = document.querySelector('[data-super-admin]');
+      if (adminPanel) {
+        setSuperAdminEnabled(adminPanel.getAttribute('data-super-admin') === 'true');
       }
     };
+    
+    checkSuperAdmin();
+    // Check periodically in case it changes
+    const interval = setInterval(checkSuperAdmin, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
-    if (selectedResponse) {
-      document.addEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'hidden';
+  const handleResponseClick = async (responseId: string) => {
+    const details = await getResponseDetails(responseId);
+    if (details) {
+      setSelectedResponse(details);
     }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'unset';
-    };
-  }, [selectedResponse]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchResponses();
-    setRefreshing(false);
   };
 
-  const fetchResponses = async () => {
+  const handleDeleteResponse = async (id: string) => {
     try {
-      setLoading(true);
-      console.log('Fetching quiz responses with date filter...');
-
-      // Build query with date filtering
-      let query = supabase
-        .from('quiz_responses')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      // Apply date range filter
-      if (dateRange.from) {
-        query = query.gte('created_at', dateRange.from + 'T00:00:00');
-      }
-      if (dateRange.to) {
-        query = query.lte('created_at', dateRange.to + 'T23:59:59');
-      }
-
-      // Apply status filter
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data: basicResponses, error: basicError } = await query;
-
-      console.log('Basic responses:', basicResponses, 'Error:', basicError);
-
-      if (basicError) {
-        console.error('Error fetching basic responses:', basicError);
-        setResponses([]);
-        setLoading(false);
-        return;
-      }
-
-      if (!basicResponses || basicResponses.length === 0) {
-        console.log('No responses found');
-        setResponses([]);
-        setLoading(false);
-        return;
-      }
-
-      const responsesWithAnswers: DetailedResponse[] = [];
-
-      for (const response of basicResponses) {
-        try {
-          const { data: answers, error: answersError } = await supabase
-            .from('quiz_answers')
-            .select(`
-              *,
-              questions (question_text)
-            `)
-            .eq('response_id', response.id);
-
-          if (answersError) {
-            console.error('Error fetching answers for response', response.id, ':', answersError);
-          }
-
-          responsesWithAnswers.push({
-            ...response,
-            answers: answers || []
-          });
-        } catch (error) {
-          console.error('Error processing response', response.id, ':', error);
-          responsesWithAnswers.push({
-            ...response,
-            answers: []
-          });
-        }
-      }
-
-      setResponses(responsesWithAnswers);
-
+      await deleteResponse(id);
     } catch (error) {
-      console.error('Error in fetchResponses:', error);
-      setResponses([]);
-    } finally {
-      setLoading(false);
+      console.error('Failed to delete response:', error);
     }
-  };
-
-  // Enhanced filtering and sorting
-  const filteredAndSortedResponses = React.useMemo(() => {
-    let filtered = responses.filter(response => {
-      const matchesSearch = (response.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (response.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (response.contact || '').includes(searchTerm);
-
-      const matchesAge = !ageFilter || 
-        (ageFilter === '18-25' && response.age >= 18 && response.age <= 25) ||
-        (ageFilter === '26-35' && response.age >= 26 && response.age <= 35) ||
-        (ageFilter === '36-45' && response.age >= 36 && response.age <= 45) ||
-        (ageFilter === '46+' && response.age >= 46);
-
-      return matchesSearch && matchesAge;
-    });
-
-    // Sort the filtered results
-    filtered.sort((a, b) => {
-      let comparison = 0;
-      switch (sortBy) {
-        case 'name':
-          comparison = (a.name || '').localeCompare(b.name || '');
-          break;
-        case 'age':
-          comparison = (a.age || 0) - (b.age || 0);
-          break;
-        case 'date':
-        default:
-          comparison = new Date(a.created_at || '').getTime() - new Date(b.created_at || '').getTime();
-          break;
-      }
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    return filtered;
-  }, [responses, searchTerm, ageFilter, sortBy, sortOrder]);
-
-  const paginatedResponses = filteredAndSortedResponses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredAndSortedResponses.length / itemsPerPage);
-
-  // Export to CSV function
-  const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Age', 'Status', 'Submission Date'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredAndSortedResponses.map(response => [
-        `"${response.name || '-'}"`,
-        `"${response.email || '-'}"`,
-        `"${response.contact || '-'}"`,
-        response.age || '-',
-        response.status || 'completed',
-        `"${formatDate(response.created_at || '')}"`
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `quiz_responses_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const clearFilters = async () => {
-    setSearchTerm('');
-    setDateRange({ from: getDateWeekAgo(), to: getCurrentDate() });
-    setAgeFilter('');
-    setSortBy('date');
-    setSortOrder('desc');
-    setStatusFilter('completed'); // Reset to default completed
-    setCurrentPage(1);
-    await fetchResponses();
-  };
-
-  const handleDeleteClick = (response: DetailedResponse) => {
-    setResponseToDelete(response);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!responseToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      // Delete quiz answers first (due to foreign key constraint)
-      const { error: answersError } = await supabase
-        .from('quiz_answers')
-        .delete()
-        .eq('response_id', responseToDelete.id);
-
-      if (answersError) {
-        console.error('Error deleting quiz answers:', answersError);
-        alert(`Error deleting quiz answers: ${answersError.message}`);
-        return;
-      }
-
-      // Delete quiz response
-      const { error: responseError } = await supabase
-        .from('quiz_responses')
-        .delete()
-        .eq('id', responseToDelete.id);
-
-      if (responseError) {
-        console.error('Error deleting quiz response:', responseError);
-        alert(`Error deleting quiz response: ${responseError.message}`);
-        return;
-      }
-
-      // Refresh the responses list
-      await fetchResponses();
-
-      // Close dialogs
-      setDeleteDialogOpen(false);
-      setResponseToDelete(null);
-      setSelectedResponse(null);
-
-      console.log('Response deleted successfully:', responseToDelete.id);
-    } catch (error) {
-      console.error('Error in delete operation:', error);
-      alert('An unexpected error occurred while deleting the response');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setResponseToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -304,7 +494,9 @@ export const ResponsesReport: React.FC = () => {
     });
   };
 
-  if (loading) {
+  const allSelected = responses.length > 0 && responses.every(r => selectedResponses.has(r.id));
+
+  if (responsesLoading && responses.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#913177]"></div>
@@ -314,503 +506,143 @@ export const ResponsesReport: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Enhanced Filters and Controls */}
+    <div className="space-y-6">
+      <ResponsesToolbar />
+
+      {responsesError && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <p className="text-red-700">Error: {responsesError}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results summary */}
+      <div className="flex justify-between items-center text-sm text-gray-600">
+        <span>
+          Showing {responses.length} of {responsesTotalCount} responses
+        </span>
+        {selectedResponses.size > 0 && (
+          <span className="text-[#913177] font-medium">
+            {selectedResponses.size} selected
+          </span>
+        )}
+      </div>
+
+      {/* Responses table */}
       <Card className="border-none shadow-lg bg-white">
-        <CardContent className="p-4 sm:p-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <h3 className="text-lg sm:text-2xl font-bold text-[#1d0917] flex items-center">
-              <span className="mr-2 sm:mr-3">🗂️</span>Quiz Responses
-            </h3>
-            <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
-              <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="bg-[#913177] text-white hover:bg-[#913177]/90 shadow-md text-sm"
-              >
-                {refreshing ? '🔄 Refreshing...' : '🔄 Refresh'}
-              </Button>
-              <Button
-                onClick={exportToCSV}
-                className="bg-[#4ade80] text-white hover:bg-[#22c55e] shadow-md text-sm"
-              >
-                📥 Export CSV
-              </Button>
-            </div>
-          </div>
-
-          {/* Date Range and Basic Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-6 bg-gradient-to-r from-[#fff4fc] to-white rounded-xl">
-            <div>
-              <label className="block text-sm font-semibold text-[#1d0917] mb-2">Search</label>
-              <Input
-                placeholder="Name, email, or phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-[#e9d6e4] focus:border-[#913177]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#1d0917] mb-2">From Date</label>
-              <Input
-                type="date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                className="border-[#e9d6e4] focus:border-[#913177]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#1d0917] mb-2">To Date</label>
-              <Input
-                type="date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                className="border-[#e9d6e4] focus:border-[#913177]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#1d0917] mb-2">Age Group</label>
-              <select
-                value={ageFilter}
-                onChange={(e) => setAgeFilter(e.target.value)}
-                className="w-full p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
-              >
-                <option value="">All Ages</option>
-                <option value="18-25">18-25 years</option>
-                <option value="26-35">26-35 years</option>
-                <option value="36-45">36-45 years</option>
-                <option value="46+">46+ years</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Status Filter */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-[#f8f9fa] to-white rounded-xl">
-            <h3 className="text-sm font-semibold text-[#1d0917] mb-3">Response Status</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={statusFilter === 'completed' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('completed')}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                Completed ({responses.filter(r => r.status === 'completed').length})
-              </Button>
-              <Button
-                variant={statusFilter === 'partial' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('partial')}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                Partial ({responses.filter(r => r.status === 'partial').length})
-              </Button>
-              <Button
-                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('all')}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                All ({responses.length})
-              </Button>
-            </div>
-          </div>
-
-          {/* Sort and Display Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-[#1d0917]">Sort by:</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date' | 'name' | 'age')}
-                  className="p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white">
+                <th className="text-left py-4 px-4 font-bold text-sm uppercase tracking-wider w-12">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        selectAllResponses();
+                      } else {
+                        clearResponseSelection();
+                      }
+                    }}
+                    className="h-4 w-4 text-[#913177] border-white rounded focus:ring-[#913177]"
+                  />
+                </th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Name</th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Email</th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Phone</th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Age</th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Status</th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Date</th>
+                <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {responses.map((response, index) => (
+                <tr 
+                  key={response.id} 
+                  className={`border-b border-[#f0f0f0] hover:bg-gradient-to-r hover:from-[#fff4fc] hover:to-white transition-all duration-200 ${
+                    response.status === 'partial' ? 'bg-yellow-50' : (index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white')
+                  } ${selectedResponses.has(response.id) ? 'bg-[#913177]/5' : ''}`}
                 >
-                  <option value="date">Date</option>
-                  <option value="name">Name</option>
-                  <option value="age">Age</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-[#1d0917]">Order:</label>
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                  className="p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
-                >
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-[#1d0917]">Show:</label>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="p-2 border border-[#e9d6e4] rounded-md focus:border-[#913177] focus:outline-none"
-                >
-                  <option value={5}>5 per page</option>
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                </select>
-              </div>
-            </div>
-
-            <Button
-              onClick={clearFilters}
-              variant="outline"
-              className="border-[#e9d6e4] text-[#1d0917] hover:bg-[#fff4fc]"
-              disabled={loading}
-            >
-              {loading ? '🔄 Clearing...' : '🗑️ Clear All Filters'}
-            </Button>
-          </div>
-
-          {/* Results Summary */}
-          <div className="mb-4 p-3 bg-[#f8f9fa] rounded-lg">
-            <div className="text-sm text-[#6d6d6e]">
-              Showing {paginatedResponses.length} of {filteredAndSortedResponses.length} responses
-              {filteredAndSortedResponses.length !== responses.length && 
-                ` (filtered from ${responses.length} total)`
-              }
-            </div>
-          </div>
-
-          {/* Enhanced Responses Table */}
-          <div className="overflow-x-auto bg-white rounded-lg shadow-inner">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white">
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Name</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Email</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Phone</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Age</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Status</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Date</th>
-                  <th className="text-left py-4 px-6 font-bold text-sm uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedResponses.map((response, index) => (
-                  <tr key={response.id} className={`border-b border-[#f0f0f0] hover:bg-gradient-to-r hover:from-[#fff4fc] hover:to-white transition-all duration-200 ${response.status === 'partial' ? 'bg-yellow-50' : (index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white')}`}>
-                    <td className="py-4 px-6">
-                      <div className="font-semibold text-[#1d0917]">{response.name || '-'}</div>
-                    </td>
-                    <td className="py-4 px-6 text-[#3d3d3d]">{response.email || '-'}</td>
-                    <td className="py-4 px-6 text-[#3d3d3d]">{response.contact || '-'}</td>
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#913177]/10 text-[#913177]">
-                        {response.age || '-'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        response.status === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : response.status === 'partial' 
-                          ? 'bg-yellow-100 text-yellow-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {response.status === 'partial' ? 'Partial' : response.status === 'completed' ? 'Completed' : 'Unknown'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-[#3d3d3d] text-sm">{formatDate(response.created_at || '')}</td>
-                    <td className="py-4 px-6">
-                      <div className="flex gap-2">
+                  <td className="py-4 px-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedResponses.has(response.id)}
+                      onChange={() => toggleResponseSelection(response.id)}
+                      className="h-4 w-4 text-[#913177] border-gray-300 rounded focus:ring-[#913177]"
+                    />
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="font-semibold text-[#1d0917]">{response.name || '-'}</div>
+                  </td>
+                  <td className="py-4 px-6 text-[#3d3d3d]">{response.email || '-'}</td>
+                  <td className="py-4 px-6 text-[#3d3d3d]">{response.contact || '-'}</td>
+                  <td className="py-4 px-6">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#913177]/10 text-[#913177]">
+                      {response.age || '-'}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <StatusBadge status={response.status} />
+                  </td>
+                  <td className="py-4 px-6 text-[#3d3d3d] text-sm">
+                    {formatDate(response.created_at)}
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleResponseClick(response.id)}
+                        size="sm"
+                        variant="outline"
+                        className="border-[#913177]/30 text-[#913177] hover:bg-[#913177]/10"
+                      >
+                        👁️ View
+                      </Button>
+                      {superAdminEnabled && (
                         <Button
-                          onClick={() => setSelectedResponse(response)}
-                          className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white hover:from-[#7a2463] hover:to-[#9a3687] text-sm px-3 py-2 shadow-md"
-                        >
-                          👁️ View
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteClick(response)}
+                          onClick={() => handleDeleteResponse(response.id)}
+                          size="sm"
                           variant="outline"
-                          className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 text-sm px-3 py-2"
+                          className="border-red-300 text-red-600 hover:bg-red-50"
                         >
                           🗑️ Delete
                         </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedResponses.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-12 px-6 text-center">
-                      <div className="text-6xl mb-4">📋</div>
-                      <div className="text-lg text-[#6d6d6e] mb-2">
-                        {searchTerm || dateRange.from || dateRange.to || ageFilter || statusFilter !== 'all' ? 'No responses found matching your filters.' : 'No quiz responses found yet.'}
-                      </div>
-                      <div className="text-sm text-[#6d6d6e]">
-                        {searchTerm || dateRange.from || dateRange.to || ageFilter || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Responses will appear here once users complete the quiz.'}
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Enhanced Pagination */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-col justify-between items-center gap-4 mt-8 p-4 bg-[#f8f9fa] rounded-lg">
-              <div className="text-sm text-[#6d6d6e]">
-                Page {currentPage} of {totalPages} • {filteredAndSortedResponses.length} total responses
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  className="border-[#e9d6e4] text-sm px-3 py-1"
-                >
-                  ⏮️ First
-                </Button>
-                <Button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  className="border-[#e9d6e4] text-sm px-3 py-1"
-                >
-                  ◀️ Previous
-                </Button>
-                <span className="px-3 py-1 bg-[#913177] text-white rounded text-sm font-medium">
-                  {currentPage}
-                </span>
-                <Button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  className="border-[#e9d6e4] text-sm px-3 py-1"
-                >
-                  Next ▶️
-                </Button>
-                <Button
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  className="border-[#e9d6e4] text-sm px-3 py-1"
-                >
-                  Last ⏭️
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
-      {/* Enhanced Response Detail Modal */}
-      {selectedResponse && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedResponse(null);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              setSelectedResponse(null);
-            }
-          }}
-          tabIndex={-1}
-        >
-          <Card className="max-w-5xl w-full max-h-[90vh] overflow-y-auto border-none shadow-2xl bg-white relative animate-in slide-in-from-bottom-4 duration-300">
-            {/* Sticky Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-[#913177] to-[#b8439a] text-white z-10 p-6 flex justify-between items-center">
-              <div>
-                <h3 className="text-2xl font-bold">
-                  👤 {selectedResponse.name || 'Unknown'}'s Response
-                </h3>
-                <p className="text-white/90 text-sm mt-1">
-                  Submitted on {formatDate(selectedResponse.created_at || '')}
-                </p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  onClick={() => handleDeleteClick(selectedResponse)}
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-red-500/20 hover:border-red-300"
-                >
-                  🗑️ Delete
-                </Button>
-                <Button
-                  onClick={() => setSelectedResponse(null)}
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10"
-                >
-                  ✕ Close
-                </Button>
-              </div>
-            </div>
-
-            <CardContent className="p-8">
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md">
-                  <h4 className="text-lg font-bold text-[#1d0917] mb-4 flex items-center">
-                    <span className="mr-2">📞</span>Contact Information
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-16">Email:</span>
-                      <span className="text-[#3d3d3d] ml-2">{selectedResponse.email || '-'}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-16">Phone:</span>
-                      <span className="text-[#3d3d3d] ml-2">{selectedResponse.contact || '-'}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-16">Age:</span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-[#913177]/10 text-[#913177] ml-2">
-                        {selectedResponse.age || '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-16">Status:</span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ml-2 ${
-                        selectedResponse.status === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : selectedResponse.status === 'partial' 
-                          ? 'bg-yellow-100 text-yellow-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedResponse.status === 'partial' ? 'Partial' : selectedResponse.status === 'completed' ? 'Completed' : 'Unknown'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-[#f0f9ff] to-white rounded-xl p-6 shadow-md">
-                  <h4 className="text-lg font-bold text-[#1d0917] mb-4 flex items-center">
-                    <span className="mr-2">📊</span>Response Summary
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-20">Answers:</span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-[#4ade80]/10 text-[#22c55e] ml-2">
-                        {selectedResponse.answers?.length || 0} questions
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-semibold text-[#6d6d6e] w-20">Files:</span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-[#f59e0b]/10 text-[#d97706] ml-2">
-                        {selectedResponse.answers?.filter(a => a.file_url).length || 0} uploaded
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quiz Answers */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-[#1d0917] border-b-2 border-[#e9d6e4] pb-3 flex items-center">
-                  <span className="mr-3">💬</span>Quiz Answers
-                  <span className="ml-auto text-sm font-normal text-[#6d6d6e]">
-                    ({selectedResponse.answers?.length || 0} responses)
-                  </span>
-                </h4>
-
-                {selectedResponse.answers && selectedResponse.answers.length > 0 ? (
-                  <div className="grid gap-6">
-                    {selectedResponse.answers.filter((answer) => {
-                      const questionText = answer.questions?.question_text?.toLowerCase() || '';
-                      // Filter out personal information questions
-                      const isPersonalInfo = questionText.includes('name') ||
-                                            questionText.includes('email') ||
-                                            questionText.includes('contact') ||
-                                            questionText.includes('phone') ||
-                                            questionText.includes('gender') ||
-                                            questionText.includes('age') ||
-                                            questionText.includes('male') ||
-                                            questionText.includes('female');
-                      return !isPersonalInfo;
-                    }).map((answer, index) => (
-                      <div key={answer.id} className="bg-gradient-to-r from-[#fff4fc] to-white rounded-xl p-6 shadow-md border-l-4 border-[#913177]">
-                        <div className="font-bold text-[#1d0917] mb-3 text-lg">
-                          <span className="inline-flex items-center justify-center w-8 h-8 bg-[#913177] text-white rounded-full text-sm font-bold mr-3">
-                            {index + 1}
-                          </span>
-                          {answer.questions?.question_text || `Question ID: ${answer.question_id}`}
-                        </div>
-
-                        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-                          <div className="font-semibold text-[#1d0917] mb-2 flex items-center">
-                            <span className="mr-2">💡</span>Answer:
-                          </div>
-                          <div className="text-[#3d3d3d] text-lg">{answer.answer_text || '-'}</div>
-                        </div>
-
-                        {answer.additional_info && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <div className="font-semibold text-blue-700 mb-2 flex items-center">
-                              <span className="mr-2">📝</span>Additional Details:
-                            </div>
-                            <div className="text-blue-800">{answer.additional_info}</div>
-                          </div>
-                        )}
-
-                        {answer.file_url && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <div className="font-semibold text-green-700 mb-3 flex items-center">
-                              <span className="mr-2">📎</span>Uploaded File:
-                            </div>
-                            <a 
-                              href={answer.file_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="inline-flex items-center gap-2 bg-[#913177] text-white px-4 py-2 rounded-lg hover:bg-[#7a2463] transition-colors font-medium"
-                            >
-                              <span>🔗</span>
-                              <span>{answer.file_url.split('/').pop()}</span>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                <polyline points="15 3 21 3 21 9"/>
-                                <line x1="10" y1="14" x2="21" y2="3"/>
-                              </svg>
-                            </a>
-                            <div className="text-sm text-green-600 mt-2">
-                              Click to view or download the uploaded document
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">📋</div>
-                    <div className="text-lg text-[#6d6d6e] mb-2">No detailed answers found</div>
-                    <div className="text-sm text-[#6d6d6e]">This response doesn't contain any quiz answers.</div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {responses.length === 0 && !responsesLoading && (
+        <Card className="border-none shadow-lg bg-white">
+          <CardContent className="p-12 text-center">
+            <div className="text-6xl mb-4">📋</div>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No Responses Found</h3>
+            <p className="text-gray-500">No quiz responses match your current filters.</p>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        isOpen={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        isDeleting={isDeleting}
-        title="Delete Quiz Response"
-        message={
-          responseToDelete
-            ? `Are you sure you want to delete the response from ${responseToDelete.name || 'Unknown'}? This action cannot be undone and will also delete all associated quiz answers.`
-            : ''
-        }
-      />
+      <LoadMoreButton />
+
+      {/* Bulk actions bar */}
+      <BulkActionsBar superAdminEnabled={superAdminEnabled} />
+
+      {/* Response detail modal */}
+      {selectedResponse && (
+        <ResponseDetailModal
+          response={selectedResponse}
+          onClose={() => setSelectedResponse(null)}
+          onDelete={handleDeleteResponse}
+          superAdminEnabled={superAdminEnabled}
+        />
+      )}
     </div>
   );
 };
