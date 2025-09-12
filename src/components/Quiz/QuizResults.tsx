@@ -727,55 +727,38 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       // Update extractedUserInfo with final values for subsequent use
       Object.assign(extractedUserInfo, finalUserInfo);
 
-      // If we have progressive save data, don't create a new response
-      if (saveData?.responseId) {
-        console.log('Progressive save response exists, skipping new response creation');
-        const uniqueResultId = `${saveData.responseId}-${Date.now()}`;
-        setResultId(uniqueResultId);
+      // Additional validation (only when not viewing existing results)
+      if (!isViewingExistingResults) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(finalUserInfo.email)) {
+          throw new Error('Please enter a valid email address');
+        }
 
-        // Create shareable result URL
-        const baseUrl = window.location.origin;
-        const shareableUrl = `${baseUrl}/results/${uniqueResultId}`;
-        setResultUrl(shareableUrl);
+        // Clean the contact number for validation - remove +91 prefix and any spaces
+        const cleanedContact = finalUserInfo.contact.replace(/^\+?91/, '').replace(/[\s\-\(\)]/g, '');
+        const phoneRegex = /^[6-9]\d{9}$/;
+        if (!phoneRegex.test(cleanedContact)) {
+          throw new Error('Please enter a valid 10-digit phone number');
+        }
 
-        // Store result URL in localStorage for future reference
-        localStorage.setItem('nutrasage_last_result_url', shareableUrl);
-        localStorage.setItem('nutrasage_last_result_id', uniqueResultId);
-
-        // Update browser URL without page reload
-        window.history.replaceState(null, '', shareableUrl);
-
-        setIsSubmitted(true);
-        return; // Exit early, no need to save again
+        const age = parseInt(finalUserInfo.age);
+        if (isNaN(age) || age < 1 || age > 120) {
+          throw new Error('Please enter a valid age between 1 and 120');
+        }
       }
 
-      // Additional validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(extractedUserInfo.email)) {
-        throw new Error('Please enter a valid email address');
-      }
-
-      // Clean the contact number for validation - remove +91 prefix and any spaces
-      const cleanedContact = extractedUserInfo.contact.replace(/^\+91/, '').replace(/\s+/g, '');
-      const phoneRegex = /^[6-9]\d{9}$/;
-      if (!phoneRegex.test(cleanedContact)) {
-        throw new Error('Please enter a valid 10-digit phone number');
-      }
-
-      const age = parseInt(extractedUserInfo.age);
-      if (isNaN(age) || age < 1 || age > 120) {
-        throw new Error('Please enter a valid age between 1 and 120');
-      }
-
-      // Check if we have a progressive save response to update
+      // UNIFIED PROGRESSIVE SAVE HANDLING - NO DUPLICATION
       let responseData;
       if (saveData?.responseId) {
-        console.log('Updating existing progressive response to completed...');
+        console.log('=== PROGRESSIVE SAVE: Completing existing response ===');
+        console.log('Response ID:', saveData.responseId);
+        
+        // Update the existing progressive save response to completed
         const updateData = {
-          name: extractedUserInfo.name.trim(),
-          email: extractedUserInfo.email.trim(),
-          contact: extractedUserInfo.contact.trim(),
-          age: parseInt(extractedUserInfo.age.toString()) || 0,
+          name: finalUserInfo.name.trim(),
+          email: finalUserInfo.email.trim(),
+          contact: finalUserInfo.contact.trim(),
+          age: parseInt(finalUserInfo.age.toString()) || 0,
           status: 'completed'
         };
 
@@ -787,12 +770,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           .single();
 
         if (updateError) {
-          console.error('Error updating quiz response:', updateError);
+          console.error('Error updating progressive save response:', updateError);
           throw new Error(`Failed to update quiz response: ${updateError.message}`);
         }
 
         responseData = updatedResponse;
-        console.log('Quiz response updated successfully:', responseData);
+        console.log('Progressive save response completed successfully:', responseData);
       } else {
         // Fallback: create new response if no progressive save exists
         console.log('Creating new quiz response...');
@@ -994,6 +977,12 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   // Main data loading effect
   useEffect(() => {
     const loadData = async () => {
+      // CRITICAL: Set guard immediately to prevent duplicate executions
+      if (hasInitiatedSave.current) {
+        console.log('Quiz submission already initiated, skipping...');
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
@@ -1030,56 +1019,23 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           return;
         }
 
-        // For new quiz submissions
-        const hasProgressiveResponse = saveData?.responseId && saveData.responseId > 0;
+        // UNIFIED QUIZ SUBMISSION HANDLING - NO DUPLICATION
+        console.log('=== STARTING UNIFIED QUIZ SUBMISSION ===');
+        console.log('Progressive save data:', saveData);
+        hasInitiatedSave.current = true; // Set guard immediately
 
-        if (hasProgressiveResponse && !hasInitiatedSave.current) {
-          console.log('Progressive save response found, checking if already completed...');
-          hasInitiatedSave.current = true;
+        // Clean up any duplicates first
+        await cleanupDuplicateResponses();
+        
+        // Use unified saveResponses function (handles both progressive save updates and new responses)
+        await saveResponses();
 
-          // Check if the progressive response is already completed
-          const { data: responseStatus, error: statusError } = await supabase
-            .from('quiz_responses')
-            .select('status')
-            .eq('id', saveData.responseId)
-            .single();
-
-          if (!statusError && responseStatus?.status === 'completed') {
-            console.log('Progressive response already completed, skipping save...');
-          } else {
-            console.log('Progressive response not completed, updating status...');
-            // Update the status to completed if it's still partial
-            const { error: updateError } = await supabase
-              .from('quiz_responses')
-              .update({ status: 'completed' })
-              .eq('id', saveData.responseId);
-
-            if (updateError) {
-              console.error('Error updating response status:', updateError);
-            }
-          }
-
-          await Promise.allSettled([
-            getRecommendedProducts(),
-            fetchActiveBanner(),
-            fetchExpectations(),
-            cleanupDuplicateResponses()
-          ]);
-
-          setIsSubmitted(true);
-        } else if (!hasProgressiveResponse && !hasInitiatedSave.current) {
-          console.log('No progressive response found, creating new submission...');
-          hasInitiatedSave.current = true;
-
-          await cleanupDuplicateResponses();
-          await saveResponses();
-
-          await Promise.allSettled([
-            getRecommendedProducts(),
-            fetchActiveBanner(),
-            fetchExpectations()
-          ]);
-        }
+        // Load all additional data in parallel
+        await Promise.allSettled([
+          getRecommendedProducts(),
+          fetchActiveBanner(),
+          fetchExpectations()
+        ]);
 
       } catch (error) {
         console.error('Error loading quiz results:', error);
@@ -1099,7 +1055,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     };
 
     loadData();
-  }, [isViewingExistingResults, saveData?.responseId]);
+  }, [isViewingExistingResults]); // FIXED: Removed saveData?.responseId dependency to prevent re-runs
 
   // Scroll to top when component loads
   useEffect(() => {
