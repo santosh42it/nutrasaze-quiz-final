@@ -776,45 +776,34 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         responseData = updatedResponse;
         console.log('Progressive save response completed successfully:', responseData);
       } else {
-        // Check if response already exists by email to prevent duplicates
-        console.log('No progressive save found, checking for existing response by email...');
-        const { data: existingByEmail, error: emailCheckError } = await supabase
+        // SAFE INTERIM FIX - Minimal duplication risk without security vulnerabilities
+        console.log('No progressive save found, creating new quiz response...');
+        
+        // SIMPLE & SECURE: Always create new response in fallback case
+        // This avoids complex reconciliation logic that introduces security risks
+        // Future improvement: Implement proper session-based uniqueness constraints
+        
+        const insertData = {
+          name: finalUserInfo.name.trim(),
+          email: finalUserInfo.email.trim(),
+          contact: finalUserInfo.contact.trim(),
+          age: parseInt(finalUserInfo.age.toString()) || 0,
+          status: 'completed'
+        };
+
+        const { data: newResponse, error: responseError } = await supabase
           .from('quiz_responses')
+          .insert(insertData)
           .select()
-          .eq('email', finalUserInfo.email.trim())
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .single();
 
-        if (!emailCheckError && existingByEmail) {
-          console.log('Found existing completed response for email, using it:', existingByEmail.id);
-          responseData = existingByEmail;
-        } else {
-          // Create new response only if none exists
-          console.log('Creating new quiz response...');
-          const insertData = {
-            name: finalUserInfo.name.trim(),
-            email: finalUserInfo.email.trim(),
-            contact: finalUserInfo.contact.trim(),
-            age: parseInt(finalUserInfo.age.toString()) || 0,
-            status: 'completed'
-          };
-
-          const { data: newResponse, error: responseError } = await supabase
-            .from('quiz_responses')
-            .insert(insertData)
-            .select()
-            .single();
-
-          if (responseError) {
-            console.error('Error saving quiz response:', responseError);
-            throw new Error(`Failed to save quiz response: ${responseError.message}`);
-          }
-
-          responseData = newResponse;
-          console.log('Quiz response created successfully:', responseData);
+        if (responseError) {
+          console.error('Error saving quiz response:', responseError);
+          throw new Error(`Failed to save quiz response: ${responseError.message}`);
         }
+
+        responseData = newResponse;
+        console.log('New quiz response created successfully:', responseData);
       }
 
       // Generate unique result id and URL
