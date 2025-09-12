@@ -461,37 +461,39 @@ const ResponseDetailModal: React.FC<{
                           )}
                         </div>
                         
-                        {/* File attachment if exists */}
-                        {answer.file_url && (
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="bg-blue-500 text-white rounded-full p-2">
-                                  📎
+                        {/* File attachment - separate section outside answer text box */}
+                        {answer.file_url && answer.file_url.trim() && (
+                          <div className="ml-9 mt-4">
+                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-green-500 text-white rounded-full p-3 text-lg">
+                                    📎
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-green-900 text-lg">📄 Medical Document Uploaded</p>
+                                    <p className="text-green-700 text-sm mt-1">
+                                      {answer.file_url.split('/').pop()?.substring(0, 50) || 'Medical Report'}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-semibold text-blue-900">Medical Document Uploaded</p>
-                                  <p className="text-blue-700 text-sm">
-                                    {answer.file_url.split('/').pop()?.substring(0, 40) || 'Attachment'}
-                                  </p>
+                                <div className="flex gap-3">
+                                  <a
+                                    href={answer.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                                  >
+                                    👁️ View Document
+                                  </a>
+                                  <a
+                                    href={answer.file_url}
+                                    download
+                                    className="inline-flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-lg hover:shadow-xl"
+                                  >
+                                    📥 Download
+                                  </a>
                                 </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <a
-                                  href={answer.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
-                                >
-                                  👁️ View
-                                </a>
-                                <a
-                                  href={answer.file_url}
-                                  download
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md"
-                                >
-                                  📥 Download
-                                </a>
                               </div>
                             </div>
                           </div>
