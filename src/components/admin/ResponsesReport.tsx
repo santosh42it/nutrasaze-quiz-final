@@ -416,14 +416,38 @@ const ResponseDetailModal: React.FC<{
               <div className="max-h-96 overflow-y-auto">
                 {response.answers.map((answer: any, index: number) => (
                   <div key={index} className="p-4 border-b border-[#f0f0f0] last:border-b-0">
-                    <div className="mb-2">
+                    <div className="mb-3">
                       <span className="font-semibold text-[#1d0917] text-sm">
                         Q{index + 1}: {answer.questions?.question_text || `Question ID ${answer.question_id}`}
                       </span>
                     </div>
-                    <div className="text-[#3d3d3d] bg-[#f8f9fa] p-3 rounded-lg">
+                    
+                    {/* Answer text */}
+                    <div className="text-[#3d3d3d] bg-[#f8f9fa] p-3 rounded-lg mb-3">
                       {answer.answer_text || 'No answer provided'}
                     </div>
+                    
+                    {/* File attachment if exists */}
+                    {answer.file_url && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-blue-600 font-medium text-sm">📎 Uploaded File:</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={answer.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            📄 View File
+                          </a>
+                          <span className="text-gray-600 text-sm">
+                            {answer.file_url.split('/').pop()?.substring(0, 30) || 'Attachment'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -452,27 +476,42 @@ export const ResponsesReport: React.FC = () => {
   
   const [selectedResponse, setSelectedResponse] = useState<any>(null);
   const [superAdminEnabled, setSuperAdminEnabled] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Initialize responses on mount
   useEffect(() => {
     fetchResponses(true);
   }, []);
 
-  // Check super admin status from parent
+  // Check super admin status from parent - improved detection
   useEffect(() => {
     const checkSuperAdmin = () => {
-      // Get super admin status from AdminPanel component
+      // Multiple ways to detect admin status
       const adminPanel = document.querySelector('[data-super-admin]');
-      if (adminPanel) {
-        setSuperAdminEnabled(adminPanel.getAttribute('data-super-admin') === 'true');
-      }
+      const editModeButton = document.querySelector('button[data-edit-mode]');
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Check various indicators
+      const hasAdminAccess = 
+        (adminPanel && adminPanel.getAttribute('data-super-admin') === 'true') ||
+        (editModeButton && editModeButton.textContent?.includes('Edit Mode')) ||
+        urlParams.get('admin') === 'true' ||
+        localStorage.getItem('nutrasage_admin_mode') === 'true';
+      
+      setSuperAdminEnabled(hasAdminAccess);
     };
     
     checkSuperAdmin();
-    // Check periodically in case it changes
-    const interval = setInterval(checkSuperAdmin, 1000);
+    // Check periodically and on focus changes
+    const interval = setInterval(checkSuperAdmin, 2000);
+    window.addEventListener('focus', checkSuperAdmin);
+    document.addEventListener('click', checkSuperAdmin);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkSuperAdmin);
+      document.removeEventListener('click', checkSuperAdmin);
+    };
   }, []);
 
   const handleResponseClick = async (responseId: string) => {
@@ -485,6 +524,7 @@ export const ResponsesReport: React.FC = () => {
   const handleDeleteResponse = async (id: string) => {
     try {
       await deleteResponse(id);
+      setDeleteConfirmId(null); // Close confirmation dialog
     } catch (error) {
       console.error('Failed to delete response:', error);
     }
@@ -609,7 +649,7 @@ export const ResponsesReport: React.FC = () => {
                       </Button>
                       {superAdminEnabled && (
                         <Button
-                          onClick={() => handleDeleteResponse(response.id)}
+                          onClick={() => setDeleteConfirmId(response.id)}
                           size="sm"
                           variant="outline"
                           className="border-red-300 text-red-600 hover:bg-red-50"
@@ -649,6 +689,31 @@ export const ResponsesReport: React.FC = () => {
           onDelete={handleDeleteResponse}
           superAdminEnabled={superAdminEnabled}
         />
+      )}
+
+      {/* Single Delete Confirmation Dialog */}
+      {deleteConfirmId && (
+        <AlertDialog open={true} onOpenChange={() => setDeleteConfirmId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Response</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this response? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDeleteResponse(deleteConfirmId)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
