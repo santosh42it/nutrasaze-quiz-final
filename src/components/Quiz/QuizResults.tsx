@@ -6,7 +6,6 @@ import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
 import { useProgressiveSave } from "./useProgressiveSave"; // Import the hook for duplicate prevention
-import { runCleanupWithNotification } from '../../utils/cleanupDuplicates';
 
 interface QuizResultsProps {
   answers: Record<string, string>;
@@ -1780,17 +1779,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               Questions? Email us at <span className="text-[#913177] font-semibold">support@nutrasage.com</span> or call{' '}
               <span className="text-[#913177] font-semibold">+91 7093619881</span>
             </p>
-            {/* Debug cleanup button - remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4">
-                <Button 
-                  onClick={() => runCleanupWithNotification(extractedUserInfo?.email)}
-                  className="bg-red-500 text-white hover:bg-red-600 px-4 py-2 rounded text-xs"
-                >
-                  🧹 Clean Duplicates (Debug)
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
