@@ -8,7 +8,7 @@ import { QuizScreen } from "./screens/QuizScreen";
 import { AdminPanel } from "./components/admin/AdminPanel";
 import { AdminLogin } from "./components/admin/AdminLogin";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
-import { createAdminUser } from "./lib/supabase";
+import { initializeApplication } from "./lib/supabase";
 import { ResultsPage } from "./components/Quiz/ResultsPage";
 import { pageview } from "./lib/analytics";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -37,9 +37,9 @@ window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
 });
 
-// Create admin user on application start
-createAdminUser().catch((error) => {
-  console.error('Failed to create admin user:', error);
+// Initialize application with secure storage and admin user
+initializeApplication().catch((error) => {
+  console.error('Failed to initialize application:', error);
 });
 
 // Component to track page views

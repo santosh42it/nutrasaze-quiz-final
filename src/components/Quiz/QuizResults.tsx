@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
+import { saveQuizAnswerWithFile } from "../../services/quizService";
 import type { QuizResponse, QuizAnswer, Product, Tag, Banner, Expectation } from "../../types/database";
 import { TagDisplay } from './TagDisplay'; // Import TagDisplay component
 import { ProductDetailModal } from './ProductDetailModal'; // Import ProductDetailModal component
@@ -903,27 +904,8 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           const answersToInsert = [];
 
-          // Handle file upload if there's a selected file
-          let uploadedFileUrl = null;
-          if (selectedFile) {
-            try {
-              const fileExt = selectedFile.name.split('.').pop();
-              const fileName = `${responseData.id}_${Date.now()}.${fileExt}`;
-
-              const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('quiz-files')
-                .upload(fileName, selectedFile);
-
-              if (!uploadError) {
-                const { data: { publicUrl } } = supabase.storage
-                  .from('quiz-files')
-                  .getPublicUrl(fileName);
-                uploadedFileUrl = publicUrl;
-              }
-            } catch (error) {
-              console.error('Error in file upload process:', error);
-            }
-          }
+          // File will be uploaded securely with individual answers
+          // No need to handle file upload separately here anymore
 
           // Save quiz answers
           for (const [answerKey, answer] of Object.entries(answers)) {
@@ -955,27 +937,42 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               additionalInfo = String(answers[detailsKey]).substring(0, 1000);
             }
 
-            const question = fetchedQuestions.find(q => q.id === actualQuestionId);
-            if (question) {
-              const questionTextLower = question.question_text.toLowerCase();
-              const shouldAttachFile = answerKey === 'blood_test' || 
-                                     answerKey === '16' ||
-                                     questionTextLower.includes('blood test') ||
-                                     questionTextLower.includes('upload') ||
-                                     questionTextLower.includes('file');
+            // File uploads are now handled securely through progressive save
+            // No need to attach file URLs here as they're handled per question
 
-              if (shouldAttachFile && uploadedFileUrl) {
-                fileUrl = uploadedFileUrl;
+            // Files are now uploaded securely with individual answers via progressive save
+            // Only save text answers here - files are handled separately
+            if (!selectedFile || !question?.question_text.toLowerCase().includes('upload')) {
+              answersToInsert.push({
+                response_id: responseData.id,
+                question_id: actualQuestionId,
+                answer_text: answerText.substring(0, 500),
+                additional_info: additionalInfo,
+                file_url: null // Files handled via secure progressive save
+              });
+            } else {
+              // For file upload questions, use the secure upload function
+              try {
+                await saveQuizAnswerWithFile(
+                  responseData.id,
+                  actualQuestionId,
+                  answerText.substring(0, 500),
+                  selectedFile,
+                  additionalInfo
+                );
+                console.log('🔐 File uploaded securely for question:', actualQuestionId);
+              } catch (fileError) {
+                console.error('Secure file upload failed:', fileError);
+                // Still save the text answer even if file upload fails
+                answersToInsert.push({
+                  response_id: responseData.id,
+                  question_id: actualQuestionId,
+                  answer_text: answerText.substring(0, 500),
+                  additional_info: additionalInfo,
+                  file_url: null
+                });
               }
             }
-
-            answersToInsert.push({
-              response_id: responseData.id,
-              question_id: actualQuestionId,
-              answer_text: answerText.substring(0, 500),
-              additional_info: additionalInfo,
-              file_url: fileUrl
-            });
           }
 
           if (answersToInsert.length > 0) {

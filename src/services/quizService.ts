@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabase';
 import type { Question as DBQuestion, QuestionOption } from '../types/database';
 import type { Question } from '../components/Quiz/types';
+import { uploadSecureFile, type SecureFileUploadResult } from './secureFileService';
 
 export interface QuizQuestionFromDB extends DBQuestion {
   options?: QuestionOption[];
@@ -173,7 +174,7 @@ export const saveQuizAnswer = async (
   questionId: number | string,
   answerText: string,
   additionalInfo?: string,
-  fileUrl?: string
+  fileId?: string // Changed from fileUrl to fileId for secure storage
 ): Promise<void> => {
   try {
     console.log('Saving quiz answer:', { responseId, questionId, answerText });
@@ -186,7 +187,7 @@ export const saveQuizAnswer = async (
           question_id: parseInt(questionId.toString()),
           answer_text: answerText,
           additional_info: additionalInfo || null,
-          file_url: fileUrl || null
+          file_url: fileId || null // Now stores file path/ID instead of public URL
         }
       ]);
 
@@ -198,6 +199,44 @@ export const saveQuizAnswer = async (
     console.log('Saved quiz answer successfully');
   } catch (error) {
     console.error('Error in saveQuizAnswer:', error);
+    throw error;
+  }
+};
+
+/**
+ * Secure file upload function that ensures proper validation and linking
+ */
+export const saveQuizAnswerWithFile = async (
+  responseId: number,
+  questionId: number | string,
+  answerText: string,
+  file?: File,
+  additionalInfo?: string
+): Promise<void> => {
+  try {
+    console.log('Saving quiz answer with file:', { responseId, questionId, answerText });
+    
+    let fileId: string | undefined = undefined;
+    
+    // Upload file securely if provided
+    if (file) {
+      console.log('🔐 Uploading file securely:', file.name);
+      const uploadResult: SecureFileUploadResult = await uploadSecureFile(file, responseId, questionId);
+      
+      if (!uploadResult.success) {
+        throw new Error(`File upload failed: ${uploadResult.error}`);
+      }
+      
+      fileId = uploadResult.fileId;
+      console.log('🔐 File uploaded successfully:', fileId);
+    }
+    
+    // Save answer with secure file ID
+    await saveQuizAnswer(responseId, questionId, answerText, additionalInfo, fileId);
+    
+    console.log('Saved quiz answer with secure file successfully');
+  } catch (error) {
+    console.error('Error in saveQuizAnswerWithFile:', error);
     throw error;
   }
 };

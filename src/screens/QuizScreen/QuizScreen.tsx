@@ -5,6 +5,7 @@ import { QuizQuestion } from "../../components/Quiz/QuizQuestion";
 import { QuizResults } from "../../components/Quiz/QuizResults";
 import { getQuizQuestions } from "../../services/quizService";
 import { useProgressiveSave } from "../../components/Quiz/useProgressiveSave";
+import { supabase } from "../../lib/supabase";
 import type { Question } from "../../components/Quiz/types"; 
 
 interface QuizAnswers {
@@ -167,6 +168,9 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
 
     // Progressive auto-save functionality
     try {
+      // We'll handle file upload securely in the handleAnswerSave function
+      // No need to upload file here anymore - it will be handled securely with proper validation
+
       // Start progressive save from name question (first question)
       if (currentQuestionData.id === "38" && currentQuestionData.type === "text" && finalValue) {
         console.log('Progressive save: Starting with name (first question)');
@@ -188,14 +192,16 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
         await handleAnswerSave(
           currentQuestionData.id,
           answers[currentQuestionData.id] || finalValue,
-          additionalInfo || undefined
+          additionalInfo || undefined,
+          selectedFile || undefined // Pass file directly for secure upload
         ).catch(err => console.error('Answer save error:', err));
       } else if (saveData.responseId && currentQuestionData.type !== "select") {
         // Also save other types of answers if they are not basic info and have a responseId
         await handleAnswerSave(
           currentQuestionData.id,
           finalValue,
-          additionalInfo || undefined
+          additionalInfo || undefined,
+          selectedFile || undefined // Pass file directly for secure upload
         ).catch(err => console.error('Answer save error:', err));
       }
 
@@ -245,7 +251,12 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
     try {
       if (saveData.responseId) {
         console.log('Progressive save: Saving option selection for question', currentQuestionData.id);
-        await handleAnswerSave(currentQuestionData.id, option).catch(err => console.error('Option save error:', err));
+        await handleAnswerSave(
+          currentQuestionData.id, 
+          option, 
+          additionalInfo || undefined, 
+          selectedFile || undefined // Pass file directly for secure upload
+        ).catch(err => console.error('Option save error:', err));
       }
     } catch (error) {
       console.error('Progressive save error for option:', error);

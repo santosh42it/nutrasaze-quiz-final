@@ -4,6 +4,7 @@ import {
   createPartialResponse, 
   updatePartialResponse, 
   saveQuizAnswer, 
+  saveQuizAnswerWithFile,
   completeQuizResponse,
   type ProgressiveSaveData 
 } from '../../services/quizService';
@@ -136,7 +137,7 @@ export const useProgressiveSave = () => {
     questionId: string | number,
     answer: string,
     additionalInfo?: string,
-    fileUrl?: string
+    file?: File // Changed from fileUrl to file for secure upload
   ) => {
     if (!saveData.responseId) {
       console.error('No response ID available for saving answer');
@@ -145,9 +146,14 @@ export const useProgressiveSave = () => {
 
     try {
       setIsSaving(true);
-      console.log('Progressive save: Answer', { questionId, answer });
+      console.log('Progressive save: Answer', { questionId, answer, hasFile: !!file });
       
-      await saveQuizAnswer(saveData.responseId, questionId, answer, additionalInfo, fileUrl);
+      // Use secure file upload if file is provided
+      if (file) {
+        await saveQuizAnswerWithFile(saveData.responseId, questionId, answer, file, additionalInfo);
+      } else {
+        await saveQuizAnswer(saveData.responseId, questionId, answer, additionalInfo);
+      }
       
       console.log('Progressive save: Saved answer');
     } catch (error) {
