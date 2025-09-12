@@ -407,24 +407,18 @@ const ResponseDetailModal: React.FC<{
 
           {/* Quiz Answers - Filter out basic info questions */}
           {(() => {
-            // Filter out basic info questions by question text patterns since they're already shown above
-            const basicInfoQuestions = [
-              'What is your name?',
-              'What is your email address?', 
-              'What is your contact number?',
-              'What is your age?'
-            ];
-            
+            // Filter out basic info questions by question_id (4-7 are name, email, contact, age)
             const quizAnswers = response.answers
               ?.filter((answer: any) => {
-                const questionText = answer.questions?.question_text || '';
-                return !basicInfoQuestions.some(basicQ => questionText.toLowerCase().includes(basicQ.toLowerCase().substring(0, 10)));
+                // Filter out basic info questions by question_id (4-7 are name, email, contact, age)
+                const questionId = Number(answer.question_id);
+                return questionId < 4 || questionId > 7; // Keep questions 1-3 and 8-15
               })
               ?.sort((a: any, b: any) => {
-                // Sort by question_id to maintain consistent order (both are numbers)
-                const aId = Number(a.question_id) || 0;
-                const bId = Number(b.question_id) || 0;
-                return aId - bId;
+                // Sort by question order_index from database for proper ordering
+                const aOrder = Number(a.questions?.order_index) || Number(a.question_id) || 0;
+                const bOrder = Number(b.questions?.order_index) || Number(b.question_id) || 0;
+                return aOrder - bOrder;
               }) || [];
 
             return quizAnswers.length > 0 && (

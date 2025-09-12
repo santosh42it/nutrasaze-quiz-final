@@ -1121,14 +1121,15 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
       if (responseError) throw responseError;
 
-      // Get answers with question text
+      // Get answers with question text, ordered by question order_index
       const { data: answers, error: answersError } = await supabase
         .from('quiz_answers')
         .select(`
           *,
-          questions (question_text)
+          questions (question_text, order_index)
         `)
-        .eq('response_id', id);
+        .eq('response_id', id)
+        .order('question_id');
 
       if (answersError) {
         console.error('Error fetching answers:', answersError);
