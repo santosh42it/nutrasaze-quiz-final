@@ -85,7 +85,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
     console.log('Raw userInfo:', userInfo);
     console.log('Progressive save data:', saveData);
 
-
     // First check if we have progressive save data to use
     let extracted = {
       name: userInfo.name?.trim() || answers.name?.trim() || saveData?.name?.trim() || '',
@@ -94,29 +93,44 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       age: userInfo.age?.trim() || answers.age?.trim() || (saveData?.age ? saveData.age.toString() : '') || '0'
     };
 
-    // Also check question IDs for contact field (question 3 is typically contact)
-    if (!extracted.contact && answers['3']) {
-      extracted.contact = answers['3'].trim();
-    }
-    
-    // If contact is still empty, try checking specific keys that might contain contact info
+    // Enhanced contact field extraction with multiple fallback strategies
     if (!extracted.contact) {
+      // Strategy 1: Check known question IDs (question 3 is typically contact)
+      if (answers['3']) {
+        extracted.contact = answers['3'].trim();
+      }
+      
+      // Strategy 2: Check for keys containing contact/phone keywords
+      if (!extracted.contact) {
         for (const key in answers) {
-            const value = answers[key];
-            if (value && typeof value === 'string') {
-                // Check if key suggests contact info
-                if (key.toLowerCase().includes('contact') || key.toLowerCase().includes('phone')) {
-                    extracted.contact = value.trim();
-                    break;
-                }
-                // Check if value looks like a phone number
-                const cleanValue = value.replace(/[\s\-\(\)\+]/g, '');
-                if (/^(?:\+?91)?[6-9]\d{9}$/.test(cleanValue)) {
-                    extracted.contact = cleanValue.replace(/^\+?91/, '');
-                    break;
-                }
+          const value = answers[key];
+          if (value && typeof value === 'string' && value.trim()) {
+            if (key.toLowerCase().includes('contact') || key.toLowerCase().includes('phone') || key.toLowerCase().includes('mobile')) {
+              extracted.contact = value.trim();
+              break;
             }
+          }
         }
+      }
+      
+      // Strategy 3: Look for phone number patterns in any answer
+      if (!extracted.contact) {
+        for (const key in answers) {
+          const value = answers[key];
+          if (value && typeof value === 'string') {
+            const cleanValue = value.replace(/[\s\-\(\)\+]/g, '');
+            if (/^(?:\+?91)?[6-9]\d{9}$/.test(cleanValue)) {
+              extracted.contact = cleanValue.replace(/^\+?91/, '');
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Clean and normalize contact field
+    if (extracted.contact) {
+      extracted.contact = extracted.contact.replace(/^\+?91/, '').replace(/[\s\-\(\)]/g, '').trim();
     }
 
     console.log('Initial extracted info:', extracted);
@@ -663,32 +677,55 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       const missingFields = [];
 
       console.log('Validating extracted user info:', extractedUserInfo);
+      console.log('Save data for validation fallback:', saveData);
 
-      if (!extractedUserInfo?.name?.trim() || extractedUserInfo.name.length < 2) {
+      // Enhanced validation with progressive save fallback
+      const finalUserInfo = {
+        name: extractedUserInfo?.name?.trim() || saveData?.name?.trim() || '',
+        email: extractedUserInfo?.email?.trim() || saveData?.email?.trim() || '',
+        contact: extractedUserInfo?.contact?.trim() || saveData?.contact?.trim() || '',
+        age: extractedUserInfo?.age?.trim() || (saveData?.age ? saveData.age.toString() : '') || '0'
+      };
+
+      console.log('Final user info after fallback:', finalUserInfo);
+
+      if (!finalUserInfo.name || finalUserInfo.name.length < 2) {
         missingFields.push('name');
-        console.error('Name validation failed:', extractedUserInfo?.name);
+        console.error('Name validation failed:', finalUserInfo.name);
       }
-      if (!extractedUserInfo?.email?.trim() || !extractedUserInfo.email.includes('@')) {
+      if (!finalUserInfo.email || !finalUserInfo.email.includes('@')) {
         missingFields.push('email');
-        console.error('Email validation failed:', extractedUserInfo?.email);
+        console.error('Email validation failed:', finalUserInfo.email);
       }
-      const contactForValidation = extractedUserInfo?.contact?.replace(/^\+91/, '').replace(/\s+/g, '') || '';
-      if (!contactForValidation.trim() || !/^[6-9]\d{9}$/.test(contactForValidation)) {
+      
+      // More robust contact validation
+      const contactForValidation = finalUserInfo.contact.replace(/^\+?91/, '').replace(/[\s\-\(\)]/g, '') || '';
+      if (!contactForValidation || !/^[6-9]\d{9}$/.test(contactForValidation)) {
         missingFields.push('contact');
-        console.error('Contact validation failed:', extractedUserInfo?.contact, 'cleaned:', contactForValidation);
+        console.error('Contact validation failed:', finalUserInfo.contact, 'cleaned:', contactForValidation);
       }
-      if (!extractedUserInfo?.age?.trim() || extractedUserInfo.age === '0' || parseInt(extractedUserInfo.age) < 1) {
+      
+      const ageNum = parseInt(finalUserInfo.age);
+      if (!finalUserInfo.age || finalUserInfo.age === '0' || isNaN(ageNum) || ageNum < 1) {
         missingFields.push('age');
-        console.error('Age validation failed:', extractedUserInfo?.age);
+        console.error('Age validation failed:', finalUserInfo.age);
       }
 
       // Skip validation if we're viewing existing results or have progressive save data
       if (missingFields.length > 0 && !isViewingExistingResults && !saveData?.responseId) {
         console.error('Missing required fields:', missingFields);
+        console.error('All available data sources:');
+        console.error('- extractedUserInfo:', extractedUserInfo);
+        console.error('- saveData:', saveData);
+        console.error('- userInfo prop:', userInfo);
+        console.error('- answers object:', answers);
         throw new Error(`Missing required fields: ${missingFields.join(', ')}. Please ensure all personal information questions are answered correctly.`);
       } else if (missingFields.length > 0) {
         console.log('Skipping validation due to existing results or progressive save');
       }
+
+      // Update extractedUserInfo with final values for subsequent use
+      Object.assign(extractedUserInfo, finalUserInfo);
 
       // If we have progressive save data, don't create a new response
       if (saveData?.responseId) {
