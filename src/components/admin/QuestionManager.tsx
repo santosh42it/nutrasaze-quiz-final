@@ -178,6 +178,14 @@ const SortableOptionItem: React.FC<SortableOptionItemProps> = ({
 const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options, tags, onSave, onClose }) => {
   const { optionTags } = useAdminStore();
   
+  // Debug: Show data state
+  const debugInfo = {
+    optionTagsCount: optionTags?.length || 0,
+    optionTagsSample: optionTags?.slice(0, 3) || [],
+    currentQuestionId: question?.id,
+    availableOptions: options?.filter(o => o.question_id === question?.id) || []
+  };
+  
   const [formData, setFormData] = useState<Partial<Question>>({
     question_text: question?.question_text || '',
     question_type: question?.question_type || 'text',
@@ -231,6 +239,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
           tags: optionTagsForOption.map(ot => ot.tag_id)
         };
       });
+      
       setQuestionOptions(optionsWithTags);
     } else if (isOpen && !question) {
       setQuestionOptions([]);
