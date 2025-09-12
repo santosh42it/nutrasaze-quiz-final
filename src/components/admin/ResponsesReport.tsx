@@ -407,14 +407,23 @@ const ResponseDetailModal: React.FC<{
 
           {/* Quiz Answers - Filter out basic info questions */}
           {(() => {
-            // Filter out basic info questions (name, email, contact, age) that are already shown above
-            const basicInfoQuestionIds = ['name', 'email', 'contact', 'age'];
+            // Filter out basic info questions by question text patterns since they're already shown above
+            const basicInfoQuestions = [
+              'What is your name?',
+              'What is your email address?', 
+              'What is your contact number?',
+              'What is your age?'
+            ];
+            
             const quizAnswers = response.answers
-              ?.filter((answer: any) => !basicInfoQuestionIds.includes(answer.question_id?.toString()))
+              ?.filter((answer: any) => {
+                const questionText = answer.questions?.question_text || '';
+                return !basicInfoQuestions.some(basicQ => questionText.toLowerCase().includes(basicQ.toLowerCase().substring(0, 10)));
+              })
               ?.sort((a: any, b: any) => {
-                // Sort by question_id to maintain consistent order
-                const aId = parseInt(a.question_id?.toString() || '0');
-                const bId = parseInt(b.question_id?.toString() || '0');
+                // Sort by question_id to maintain consistent order (both are numbers)
+                const aId = Number(a.question_id) || 0;
+                const bId = Number(b.question_id) || 0;
                 return aId - bId;
               }) || [];
 
@@ -693,8 +702,8 @@ export const ResponsesReport: React.FC<ResponsesReportProps> = ({ superAdminEnab
 
       <LoadMoreButton />
 
-      {/* Bulk actions bar - only show in edit mode */}
-      {superAdminEnabled && <BulkActionsBar superAdminEnabled={superAdminEnabled} />}
+      {/* Bulk actions bar - only show in edit mode when items are selected */}
+      {superAdminEnabled && selectedResponses.size > 0 && <BulkActionsBar superAdminEnabled={superAdminEnabled} />}
 
       {/* Response detail modal */}
       {selectedResponse && (
