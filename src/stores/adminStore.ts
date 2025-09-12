@@ -2,6 +2,36 @@ import create from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Question, QuestionOption, Tag, Product, AnswerKey, Expectation, OptionTag } from '../types/database';
 
+// Response types
+interface QuizResponse {
+  id: string;
+  name: string;
+  email: string;
+  contact: string;
+  age: number;
+  status: 'partial' | 'completed';
+  created_at: string;
+  updated_at: string;
+}
+
+interface DetailedResponse extends QuizResponse {
+  answers?: any[];
+}
+
+interface ResponseFilters {
+  status: 'all' | 'completed' | 'partial';
+  search: string;
+  dateFrom?: string;
+  dateTo?: string;
+  showDuplicatesOnly?: boolean;
+}
+
+interface ResponsesPagination {
+  hasMore: boolean;
+  cursor?: string;
+  pageSize: number;
+}
+
 interface AdminStore {
   // State
   questions: Question[];
@@ -14,6 +44,16 @@ interface AdminStore {
   loading: boolean;
   error: string | null;
   expectations: Expectation[];
+
+  // Responses state
+  responses: QuizResponse[];
+  responsesLoading: boolean;
+  responsesError: string | null;
+  responsesPagination: ResponsesPagination;
+  responsesFilters: ResponseFilters;
+  responsesTotalCount: number;
+  selectedResponses: Set<string>;
+  bulkActionLoading: boolean;
 
   // Question methods
   fetchQuestions: () => Promise<void>;
@@ -62,6 +102,28 @@ interface AdminStore {
   updateExpectation: (id: number, updates: Partial<Expectation>) => Promise<void>;
   deleteExpectation: (id: number) => Promise<void>;
   reorderExpectations: (expectations: Expectation[]) => Promise<void>;
+
+  // Responses methods
+  fetchResponses: (reset?: boolean) => Promise<void>;
+  loadMoreResponses: () => Promise<void>;
+  refreshResponses: () => Promise<void>;
+  setResponsesFilters: (filters: Partial<ResponseFilters>) => void;
+  clearResponsesFilters: () => void;
+  setResponsesPageSize: (size: number) => void;
+  getResponsesTotalCount: () => Promise<void>;
+  
+  // Bulk operations
+  toggleResponseSelection: (id: string) => void;
+  selectAllResponses: () => void;
+  clearResponseSelection: () => void;
+  bulkDeleteResponses: (ids: string[]) => Promise<void>;
+  
+  // Export
+  exportResponsesCSV: () => Promise<void>;
+  
+  // Individual response operations
+  deleteResponse: (id: string) => Promise<void>;
+  getResponseDetails: (id: string) => Promise<DetailedResponse | null>;
 }
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
@@ -76,6 +138,26 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   loading: false,
   error: null,
   expectations: [],
+
+  // Responses initial state
+  responses: [],
+  responsesLoading: false,
+  responsesError: null,
+  responsesPagination: {
+    hasMore: true,
+    cursor: undefined,
+    pageSize: 25
+  },
+  responsesFilters: {
+    status: 'all',
+    search: '',
+    dateFrom: undefined,
+    dateTo: undefined,
+    showDuplicatesOnly: false
+  },
+  responsesTotalCount: 0,
+  selectedResponses: new Set<string>(),
+  bulkActionLoading: false,
 
   fetchQuestions: async () => {
     set({ loading: true });
@@ -722,6 +804,344 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       // Revert to original order on error
       get().fetchExpectations();
       set({ error: (error as Error).message });
+    }
+  },
+
+  // ===== RESPONSES METHODS =====
+
+  fetchResponses: async (reset = false) => {
+    const state = get();
+    
+    try {
+      set({ responsesLoading: true, responsesError: null });
+
+      if (reset) {
+        set({ 
+          responses: [], 
+          responsesPagination: { ...state.responsesPagination, cursor: undefined, hasMore: true },
+          selectedResponses: new Set<string>()
+        });
+      }
+
+      // Build query with filters
+      let query = supabase
+        .from('quiz_responses')
+        .select('id, name, email, contact, age, status, created_at, updated_at')
+        .order('created_at', { ascending: false });
+
+      // Apply filters
+      const { responsesFilters, responsesPagination } = get();
+      
+      if (responsesFilters.status !== 'all') {
+        query = query.eq('status', responsesFilters.status);
+      }
+
+      if (responsesFilters.dateFrom) {
+        query = query.gte('created_at', responsesFilters.dateFrom + 'T00:00:00');
+      }
+      if (responsesFilters.dateTo) {
+        query = query.lte('created_at', responsesFilters.dateTo + 'T23:59:59');
+      }
+
+      // Search filter
+      if (responsesFilters.search.trim()) {
+        const searchTerm = responsesFilters.search.trim();
+        query = query.or(
+          `name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%`
+        );
+      }
+
+      // Keyset pagination
+      if (responsesPagination.cursor) {
+        query = query.lt('created_at', responsesPagination.cursor);
+      }
+
+      query = query.limit(responsesPagination.pageSize);
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      const responses = data || [];
+      const hasMore = responses.length === responsesPagination.pageSize;
+      const newCursor = responses.length > 0 ? responses[responses.length - 1].created_at : undefined;
+
+      set(state => ({
+        responses: reset ? responses : [...state.responses, ...responses],
+        responsesPagination: {
+          ...state.responsesPagination,
+          hasMore,
+          cursor: newCursor
+        }
+      }));
+
+      // Fetch total count if reset or first load
+      if (reset || state.responses.length === 0) {
+        get().getResponsesTotalCount();
+      }
+
+    } catch (error) {
+      console.error('Error fetching responses:', error);
+      set({ responsesError: (error as Error).message });
+    } finally {
+      set({ responsesLoading: false });
+    }
+  },
+
+  loadMoreResponses: async () => {
+    const { responsesPagination } = get();
+    if (!responsesPagination.hasMore) return;
+    
+    await get().fetchResponses(false);
+  },
+
+  refreshResponses: async () => {
+    await get().fetchResponses(true);
+  },
+
+  setResponsesFilters: (filters: Partial<ResponseFilters>) => {
+    set(state => ({
+      responsesFilters: { ...state.responsesFilters, ...filters }
+    }));
+    // Auto-refresh with new filters
+    setTimeout(() => get().fetchResponses(true), 100);
+  },
+
+  clearResponsesFilters: () => {
+    set({
+      responsesFilters: {
+        status: 'all',
+        search: '',
+        dateFrom: undefined,
+        dateTo: undefined,
+        showDuplicatesOnly: false
+      }
+    });
+    get().fetchResponses(true);
+  },
+
+  setResponsesPageSize: (size: number) => {
+    set(state => ({
+      responsesPagination: { ...state.responsesPagination, pageSize: size }
+    }));
+    get().fetchResponses(true);
+  },
+
+  getResponsesTotalCount: async () => {
+    try {
+      const { responsesFilters } = get();
+      
+      let query = supabase
+        .from('quiz_responses')
+        .select('id', { count: 'exact', head: true });
+
+      // Apply same filters as main query
+      if (responsesFilters.status !== 'all') {
+        query = query.eq('status', responsesFilters.status);
+      }
+
+      if (responsesFilters.dateFrom) {
+        query = query.gte('created_at', responsesFilters.dateFrom + 'T00:00:00');
+      }
+      if (responsesFilters.dateTo) {
+        query = query.lte('created_at', responsesFilters.dateTo + 'T23:59:59');
+      }
+
+      if (responsesFilters.search.trim()) {
+        const searchTerm = responsesFilters.search.trim();
+        query = query.or(
+          `name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%`
+        );
+      }
+
+      const { count, error } = await query;
+
+      if (error) throw error;
+
+      set({ responsesTotalCount: count || 0 });
+    } catch (error) {
+      console.error('Error getting total count:', error);
+    }
+  },
+
+  // Bulk operations
+  toggleResponseSelection: (id: string) => {
+    set(state => {
+      const newSelection = new Set(state.selectedResponses);
+      if (newSelection.has(id)) {
+        newSelection.delete(id);
+      } else {
+        newSelection.add(id);
+      }
+      return { selectedResponses: newSelection };
+    });
+  },
+
+  selectAllResponses: () => {
+    set(state => ({
+      selectedResponses: new Set(state.responses.map(r => r.id))
+    }));
+  },
+
+  clearResponseSelection: () => {
+    set({ selectedResponses: new Set<string>() });
+  },
+
+  bulkDeleteResponses: async (ids: string[]) => {
+    try {
+      set({ bulkActionLoading: true });
+
+      const { error } = await supabase
+        .from('quiz_responses')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      // Update local state
+      set(state => ({
+        responses: state.responses.filter(r => !ids.includes(r.id)),
+        selectedResponses: new Set<string>(),
+        responsesTotalCount: Math.max(0, state.responsesTotalCount - ids.length)
+      }));
+
+    } catch (error) {
+      console.error('Error bulk deleting responses:', error);
+      set({ responsesError: (error as Error).message });
+      throw error;
+    } finally {
+      set({ bulkActionLoading: false });
+    }
+  },
+
+  exportResponsesCSV: async () => {
+    try {
+      set({ responsesLoading: true });
+      
+      const { responsesFilters } = get();
+      
+      // Fetch all responses matching current filters
+      let query = supabase
+        .from('quiz_responses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5000); // Cap at 5k for performance
+
+      // Apply same filters
+      if (responsesFilters.status !== 'all') {
+        query = query.eq('status', responsesFilters.status);
+      }
+
+      if (responsesFilters.dateFrom) {
+        query = query.gte('created_at', responsesFilters.dateFrom + 'T00:00:00');
+      }
+      if (responsesFilters.dateTo) {
+        query = query.lte('created_at', responsesFilters.dateTo + 'T23:59:59');
+      }
+
+      if (responsesFilters.search.trim()) {
+        const searchTerm = responsesFilters.search.trim();
+        query = query.or(
+          `name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,contact.ilike.%${searchTerm}%`
+        );
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Generate CSV
+      const csvContent = [
+        // Headers
+        ['ID', 'Name', 'Email', 'Contact', 'Age', 'Status', 'Created At', 'Updated At'].join(','),
+        // Data rows
+        ...(data || []).map(response => [
+          response.id,
+          `"${(response.name || '').replace(/"/g, '""')}"`,
+          `"${(response.email || '').replace(/"/g, '""')}"`,
+          `"${(response.contact || '').replace(/"/g, '""')}"`,
+          response.age || '',
+          response.status || '',
+          response.created_at || '',
+          response.updated_at || ''
+        ].join(','))
+      ].join('\n');
+
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `quiz_responses_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      set({ responsesError: (error as Error).message });
+      throw error;
+    } finally {
+      set({ responsesLoading: false });
+    }
+  },
+
+  deleteResponse: async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('quiz_responses')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      set(state => ({
+        responses: state.responses.filter(r => r.id !== id),
+        selectedResponses: new Set([...state.selectedResponses].filter(selectedId => selectedId !== id)),
+        responsesTotalCount: Math.max(0, state.responsesTotalCount - 1)
+      }));
+
+    } catch (error) {
+      console.error('Error deleting response:', error);
+      throw error;
+    }
+  },
+
+  getResponseDetails: async (id: string) => {
+    try {
+      // Get response details
+      const { data: response, error: responseError } = await supabase
+        .from('quiz_responses')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (responseError) throw responseError;
+
+      // Get answers with question text
+      const { data: answers, error: answersError } = await supabase
+        .from('quiz_answers')
+        .select(`
+          *,
+          questions (question_text)
+        `)
+        .eq('response_id', id);
+
+      if (answersError) {
+        console.error('Error fetching answers:', answersError);
+      }
+
+      return {
+        ...response,
+        answers: answers || []
+      } as DetailedResponse;
+
+    } catch (error) {
+      console.error('Error fetching response details:', error);
+      return null;
     }
   }
 }));
