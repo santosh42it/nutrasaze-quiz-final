@@ -410,14 +410,14 @@ const ResponseDetailModal: React.FC<{
             // Filter out basic info questions by question_id (4-7 are name, email, contact, age)
             const quizAnswers = response.answers
               ?.filter((answer: any) => {
-                // Filter out basic info questions by question_id (4-7 are name, email, contact, age)
-                const questionId = Number(answer.question_id);
-                return questionId < 4 || questionId > 7; // Keep questions 1-3 and 8-15
+                // Filter out basic info questions (orders 1-4: name, contact, email, age)
+                const questionOrder = Number(answer.questions?.order_index) || 0;
+                return questionOrder > 4; // Keep questions from order 5 onwards (gender, stress, energy, etc.)
               })
               ?.sort((a: any, b: any) => {
                 // Sort by question order_index from database for proper ordering
-                const aOrder = Number(a.questions?.order_index) || Number(a.question_id) || 0;
-                const bOrder = Number(b.questions?.order_index) || Number(b.question_id) || 0;
+                const aOrder = Number(a.questions?.order_index) || 0;
+                const bOrder = Number(b.questions?.order_index) || 0;
                 return aOrder - bOrder;
               }) || [];
 
@@ -451,6 +451,14 @@ const ResponseDetailModal: React.FC<{
                           <div className="text-[#2d3748] font-medium">
                             {answer.answer_text || 'No answer provided'}
                           </div>
+                          
+                          {/* Show additional text area info if available */}
+                          {answer.additional_info && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                              <p className="text-sm font-semibold text-blue-900 mb-1">💬 Additional Details:</p>
+                              <p className="text-blue-800">{answer.additional_info}</p>
+                            </div>
+                          )}
                         </div>
                         
                         {/* File attachment if exists */}
