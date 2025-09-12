@@ -459,7 +459,11 @@ const ResponseDetailModal: React.FC<{
   );
 };
 
-export const ResponsesReport: React.FC = () => {
+interface ResponsesReportProps {
+  superAdminEnabled: boolean;
+}
+
+export const ResponsesReport: React.FC<ResponsesReportProps> = ({ superAdminEnabled }) => {
   const {
     responses,
     responsesLoading,
@@ -475,43 +479,11 @@ export const ResponsesReport: React.FC = () => {
   } = useAdminStore();
   
   const [selectedResponse, setSelectedResponse] = useState<any>(null);
-  const [superAdminEnabled, setSuperAdminEnabled] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Initialize responses on mount
   useEffect(() => {
     fetchResponses(true);
-  }, []);
-
-  // Check super admin status from parent - improved detection
-  useEffect(() => {
-    const checkSuperAdmin = () => {
-      // Multiple ways to detect admin status
-      const adminPanel = document.querySelector('[data-super-admin]');
-      const editModeButton = document.querySelector('button[data-edit-mode]');
-      const urlParams = new URLSearchParams(window.location.search);
-      
-      // Check various indicators
-      const hasAdminAccess = 
-        (adminPanel && adminPanel.getAttribute('data-super-admin') === 'true') ||
-        (editModeButton && editModeButton.textContent?.includes('Edit Mode')) ||
-        urlParams.get('admin') === 'true' ||
-        localStorage.getItem('nutrasage_admin_mode') === 'true';
-      
-      setSuperAdminEnabled(hasAdminAccess);
-    };
-    
-    checkSuperAdmin();
-    // Check periodically and on focus changes
-    const interval = setInterval(checkSuperAdmin, 2000);
-    window.addEventListener('focus', checkSuperAdmin);
-    document.addEventListener('click', checkSuperAdmin);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', checkSuperAdmin);
-      document.removeEventListener('click', checkSuperAdmin);
-    };
   }, []);
 
   const handleResponseClick = async (responseId: string) => {

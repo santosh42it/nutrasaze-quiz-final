@@ -122,7 +122,7 @@ export const AdminPanel: React.FC = () => {
             {(() => {
               switch (activeTab) {
                 case 'responses':
-                  return <ResponsesReport />;
+                  return <ResponsesReport superAdminEnabled={superAdminEnabled} />;
                 case 'analytics':
                   return <AnalyticsReport />;
                 case 'questions':
