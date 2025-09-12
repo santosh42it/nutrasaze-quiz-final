@@ -416,8 +416,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('option_tags')
-        .select('*')
-        .order('id');
+        .select('option_id, tag_id')
+        .order('option_id');
 
       if (error) throw error;
       set({ optionTags: data || [] });
