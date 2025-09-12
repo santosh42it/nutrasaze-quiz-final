@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { supabase } from "../../lib/supabase";
@@ -39,6 +40,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expectations, setExpectations] = useState<Expectation[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Navigation hook for routing
+  const navigate = useNavigate();
 
   // Progressive save integration
   const { saveData } = useProgressiveSave();
@@ -819,8 +823,10 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       localStorage.setItem('nutrasage_last_result_url', shareableUrl);
       localStorage.setItem('nutrasage_last_result_id', uniqueResultId);
 
-      // Update browser URL without page reload
-      window.history.replaceState(null, '', shareableUrl);
+      // FIXED: Use React Router navigation instead of window.history.replaceState
+      // This ensures proper route transition to ResultsPage component
+      console.log('Navigating to results page:', `/results/${uniqueResultId}`);
+      navigate(`/results/${uniqueResultId}`, { replace: true });
 
       // Save quiz answers
       const validAnswers = Object.entries(answers)
