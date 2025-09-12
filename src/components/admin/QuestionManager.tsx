@@ -178,13 +178,6 @@ const SortableOptionItem: React.FC<SortableOptionItemProps> = ({
 const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options, tags, onSave, onClose }) => {
   const { optionTags } = useAdminStore();
   
-  // Debug: Show data state
-  const debugInfo = {
-    optionTagsCount: optionTags?.length || 0,
-    optionTagsSample: optionTags?.slice(0, 3) || [],
-    currentQuestionId: question?.id,
-    availableOptions: options?.filter(o => o.question_id === question?.id) || []
-  };
   
   const [formData, setFormData] = useState<Partial<Question>>({
     question_text: question?.question_text || '',
@@ -227,11 +220,17 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
   // Separate effect for loading question options with tags to ensure data is fresh
   useEffect(() => {
     if (isOpen && question && options && optionTags) {
+      console.log('🏷️ Building question options with tags...');
+      console.log('Question ID:', question.id);
+      console.log('All optionTags:', optionTags);
+      
       // Filter options for this specific question first
       const questionOptionsForThisQuestion = options.filter(option => option.question_id === question.id);
+      console.log('Options for this question:', questionOptionsForThisQuestion);
       
       const optionsWithTags = questionOptionsForThisQuestion.map(option => {
         const optionTagsForOption = optionTags.filter(ot => ot.option_id === option.id);
+        console.log(`Option ${option.id} (${option.option_text}) has tags:`, optionTagsForOption);
         
         return {
           id: option.id, // Include the database ID
@@ -240,6 +239,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, question, options
         };
       });
       
+      console.log('Final optionsWithTags:', optionsWithTags);
       setQuestionOptions(optionsWithTags);
     } else if (isOpen && !question) {
       setQuestionOptions([]);
