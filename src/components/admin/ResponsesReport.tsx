@@ -4,7 +4,6 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { SecureFileViewer } from './SecureFileViewer';
 
 // Response status badge component
 const StatusBadge: React.FC<{ status: 'completed' | 'partial' }> = ({ status }) => (
@@ -394,25 +393,26 @@ const ResponseDetailModal: React.FC<{
                   <span className="font-semibold text-[#6d6d6e] w-20">Status:</span>
                   <StatusBadge status={response.status} />
                 </div>
-                <div className="flex items-start">
-                  <span className="font-semibold text-[#6d6d6e] w-20 flex-shrink-0">Submitted:</span>
-                  <span className="text-[#1d0917] ml-2">{formatDate(response.created_at)}</span>
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-20">Submitted:</span>
+                  <span className="text-[#1d0917]">{formatDate(response.created_at)}</span>
                 </div>
-                <div className="flex items-start mt-2">
-                  <span className="font-semibold text-[#6d6d6e] w-20 flex-shrink-0">Updated:</span>
-                  <span className="text-[#1d0917] ml-2">{formatDate(response.updated_at)}</span>
+                <div className="flex items-center">
+                  <span className="font-semibold text-[#6d6d6e] w-20">Updated:</span>
+                  <span className="text-[#1d0917]">{formatDate(response.updated_at)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quiz Answers - Show ALL quiz questions */}
+          {/* Quiz Answers - Filter out basic info questions */}
           {(() => {
-            // Show all quiz questions including file upload questions
+            // Filter out basic info questions by question_id (4-7 are name, email, contact, age)
             const quizAnswers = response.answers
               ?.filter((answer: any) => {
-                // Only filter out completely empty answers, show everything else
-                return answer && (answer.answer_text || answer.file_url);
+                // Filter out basic info questions (orders 1-4: name, contact, email, age)
+                const questionOrder = Number(answer.questions?.order_index) || 0;
+                return questionOrder > 4; // Keep questions from order 5 onwards (gender, stress, energy, etc.)
               })
               ?.sort((a: any, b: any) => {
                 // Sort by question order_index from database for proper ordering
@@ -420,8 +420,6 @@ const ResponseDetailModal: React.FC<{
                 const bOrder = Number(b.questions?.order_index) || 0;
                 return aOrder - bOrder;
               }) || [];
-
-            // All questions with answers are now properly displayed
 
             return quizAnswers.length > 0 && (
               <div className="bg-white rounded-xl border border-[#e9d6e4] overflow-hidden shadow-lg">
@@ -463,29 +461,39 @@ const ResponseDetailModal: React.FC<{
                           )}
                         </div>
                         
-                        {/* File attachment section - always show for file upload questions */}
-                        {answer.questions?.question_text?.toLowerCase().includes('upload') && (
-                          <div className="mt-4">
-                            {answer.file_url && answer.file_url.trim() ? (
-                              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <span className="text-green-600 text-lg">📎</span>
-                                  <span className="font-semibold text-green-800">File Attachment</span>
+                        {/* File attachment if exists */}
+                        {answer.file_url && (
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-blue-500 text-white rounded-full p-2">
+                                  📎
                                 </div>
-                                <SecureFileViewer 
-                                  filePath={answer.file_url}
-                                  fileName={answer.file_url.split('/').pop() || 'attachment'}
-                                />
-                              </div>
-                            ) : (
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-yellow-600 text-lg">📄</span>
-                                  <span className="font-semibold text-yellow-800">No file uploaded</span>
-                                  <span className="text-yellow-600 text-sm">User indicated they would upload but no file was provided</span>
+                                <div>
+                                  <p className="font-semibold text-blue-900">Medical Document Uploaded</p>
+                                  <p className="text-blue-700 text-sm">
+                                    {answer.file_url.split('/').pop()?.substring(0, 40) || 'Attachment'}
+                                  </p>
                                 </div>
                               </div>
-                            )}
+                              <div className="flex gap-2">
+                                <a
+                                  href={answer.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
+                                >
+                                  👁️ View
+                                </a>
+                                <a
+                                  href={answer.file_url}
+                                  download
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md"
+                                >
+                                  📥 Download
+                                </a>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>

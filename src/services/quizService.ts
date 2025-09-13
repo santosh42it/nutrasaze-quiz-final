@@ -2,7 +2,6 @@
 import { supabase } from '../lib/supabase';
 import type { Question as DBQuestion, QuestionOption } from '../types/database';
 import type { Question } from '../components/Quiz/types';
-import { uploadSecureFile, type SecureFileUploadResult } from './secureFileService';
 
 export interface QuizQuestionFromDB extends DBQuestion {
   options?: QuestionOption[];
@@ -174,7 +173,7 @@ export const saveQuizAnswer = async (
   questionId: number | string,
   answerText: string,
   additionalInfo?: string,
-  fileId?: string // Changed from fileUrl to fileId for secure storage
+  fileUrl?: string
 ): Promise<void> => {
   try {
     console.log('Saving quiz answer:', { responseId, questionId, answerText });
@@ -187,7 +186,7 @@ export const saveQuizAnswer = async (
           question_id: parseInt(questionId.toString()),
           answer_text: answerText,
           additional_info: additionalInfo || null,
-          file_url: fileId || null // Now stores file path/ID instead of public URL
+          file_url: fileUrl || null
         }
       ]);
 
@@ -199,60 +198,6 @@ export const saveQuizAnswer = async (
     console.log('Saved quiz answer successfully');
   } catch (error) {
     console.error('Error in saveQuizAnswer:', error);
-    throw error;
-  }
-};
-
-/**
- * Secure file upload function that ensures proper validation and linking
- */
-export const saveQuizAnswerWithFile = async (
-  responseId: number,
-  questionId: number | string,
-  answerText: string,
-  file?: File,
-  additionalInfo?: string
-): Promise<void> => {
-  try {
-    console.log('Saving quiz answer with file:', { responseId, questionId, answerText });
-    
-    let fileId: string | undefined = undefined;
-    let uploadErrorMessage: string | undefined = undefined;
-    
-    // FIX 2: Upload file securely if provided - but don't fail entire submission if upload fails
-    if (file) {
-      try {
-        console.log('🔐 Uploading file securely:', file.name);
-        const uploadResult: SecureFileUploadResult = await uploadSecureFile(file, responseId, questionId);
-        
-        if (uploadResult.success) {
-          fileId = uploadResult.fileId;
-          console.log('🔐 File uploaded successfully:', fileId);
-        } else {
-          uploadErrorMessage = `File upload failed: ${uploadResult.error}`;
-          console.warn('⚠️ File upload failed, saving answer without file:', uploadErrorMessage);
-        }
-      } catch (uploadError) {
-        uploadErrorMessage = `File upload error: ${uploadError}`;
-        console.warn('⚠️ File upload exception, saving answer without file:', uploadErrorMessage);
-      }
-    }
-    
-    // Always save the answer - even if file upload failed
-    // If upload failed, append error message to additionalInfo
-    const finalAdditionalInfo = uploadErrorMessage 
-      ? (additionalInfo ? `${additionalInfo}\n\n[File Upload Failed: ${uploadErrorMessage}]` : `[File Upload Failed: ${uploadErrorMessage}]`)
-      : additionalInfo;
-      
-    await saveQuizAnswer(responseId, questionId, answerText, finalAdditionalInfo, fileId);
-    
-    if (fileId) {
-      console.log('✅ Saved quiz answer with secure file successfully');
-    } else {
-      console.log('✅ Saved quiz answer successfully (file upload failed but answer preserved)');
-    }
-  } catch (error) {
-    console.error('Error in saveQuizAnswerWithFile:', error);
     throw error;
   }
 };

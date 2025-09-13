@@ -4,7 +4,6 @@ import {
   createPartialResponse, 
   updatePartialResponse, 
   saveQuizAnswer, 
-  saveQuizAnswerWithFile,
   completeQuizResponse,
   type ProgressiveSaveData 
 } from '../../services/quizService';
@@ -137,38 +136,18 @@ export const useProgressiveSave = () => {
     questionId: string | number,
     answer: string,
     additionalInfo?: string,
-    file?: File // Changed from fileUrl to file for secure upload
+    fileUrl?: string
   ) => {
-    // FIX 1: Guarantee response creation - create placeholder if none exists
-    let currentResponseId = saveData.responseId;
-    if (!currentResponseId) {
-      console.log('🔧 No response ID - creating placeholder response for file upload');
-      try {
-        // Create a placeholder response to ensure we have a responseId
-        const placeholderEmail = `temp_${Date.now()}@placeholder.com`;
-        currentResponseId = await handleEmailSave(placeholderEmail);
-        
-        if (!currentResponseId) {
-          console.error('Failed to create placeholder response for file upload');
-          return;
-        }
-        console.log('✅ Created placeholder response with ID:', currentResponseId);
-      } catch (error) {
-        console.error('Error creating placeholder response:', error);
-        return;
-      }
+    if (!saveData.responseId) {
+      console.error('No response ID available for saving answer');
+      return;
     }
 
     try {
       setIsSaving(true);
-      console.log('Progressive save: Answer', { questionId, answer, hasFile: !!file });
+      console.log('Progressive save: Answer', { questionId, answer });
       
-      // Use secure file upload if file is provided - use local responseId to avoid stale closure
-      if (file) {
-        await saveQuizAnswerWithFile(currentResponseId, questionId, answer, file, additionalInfo);
-      } else {
-        await saveQuizAnswer(currentResponseId, questionId, answer, additionalInfo);
-      }
+      await saveQuizAnswer(saveData.responseId, questionId, answer, additionalInfo, fileUrl);
       
       console.log('Progressive save: Saved answer');
     } catch (error) {

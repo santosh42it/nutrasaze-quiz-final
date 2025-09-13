@@ -79,19 +79,3 @@ export const createAdminUser = async () => {
     console.error('Unexpected error creating admin user:', error);
   }
 };
-
-// Initialize secure storage system
-export const initializeApplication = async () => {
-  try {
-    // Initialize secure storage
-    const { initializeSecureStorage } = await import('../services/secureFileService');
-    await initializeSecureStorage();
-    
-    // Create admin user
-    await createAdminUser();
-    
-    console.log('🔐 Application initialized with secure storage');
-  } catch (error) {
-    console.error('Error initializing application:', error);
-  }
-};

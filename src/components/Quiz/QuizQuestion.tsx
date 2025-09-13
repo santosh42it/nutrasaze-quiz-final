@@ -22,7 +22,6 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
   handleOptionSelect,
   handleKeyPress,
   handleFileChange,
-  isSaving,
 }) => {
   const showAdditionalInputs = (question.hasTextArea || question.hasFileUpload) &&
                               answers[question.id] &&
@@ -116,10 +115,9 @@ export const QuizQuestion: React.FC<QuestionProps> = ({
                       )}
                       <Button
                         onClick={handleNext}
-                        disabled={isSaving}
                         className="w-full h-14 md:h-16 rounded-2xl bg-[#913177] hover:bg-[#7a2a66] text-white font-semibold text-base md:text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                       >
-                        {isSaving ? 'Saving...' : 'Continue'}
+                        Continue
                       </Button>
                       {validationError && (
                         <p className="text-red-400 text-sm text-center font-medium">{validationError}</p>
