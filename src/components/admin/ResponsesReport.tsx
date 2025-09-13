@@ -394,26 +394,25 @@ const ResponseDetailModal: React.FC<{
                   <span className="font-semibold text-[#6d6d6e] w-20">Status:</span>
                   <StatusBadge status={response.status} />
                 </div>
-                <div className="flex items-center">
-                  <span className="font-semibold text-[#6d6d6e] w-20">Submitted:</span>
-                  <span className="text-[#1d0917]">{formatDate(response.created_at)}</span>
+                <div className="flex items-start">
+                  <span className="font-semibold text-[#6d6d6e] w-20 flex-shrink-0">Submitted:</span>
+                  <span className="text-[#1d0917] ml-2">{formatDate(response.created_at)}</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="font-semibold text-[#6d6d6e] w-20">Updated:</span>
-                  <span className="text-[#1d0917]">{formatDate(response.updated_at)}</span>
+                <div className="flex items-start mt-2">
+                  <span className="font-semibold text-[#6d6d6e] w-20 flex-shrink-0">Updated:</span>
+                  <span className="text-[#1d0917] ml-2">{formatDate(response.updated_at)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quiz Answers - Filter out basic info questions */}
+          {/* Quiz Answers - Show ALL quiz questions */}
           {(() => {
-            // Filter out basic info questions by question_id (4-7 are name, email, contact, age)
+            // Show all quiz questions including file upload questions
             const quizAnswers = response.answers
               ?.filter((answer: any) => {
-                // Filter out basic info questions (orders 1-4: name, contact, email, age)
-                const questionOrder = Number(answer.questions?.order_index) || 0;
-                return questionOrder > 4; // Keep questions from order 5 onwards (gender, stress, energy, etc.)
+                // Only filter out completely empty answers, show everything else
+                return answer && (answer.answer_text || answer.file_url);
               })
               ?.sort((a: any, b: any) => {
                 // Sort by question order_index from database for proper ordering
@@ -464,11 +463,17 @@ const ResponseDetailModal: React.FC<{
                         
                         {/* Secure File attachment - separate section outside answer text box */}
                         {answer.file_url && answer.file_url.trim() && (
-                          <div className="ml-9 mt-4">
-                            <SecureFileViewer 
-                              filePath={answer.file_url}
-                              fileName={answer.file_url.split('/').pop()}
-                            />
+                          <div className="mt-4">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <div className="flex items-center gap-3 mb-3">
+                                <span className="text-green-600 text-lg">📎</span>
+                                <span className="font-semibold text-green-800">File Attachment</span>
+                              </div>
+                              <SecureFileViewer 
+                                filePath={answer.file_url}
+                                fileName={answer.file_url.split('/').pop() || 'attachment'}
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
