@@ -296,7 +296,7 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 10 * 1024 * 1024; // 10MB (matches secure file service)
 
       if (!allowedTypes.includes(file.type)) {
         setValidationError('Please upload only PDF, JPG, or PNG files');
@@ -305,7 +305,7 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
       }
 
       if (file.size > maxSize) {
-        setValidationError('File size should be less than 5MB');
+        setValidationError('File size should be less than 10MB');
         e.target.value = '';
         return;
       }
