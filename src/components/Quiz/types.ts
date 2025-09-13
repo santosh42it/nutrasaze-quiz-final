@@ -29,4 +29,5 @@ export interface QuestionProps {
   handleOptionSelect: (option: string) => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isSaving: boolean; // Added to prevent premature clicks during save operations
 }

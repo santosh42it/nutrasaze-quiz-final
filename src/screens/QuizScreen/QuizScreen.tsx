@@ -114,6 +114,14 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
   };
 
   const handleNext = async () => {
+    // FIX 3: Prevent multiple clicks during save operations
+    if (isSaving) {
+      console.log('⏳ Save operation in progress, ignoring Continue click');
+      return;
+    }
+    
+    setValidationError("");
+    
     const currentQuestionData = questions[currentQuestion];
 
     if (!currentQuestionData) return; // Safety check
@@ -168,33 +176,34 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
 
     // Progressive auto-save functionality
     try {
+      // FIX 3: Wait for save operations to complete - prevent premature navigation
       // We'll handle file upload securely in the handleAnswerSave function
       // No need to upload file here anymore - it will be handled securely with proper validation
 
       // Start progressive save from name question (first question)
       if (currentQuestionData.id === "38" && currentQuestionData.type === "text" && finalValue) {
         console.log('Progressive save: Starting with name (first question)');
-        await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue).catch(err => console.error('Name save error:', err));
+        await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue);
       }
       // Save email
       else if (currentQuestionData.type === "email" && finalValue) {
         console.log('Progressive save: Saving email');
-        await handleEmailSave(finalValue).catch(err => console.error('Email save error:', err));
+        await handleEmailSave(finalValue);
       }
       // Save other basic info (contact, age)
       else if (["tel", "number"].includes(currentQuestionData.type) && finalValue) {
-        await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue).catch(err => console.error('Basic info save error:', err));
+        await handleBasicInfoSaveLocal(currentQuestionData.id, finalValue);
       }
 
-      // Save all other answers (only after we have a response ID)
-      if (saveData.responseId && currentQuestionData.type === "select") {
+      // Save all other answers - ALWAYS await to prevent premature navigation
+      if (currentQuestionData.type === "select") {
         console.log('Progressive save: Saving answer for question', currentQuestionData.id);
         await handleAnswerSave(
           currentQuestionData.id,
           answers[currentQuestionData.id] || finalValue,
           additionalInfo || undefined,
           selectedFile || undefined // Pass file directly for secure upload
-        ).catch(err => console.error('Answer save error:', err));
+        );
       } else if (saveData.responseId && currentQuestionData.type !== "select") {
         // Also save other types of answers if they are not basic info and have a responseId
         await handleAnswerSave(

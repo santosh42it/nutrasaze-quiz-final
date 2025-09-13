@@ -217,24 +217,40 @@ export const saveQuizAnswerWithFile = async (
     console.log('Saving quiz answer with file:', { responseId, questionId, answerText });
     
     let fileId: string | undefined = undefined;
+    let uploadErrorMessage: string | undefined = undefined;
     
-    // Upload file securely if provided
+    // FIX 2: Upload file securely if provided - but don't fail entire submission if upload fails
     if (file) {
-      console.log('🔐 Uploading file securely:', file.name);
-      const uploadResult: SecureFileUploadResult = await uploadSecureFile(file, responseId, questionId);
-      
-      if (!uploadResult.success) {
-        throw new Error(`File upload failed: ${uploadResult.error}`);
+      try {
+        console.log('🔐 Uploading file securely:', file.name);
+        const uploadResult: SecureFileUploadResult = await uploadSecureFile(file, responseId, questionId);
+        
+        if (uploadResult.success) {
+          fileId = uploadResult.fileId;
+          console.log('🔐 File uploaded successfully:', fileId);
+        } else {
+          uploadErrorMessage = `File upload failed: ${uploadResult.error}`;
+          console.warn('⚠️ File upload failed, saving answer without file:', uploadErrorMessage);
+        }
+      } catch (uploadError) {
+        uploadErrorMessage = `File upload error: ${uploadError}`;
+        console.warn('⚠️ File upload exception, saving answer without file:', uploadErrorMessage);
       }
-      
-      fileId = uploadResult.fileId;
-      console.log('🔐 File uploaded successfully:', fileId);
     }
     
-    // Save answer with secure file ID
-    await saveQuizAnswer(responseId, questionId, answerText, additionalInfo, fileId);
+    // Always save the answer - even if file upload failed
+    // If upload failed, append error message to additionalInfo
+    const finalAdditionalInfo = uploadErrorMessage 
+      ? (additionalInfo ? `${additionalInfo}\n\n[File Upload Failed: ${uploadErrorMessage}]` : `[File Upload Failed: ${uploadErrorMessage}]`)
+      : additionalInfo;
+      
+    await saveQuizAnswer(responseId, questionId, answerText, finalAdditionalInfo, fileId);
     
-    console.log('Saved quiz answer with secure file successfully');
+    if (fileId) {
+      console.log('✅ Saved quiz answer with secure file successfully');
+    } else {
+      console.log('✅ Saved quiz answer successfully (file upload failed but answer preserved)');
+    }
   } catch (error) {
     console.error('Error in saveQuizAnswerWithFile:', error);
     throw error;
