@@ -421,6 +421,8 @@ const ResponseDetailModal: React.FC<{
                 return aOrder - bOrder;
               }) || [];
 
+            // All questions with answers are now properly displayed
+
             return quizAnswers.length > 0 && (
               <div className="bg-white rounded-xl border border-[#e9d6e4] overflow-hidden shadow-lg">
                 <div className="bg-gradient-to-r from-[#913177] to-[#b8439a] text-white p-5">
@@ -461,19 +463,29 @@ const ResponseDetailModal: React.FC<{
                           )}
                         </div>
                         
-                        {/* Secure File attachment - separate section outside answer text box */}
-                        {answer.file_url && answer.file_url.trim() && (
+                        {/* File attachment section - always show for file upload questions */}
+                        {answer.questions?.question_text?.toLowerCase().includes('upload') && (
                           <div className="mt-4">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                              <div className="flex items-center gap-3 mb-3">
-                                <span className="text-green-600 text-lg">📎</span>
-                                <span className="font-semibold text-green-800">File Attachment</span>
+                            {answer.file_url && answer.file_url.trim() ? (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <span className="text-green-600 text-lg">📎</span>
+                                  <span className="font-semibold text-green-800">File Attachment</span>
+                                </div>
+                                <SecureFileViewer 
+                                  filePath={answer.file_url}
+                                  fileName={answer.file_url.split('/').pop() || 'attachment'}
+                                />
                               </div>
-                              <SecureFileViewer 
-                                filePath={answer.file_url}
-                                fileName={answer.file_url.split('/').pop() || 'attachment'}
-                              />
-                            </div>
+                            ) : (
+                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-yellow-600 text-lg">📄</span>
+                                  <span className="font-semibold text-yellow-800">No file uploaded</span>
+                                  <span className="text-yellow-600 text-sm">User indicated they would upload but no file was provided</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
