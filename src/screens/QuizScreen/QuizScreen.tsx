@@ -399,6 +399,7 @@ export const QuizScreen = ({ onNavigateToContent }: QuizScreenProps): JSX.Elemen
               handleOptionSelect={handleOptionSelect}
               handleKeyPress={handleKeyPress}
               handleFileChange={handleFileChange}
+              isSaving={isSaving}
             />
           </div>
         ) : (
