@@ -1298,17 +1298,6 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                 {/* Horizontal Scrolling Tags Container */}
                 <div className="relative">
-                  {/* Mobile scroll indicator - show when content might overflow */}
-                  {matchedTags.length > 2 && (
-                    <div className="flex md:hidden absolute top-1/2 -translate-y-1/2 right-2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-md">
-                      <div className="flex items-center gap-1 text-xs text-gray-600">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                        <span className="text-xs">Swipe</span>
-                      </div>
-                    </div>
-                  )}
                   
                   {/* Desktop scroll indicator - only show when scrolling is needed */}
                   {matchedTags.length > 4 && (
