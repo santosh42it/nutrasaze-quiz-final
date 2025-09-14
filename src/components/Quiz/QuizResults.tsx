@@ -1285,7 +1285,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
           {/* Your Key Health Focus Areas Section */}
           {matchedTags.length > 0 && (
-            <Card className="mb-6 border-0 shadow-sm overflow-hidden" style={{backgroundColor: '#f0f8ff'}}>
+            <Card className="mb-6 border-0 shadow-sm" style={{backgroundColor: '#f0f8ff'}}>
               <CardContent className="p-6 md:p-8">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-[#1d0917] mb-3">
@@ -1298,6 +1298,18 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
 
                 {/* Horizontal Scrolling Tags Container */}
                 <div className="relative">
+                  {/* Mobile scroll indicator - show when content might overflow */}
+                  {matchedTags.length > 2 && (
+                    <div className="flex md:hidden absolute top-1/2 -translate-y-1/2 right-2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-md">
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                        <span className="text-xs">Swipe</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Desktop scroll indicator - only show when scrolling is needed */}
                   {matchedTags.length > 4 && (
                     <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md">
@@ -1310,9 +1322,9 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
                     </div>
                   )}
 
-                  {/* Scrollable tags container */}
-                  <div className={`${matchedTags.length > 4 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 scrollbar-hide`}>
-                    <div className={`flex gap-4 md:gap-6 px-1 ${matchedTags.length <= 4 ? 'justify-center' : ''}`} style={matchedTags.length > 4 ? { minWidth: 'max-content' } : {}}>
+                  {/* Scrollable tags container - mobile-first approach */}
+                  <div className={`overflow-x-auto sm:${matchedTags.length > 4 ? 'overflow-x-auto' : 'overflow-hidden'} pb-4 scrollbar-hide`}>
+                    <div className={`flex gap-4 md:gap-6 px-1 sm:${matchedTags.length <= 4 ? 'justify-center' : ''}`} style={{ minWidth: 'max-content' }}>
                       {matchedTags.map((tag, index) => {
                         // Generate gradient colors for each tag
                         const gradients = [
